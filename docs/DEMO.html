@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AccTrack — screens & features</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+  :root{--bg:#0b0c0e;--card:#111214;--brd:#26282c;--tx:#edeef0;--mu:#8a8f98;--gr:#5fbf7f;--a1:#edeef0}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 22px 80px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px;letter-spacing:-.01em}
+  .brand svg{width:18px;height:18px}
+  .lang{display:flex;gap:6px}
+  .lang button{background:var(--card);border:1px solid var(--brd);color:var(--mu);border-radius:8px;
+    padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit}
+  .lang button.on{color:var(--tx);border-color:#4a4d54}
+  h1{font-size:28px;line-height:1.2;letter-spacing:-.02em;margin:18px 0 8px;font-weight:600}
+  .lead{color:var(--mu);font-size:15px;max-width:760px;margin:0 0 30px}
+  .item{margin:0 0 46px}
+  .item figure{margin:0;border:1px solid var(--brd);border-radius:14px;overflow:hidden;background:var(--card)}
+  .item img{display:block;width:100%;height:auto}
+  .item h2{font-size:19px;margin:18px 0 8px;font-weight:600;letter-spacing:-.01em}
+  .item p{color:var(--mu);font-size:14.5px;margin:0 0 6px;max-width:900px}
+  .item ul{color:var(--mu);font-size:14px;margin:8px 0 0;padding-left:20px}
+  .item li{margin:3px 0}
+  .cta{margin-top:56px;padding:26px;border:1px solid var(--brd);border-radius:14px;background:var(--card)}
+  .cta b{font-size:16px}
+  .cta p{color:var(--mu);font-size:14px;margin:8px 0 14px}
+  .cta a{display:inline-block;background:var(--a1);color:#0b0c0e;text-decoration:none;
+    font-weight:600;font-size:14px;padding:10px 18px;border-radius:9px}
+  .foot{margin-top:28px;color:#5d626a;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.6 21 20.4H3L12 3.6Z" fill="#edeef0"/></svg>
+      AccTrack
+    </div>
+    <div class="lang">
+      <button data-l="uk" onclick="setL('uk')">UA</button>
+      <button data-l="en" onclick="setL('en')">EN</button>
+      <button data-l="ru" onclick="setL('ru')">RU</button>
+    </div>
+  </div>
+
+  <h1 id="h1"></h1>
+  <p class="lead" id="lead"></p>
+  <div id="items"></div>
+
+  <div class="cta">
+    <b id="ctaT"></b>
+    <p id="ctaP"></p>
+    <a id="ctaA" href="https://t.me/ENOUGHT285" target="_blank" rel="noopener">Telegram →</a>
+    <div class="foot" id="ctaF"></div>
+  </div>
+</div>
+
+<script>
+const T = {
+  uk: {
+    h1: "Так виглядає повний облік",
+    lead: "Скріншоти з робочого трекера (дані демонстраційні). Нижче — що саме показує кожен екран і навіщо ця функція.",
+    items: [
+      {img: "01-overview.png", t: "Огляд — стан бізнесу на одному екрані",
+       d: "Головний екран відповідає на чотири питання: скільки заробив цього місяця, чи є замовлення, що чекають дії, скільки грошей «заморожено» на складі, і чи все працює.",
+       li: ["Прибуток за місяць з порівнянням до минулого", "Стрічка останніх продажів з усіх каналів", "Стан складу й заморожені гроші", "Стан системи: агент, канали, токени"]},
+      {img: "02-deals.png", t: "Угоди — повний P&L",
+       d: "Кожна угода: дата, гра, платформа, закупівля, продаж, комісія майданчика і чистий прибуток. Фільтри за платформою, періодом і пошуком; експорт у CSV та Excel.",
+       li: ["Прибуток рахується як продаж − комісія − закупівля", "Комісії підставляються за платформою (FunPay 1.5%, ZeusX 9.5%, Eldorado 10%)", "Фільтри: період, платформа, пошук за назвою", "Експорт CSV / Excel одним кліком"]},
+      {img: "03-channels.png", t: "Канали — усі майданчики в одному списку",
+       d: "Спільний список продажів із FunPay, ZeusX та Eldorado одночасно: видно, який канал дає прибуток, а який — ні.",
+       li: ["Єдиний список продажів з усіх каналів", "Автоматичний імпорт із FunPay і ZeusX (з вашими токенами)", "Eldorado — вручну або з листів пошти", "Порівняння: де продавати вигідніше, з урахуванням комісій"]},
+      {img: "04-analytics.png", t: "Аналітика — де гроші",
+       d: "Зведені цифри по днях, місяцях і іграх: виторг, прибуток, маржа, топ ігор. Видно сезонність і які товари заробляють найбільше.",
+       li: ["Графік виторгу й прибутку за 30 днів", "Топ ігор за прибутком", "Місячний звіт із експортом", "Порівняння цього місяця з минулим"]},
+      {img: "05-inventory.png", t: "Склад — куплені акаунти",
+       d: "Скільки акаунтів куплено, у кого, за скільки і чи продані. Показує «мертвий склад» — що лежить понад 30 днів і з'їдає обігові гроші.",
+       li: ["Статуси: на складі / продано / списано", "Дані акаунта зберігаються приховано — показ за кнопкою", "«Мертвий склад»: позиції 30+ днів", "Експорт лотів у CSV"]},
+      {img: "06-catalog.png", t: "Каталог постачальників — ціни й знижки",
+       d: "Товари з ваших Shopify-постачальників: ціна, знижка, наявність, історія ціни. Видно, де та сама гра дешевша, і що вигідніше купити зараз.",
+       li: ["Ціни з усіх ваших постачальників в одному списку", "Знижки й наявність — одразу видно", "Історія ціни за 30 днів", "Дешевше в іншого постачальника — підсвічено"]}
+    ],
+    ctaT: "Хочете таку саму автоматизацію?",
+    ctaP: "Збір Taobao з проходженням капчі, авто-імпорт FunPay і ZeusX, постійний агент на ПК — напишіть, налаштуємо під вас.",
+    ctaF: "Telegram @ENOUGHT285 · dhdueu564@gmail.com · Discord facemyfear"
+  },
+  en: {
+    h1: "This is what full bookkeeping looks like",
+    lead: "Screenshots from a working tracker (demo data). Below — what each screen shows and why that feature matters.",
+    items: [
+      {img: "01-overview.png", t: "Overview — your business on one screen",
+       d: "The main screen answers four questions: how much you earned this month, whether anything needs action, how much money is frozen in stock, and whether everything is running.",
+       li: ["Monthly profit vs last month", "Feed of latest sales from all channels", "Stock state and frozen money", "System status: agent, channels, tokens"]},
+      {img: "02-deals.png", t: "Deals — full P&L",
+       d: "Every deal: date, game, platform, purchase, sale, marketplace fee and net profit. Filters by platform, period and search; export to CSV and Excel.",
+       li: ["Profit = sale − fee − purchase", "Fees per platform (FunPay 1.5%, ZeusX 9.5%, Eldorado 10%)", "Filters: period, platform, search", "One-click CSV / Excel export"]},
+      {img: "03-channels.png", t: "Channels — all marketplaces in one list",
+       d: "A single sales list from FunPay, ZeusX and Eldorado: you can see which channel brings profit and which does not.",
+       li: ["One combined sales list from all channels", "Auto-import from FunPay and ZeusX (with your tokens)", "Eldorado — manual or from mail", "Compare where selling is more profitable, fees included"]},
+      {img: "04-analytics.png", t: "Analytics — where the money is",
+       d: "Aggregated numbers by day, month and game: revenue, profit, margin, top games. Shows seasonality and which products actually earn.",
+       li: ["Revenue and profit chart for 30 days", "Top games by profit", "Monthly report with export", "This month vs last month"]},
+      {img: "05-inventory.png", t: "Inventory — accounts you bought",
+       d: "How many accounts were bought, from whom, for how much, and whether they sold. Shows dead stock — what sits 30+ days and eats working capital.",
+       li: ["Statuses: in stock / sold / written off", "Account data stored hidden — reveal by button", "Dead stock: positions 30+ days", "Export lots to CSV"]},
+      {img: "06-catalog.png", t: "Supplier catalog — prices and discounts",
+       d: "Products from your Shopify suppliers: price, discount, availability, price history. Shows where the same game is cheaper and what is worth buying now.",
+       li: ["Prices from all your suppliers in one list", "Discounts and availability at a glance", "30-day price history", "Cheaper elsewhere — highlighted"]}
+    ],
+    ctaT: "Want the same automation?",
+    ctaP: "Taobao collection with captcha handling, FunPay and ZeusX auto-import, a permanent agent on your PC — message me and we set it up for you.",
+    ctaF: "Telegram @ENOUGHT285 · dhdueu564@gmail.com · Discord facemyfear"
+  },
+  ru: {
+    h1: "Так выглядит полный учёт",
+    lead: "Скриншоты с рабочего трекера (данные демонстрационные). Ниже — что показывает каждый экран и зачем эта функция.",
+    items: [
+      {img: "01-overview.png", t: "Обзор — состояние бизнеса на одном экране",
+       d: "Главный экран отвечает на четыре вопроса: сколько заработано за месяц, есть ли заказы, ждущие действия, сколько денег «заморожено» на складе и всё ли работает.",
+       li: ["Прибыль за месяц со сравнением с прошлым", "Лента последних продаж со всех каналов", "Состояние склада и замороженные деньги", "Состояние системы: агент, каналы, токены"]},
+      {img: "02-deals.png", t: "Сделки — полный P&L",
+       d: "Каждая сделка: дата, игра, платформа, закупка, продажа, комиссия площадки и чистая прибыль. Фильтры по платформе, периоду и поиску; экспорт в CSV и Excel.",
+       li: ["Прибыль = продажа − комиссия − закупка", "Комиссии по платформам (FunPay 1.5%, ZeusX 9.5%, Eldorado 10%)", "Фильтры: период, платформа, поиск", "Экспорт CSV / Excel одним кликом"]},
+      {img: "03-channels.png", t: "Каналы — все площадки в одном списке",
+       d: "Общий список продаж из FunPay, ZeusX и Eldorado одновременно: видно, какой канал даёт прибыль, а какой нет.",
+       li: ["Единый список продаж со всех каналов", "Авто-импорт из FunPay и ZeusX (с вашими токенами)", "Eldorado — вручную или из писем почты", "Сравнение: где продавать выгоднее, с учётом комиссий"]},
+      {img: "04-analytics.png", t: "Аналитика — где деньги",
+       d: "Сводные цифры по дням, месяцам и играм: выручка, прибыль, маржа, топ игр. Видно сезонность и какие товары зарабатывают больше.",
+       li: ["График выручки и прибыли за 30 дней", "Топ игр по прибыли", "Месячный отчёт с экспортом", "Сравнение этого месяца с прошлым"]},
+      {img: "05-inventory.png", t: "Склад — купленные аккаунты",
+       d: "Сколько аккаунтов куплено, у кого, за сколько и проданы ли. Показывает «мёртвый склад» — что лежит больше 30 дней и съедает оборотные деньги.",
+       li: ["Статусы: на складе / продано / списано", "Данные аккаунта скрыты — показ по кнопке", "«Мёртвый склад»: позиции 30+ дней", "Экспорт лотов в CSV"]},
+      {img: "06-catalog.png", t: "Каталог поставщиков — цены и скидки",
+       d: "Товары из ваших Shopify-поставщиков: цена, скидка, наличие, история цены. Видно, где та же игра дешевле и что выгоднее купить сейчас.",
+       li: ["Цены со всех ваших поставщиков в одном списке", "Скидки и наличие — сразу видно", "История цены за 30 дней", "Дешевле у другого поставщика — подсвечено"]}
+    ],
+    ctaT: "Хотите такую же автоматизацию?",
+    ctaP: "Сбор Taobao с прохождением капчи, авто-импорт FunPay и ZeusX, постоянный агент на ПК — напишите, настроим под вас.",
+    ctaF: "Telegram @ENOUGHT285 · dhdueu564@gmail.com · Discord facemyfear"
+  }
+};
+
+function setL(l){
+  if(!T[l]) l = 'en';
+  window.__l = l;
+  document.documentElement.lang = l;
+  const d = T[l];
+  document.getElementById('h1').textContent = d.h1;
+  document.getElementById('lead').textContent = d.lead;
+  document.getElementById('ctaT').textContent = d.ctaT;
+  document.getElementById('ctaP').textContent = d.ctaP;
+  document.getElementById('ctaF').textContent = d.ctaF;
+  document.getElementById('items').innerHTML = d.items.map(x => `
+    <section class="item">
+      <figure><img src="/docs/demo/${window.__l || 'en'}/${x.img}" alt="${x.t}" loading="lazy"></figure>
+      <h2>${x.t}</h2>
+      <p>${x.d}</p>
+      <ul>${x.li.map(i => `<li>${i}</li>`).join('')}</ul>
+    </section>`).join('');
+  document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.l === l));
+  try{ localStorage.setItem('gt_lang', l); }catch(e){}
+}
+
+const q = new URLSearchParams(location.search).get('lang');
+setL(q || localStorage.getItem('gt_lang') || 'en');
+</script>
+</body>
+</html>

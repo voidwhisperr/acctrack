@@ -1,0 +1,22 @@
+# дані застосунку
+.gt_*.json
+.gt_*.corrupt
+gt_backups/
+*.corrupt
+
+# секрети й конфіги
+.gt_secrets.json
+.env
+config.json
+*.secret
+
+# сміття
+__pycache__/
+*.pyc
+_chk.js
+_audit/
+_audit_*.json
+certs/
+
+# персональний ярлик (створюється make-shortcut.bat)
+AccTrack.lnk

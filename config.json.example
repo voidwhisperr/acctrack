@@ -1,0 +1,4 @@
+{
+  "server": "https://your-domain.example",
+  "token": "agent-token-here"
+}

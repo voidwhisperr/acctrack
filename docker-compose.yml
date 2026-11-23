@@ -1,0 +1,21 @@
+# AccTrack — Docker Compose
+# Start:  docker compose up -d
+# Open:   http://localhost:8766
+
+services:
+  acctrack:
+    build: .
+    container_name: acctrack
+    restart: unless-stopped
+    ports:
+      - "8766:8766"
+    environment:
+      GT_BIND: "0.0.0.0"
+      GT_PORT: "8766"
+      GT_DATA_DIR: "/app/data"
+      TZ: "Europe/Kyiv"
+    volumes:
+      - acctrack_data:/app/data
+
+volumes:
+  acctrack_data:

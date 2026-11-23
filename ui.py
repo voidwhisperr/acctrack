@@ -1,0 +1,5921 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+HTML-шаблон дашборда (винесено з game_tracker.py).
+
+Логіки тут немає — тільки розмітка, стилі та JS. Єдине, що підставляється
+ззовні: __FEE_CONFIG__ (комісії з Python, щоб не дублювати їх у JS).
+"""
+
+HTML = r"""<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Game Tracker v4.6</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GameTracker">
+<meta name="theme-color" content="#0d1017">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/favicon.ico?v=7" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/icon.svg?v=7">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=7">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   v4.6 — нова тема: Manrope, більші шрифти, м'які картки
+   Кольори — змінні, тому працюють 4 теми (Slate/Nord/Carbon/Light)
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --fs:1;
+  --bg:#0d1017; --bg2:#11151e; --card:#151a24; --card2:#1b2130; --brd:#28303f;
+  --a1:#7c8cff; --a2:#ff7a59; --a3:#a78bfa; --a4:#22d3ee; --a5:#34d399;
+  --tx:#e9ebf2; --mu:#8b95a9; --gr:#34d399; --rd:#f87171; --yw:#fbbf24;
+  --radius:14px; --shadow:0 8px 28px rgba(0,0,0,.28);
+  --font:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+/* ═══════════ ТЕМА LEDGER — лаконічна, без градієнтів ═══════════ */
+[data-theme="ledger"]{
+  --bg:#08090A;--bg2:#0B0C0E;--card:#0B0C0E;--card2:#111214;--brd:#1D1F23;
+  --a1:#EDEEF0;--a2:#D9A05B;--a3:#8B95F0;--a4:#8FBFD9;--a5:#4CB782;
+  --tx:#E6E6E6;--mu:#82878F;--gr:#4CB782;--rd:#E08A8A;--yw:#D9A05B;
+  --radius:10px;--shadow:none;
+}
+[data-theme="ledger"] body::before{display:none}
+[data-theme="ledger"] .panel{background:#0B0C0E;border:1px solid #1D1F23;border-radius:12px;box-shadow:none}
+[data-theme="ledger"] .ph{font-weight:600;letter-spacing:.02em;border-bottom:1px solid #1D1F23}
+[data-theme="ledger"] .logo-i{background:#111214;border:1px solid #262A30;box-shadow:none;font-size:0}
+[data-theme="ledger"] h1{font-size:1rem;font-weight:600;letter-spacing:-.01em}
+[data-theme="ledger"] .tabs{border-bottom:1px solid #1D1F23;gap:2px;padding:6px 0}
+[data-theme="ledger"] .tab{border-radius:6px;border-bottom:0;padding:8px 11px;font-weight:500;font-size:.85rem}
+[data-theme="ledger"] .tab:hover{background:#111214}
+[data-theme="ledger"] .tab.on{background:#15161A;color:#EDEEF0;border-bottom:0}
+[data-theme="ledger"] .btn{background:#131417;border-color:#262A30;border-radius:6px}
+[data-theme="ledger"] .btn:hover{background:#17181C;border-color:#3A3E45;color:#fff}
+[data-theme="ledger"] input,[data-theme="ledger"] select,[data-theme="ledger"] textarea{
+  background:#0D0E10;border-color:#262A30;border-radius:6px}
+[data-theme="ledger"] .bub{background:#0D0E10;border:1px solid #1D1F23;border-radius:10px;box-shadow:none}
+[data-theme="ledger"] .bub:hover{border-color:#2A2D33;box-shadow:none}
+[data-theme="ledger"] .al{border-radius:8px}
+[data-theme="ledger"] .theme-btn{border-radius:8px}
+/* ── Огляд ── */
+.ov-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.ov-tile{background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:13px 14px}
+.ov-k{font-size:.76rem;color:var(--mu)}
+.ov-v{font-size:1.35rem;font-weight:600;margin-top:6px;letter-spacing:-.02em}
+.ov-v.gr{color:var(--gr)}.ov-v.rd{color:var(--rd)}
+.ov-d{font-size:.72rem;color:var(--mu);margin-top:4px}
+@media(max-width:860px){.ov-tiles{grid-template-columns:repeat(2,1fr)}}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:calc(16.5px * var(--fs));-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--tx);font-family:var(--font);
+  min-height:100vh;font-size:1rem;line-height:1.45;
+  font-variant-numeric:tabular-nums;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 10% 0%,color-mix(in srgb, var(--a1) 10%, transparent),transparent 60%),
+    radial-gradient(ellipse 50% 45% at 95% 100%,rgba(167,139,250,.08),transparent 60%);
+}
+.w{position:relative;z-index:1;max-width:1560px;margin:0 auto;padding:0 22px 70px}
+
+.ic{width:15px;height:15px;flex:none;display:inline-block;vertical-align:-2px;
+  stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ph .btn,.ph .ic{flex:none}
+.onb{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;display:flex;
+  align-items:center;justify-content:center;padding:20px}
+.onb-card{background:var(--card);border:1px solid var(--brd);border-radius:16px;padding:26px 28px;
+  width:100%;max-width:520px;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+.onb-card h2{font-size:1.15rem;margin-bottom:14px;font-weight:600;letter-spacing:-.01em}
+.onb-step{font-size:11px;color:var(--mu);letter-spacing:.12em;margin-bottom:8px}
+.onb-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}
+.onb-lang{display:flex;gap:8px;margin-top:6px}
+.onb-lang button{flex:1;padding:14px;font-size:15px;border-radius:8px;border:1px solid var(--brd);background:var(--card2);
+  color:var(--tx);font-family:var(--font);font-size:.9rem;cursor:pointer}
+.onb-lang button.on{border-color:var(--a1);background:color-mix(in srgb, var(--a1) 14%, transparent)}
+.tab .ic{width:15px;height:15px;flex:none;stroke:currentColor;fill:none;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.tab.on .ic{opacity:1}
+.tabs .tsep{width:1px;background:var(--brd);margin:6px 6px;flex:none}
+.psel{position:relative;min-width:196px}
+.psel-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 11px;border-radius:8px;
+  border:1px solid var(--brd);background:var(--card2);color:var(--tx);font-family:var(--font);
+  font-size:.85rem;font-weight:500;cursor:pointer}
+.psel-btn:hover{border-color:var(--a1)}
+.psel-btn .car{margin-left:auto;color:var(--mu);font-size:.7rem}
+.psel-logo{width:16px;height:16px;border-radius:3px;object-fit:contain;flex:none}
+.psel-list{position:absolute;z-index:60;top:calc(100% + 4px);left:0;right:0;background:var(--card);
+  border:1px solid var(--brd);border-radius:8px;padding:4px;box-shadow:0 10px 30px rgba(0,0,0,.45);display:none}
+.psel.open .psel-list{display:block}
+.psel-opt{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:6px;cursor:pointer;
+  font-size:.85rem;color:var(--tx)}
+.psel-opt:hover{background:var(--card2)}
+.psel-opt.on{background:var(--card2);font-weight:600}
+.psel-opt .fee{margin-left:auto;color:var(--mu);font-size:.78rem}
+.seg{display:inline-flex;gap:2px;background:var(--card2);border:1px solid var(--brd);border-radius:8px;padding:2px}
+.seg-b{display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-size:.8rem;font-weight:500;
+  padding:6px 11px;border-radius:6px;border:0;background:transparent;color:var(--mu);cursor:pointer}
+.seg-b:hover{color:var(--tx)}
+.seg-b.on{background:var(--card);color:var(--tx);box-shadow:0 0 0 1px var(--brd) inset}
+.langbtn{font-size:.72rem;font-weight:700;letter-spacing:.06em;padding:6px 9px;border-radius:6px;
+  border:1px solid var(--brd);background:transparent;color:var(--mu);cursor:pointer}
+.langbtn.on{color:var(--tx);background:var(--card2);border-color:var(--a1)}
+/* ── header ── */
+header{
+  padding:22px 0 16px;border-bottom:1px solid var(--brd);margin-bottom:20px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-i{
+  width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;background:linear-gradient(135deg,var(--a1),var(--a3));box-shadow:var(--shadow);
+}
+h1{
+  font-family:var(--font);font-size:1.05rem;font-weight:800;letter-spacing:.04em;
+  color:var(--tx);line-height:1.15;
+}
+h1 span{
+  display:block;font-size:.72rem;font-weight:500;color:var(--mu);
+  letter-spacing:.10em;margin-top:3px;text-transform:uppercase;
+}
+h1 span b{color:var(--a1);font-weight:700}
+
+/* ── tabs ── */
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--brd);margin-bottom:20px;overflow-x:auto;padding-bottom:2px}
+.tab{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:11px 18px;font-size:.92rem;font-weight:600;color:var(--mu);cursor:pointer;
+  border-radius:10px 10px 0 0;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s;
+}
+.tab:hover{color:var(--tx);background:color-mix(in srgb, var(--a1) 7%, transparent)}
+.tab.on{color:var(--a1);border-bottom-color:var(--a1);background:color-mix(in srgb, var(--a1) 8%, transparent)}
+.tc{display:none}.tc.on{display:block}
+
+/* ── кнопки ── */
+.btn{
+  background:color-mix(in srgb, var(--a1) 8%, transparent);border:1px solid var(--brd);color:var(--tx);
+  padding:9px 15px;border-radius:10px;font-family:var(--font);font-size:.86rem;font-weight:600;
+  cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px;line-height:1.2;
+}
+.btn:hover{border-color:var(--a1);color:var(--a1);background:color-mix(in srgb, var(--a1) 14%, transparent)}
+.btn.gr{border-color:rgba(52,211,153,.45);color:var(--gr);background:rgba(52,211,153,.08)}
+.btn.gr:hover{background:var(--gr);color:#06120d;border-color:var(--gr)}
+.btn.yw{border-color:rgba(251,191,36,.45);color:var(--yw);background:rgba(251,191,36,.08)}
+.btn.yw:hover{background:var(--yw);color:#1a1300;border-color:var(--yw)}
+.btn.rd{border-color:rgba(248,113,113,.45);color:var(--rd);background:rgba(248,113,113,.08)}
+.btn.rd:hover{background:var(--rd);color:#1c0505;border-color:var(--rd)}
+.btn.pu{border-color:rgba(167,139,250,.5);color:var(--a3);background:rgba(167,139,250,.08)}
+.btn.pu:hover{background:var(--a3);color:#120a24;border-color:var(--a3)}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.btn.on{background:var(--a1);color:#0a0d16;border-color:var(--a1)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+.spin{animation:spin .8s linear infinite;display:inline-block}
+
+/* ── панелі ── */
+.panel{
+  background:var(--card);border:1px solid var(--brd);border-radius:var(--radius);
+  padding:20px;margin-bottom:16px;box-shadow:var(--shadow);
+}
+.ph{
+  font-size:1rem;font-weight:800;color:var(--tx);letter-spacing:.01em;
+  margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--brd);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+}
+.al{padding:14px 18px;border-radius:11px;font-size:.92rem;margin-bottom:14px;border:1px solid}
+.al.info{border-color:color-mix(in srgb, var(--a1) 35%, transparent);background:color-mix(in srgb, var(--a1) 8%, transparent);color:#c7cdff}
+.al.ok{border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.08);color:var(--gr)}
+.al.warn{border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.08);color:var(--yw)}
+.al.err{border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.08);color:var(--rd)}
+
+/* ── поля вводу: 16px, щоб iOS не збільшував сторінку ── */
+input,select,textarea{
+  background:var(--bg2);border:1px solid var(--brd);border-radius:10px;
+  padding:10px 13px;color:var(--tx);font-family:var(--font);font-size:.98rem;
+  outline:none;transition:border-color .15s,box-shadow .15s;min-height:42px;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--a1);box-shadow:0 0 0 3px color-mix(in srgb, var(--a1) 25%, transparent)}
+input[type=checkbox]{min-height:auto;width:18px;height:18px;accent-color:var(--a1);cursor:pointer}
+label{font-size:.92rem}
+::placeholder{color:var(--mu);opacity:.9}
+
+/* ── статистичні картки ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.sc{
+  background:var(--card);border:1px solid var(--brd);border-radius:12px;
+  padding:14px 16px;position:relative;overflow:hidden;
+}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.c1::before{background:linear-gradient(90deg,var(--a1),transparent)}
+.c2::before{background:linear-gradient(90deg,var(--a2),transparent)}
+.c3::before{background:linear-gradient(90deg,var(--a3),transparent)}
+.c4::before{background:linear-gradient(90deg,var(--rd),transparent)}
+.c5::before{background:linear-gradient(90deg,var(--yw),transparent)}
+.cg::before{background:linear-gradient(90deg,var(--gr),transparent)}
+.sl{font-size:.75rem;letter-spacing:.09em;color:var(--mu);text-transform:uppercase;margin-bottom:6px;font-weight:600}
+.sv{font-size:1.55rem;font-weight:800;letter-spacing:-.01em}
+
+/* ── таблиці ── */
+.sup-table{width:100%;border-collapse:collapse}
+.sup-table th{
+  padding:12px 14px;text-align:left;font-size:.72rem;letter-spacing:.10em;color:var(--mu);
+  background:var(--bg2);border-bottom:1px solid var(--brd);font-weight:700;text-transform:uppercase;
+}
+.sup-table td{padding:13px 14px;border-bottom:1px solid rgba(40,48,63,.55);font-size:1rem;vertical-align:middle}
+.sup-table tr:last-child td{border-bottom:none}
+.sup-table tbody tr:hover td{background:color-mix(in srgb, var(--a1) 5%, transparent)}
+.sup-table a{color:var(--tx);text-decoration:none}
+.sup-table a:hover{color:var(--a1)}
+/* клітинка з кнопками не ламає рамку рядка */
+.sup-table td[style*="display:flex"]{display:table-cell!important;white-space:nowrap}
+.sup-table td[style*="display:flex"] button{margin-right:4px}
+/* 🫧 «бульбашки» записів (iOS-style) */
+.bub-wrap{display:flex;flex-direction:column;gap:10px}
+.bub{background:var(--card2);
+     border:1px solid var(--brd);border-radius:20px;padding:14px 16px;transition:.15s}
+.bub:hover{border-color:color-mix(in srgb, var(--a1) 45%, transparent);box-shadow:0 8px 28px rgba(0,0,0,.3)}
+.bub-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+.bub-date{font-size:11px;color:var(--mu);background:color-mix(in srgb, var(--a1) 10%, transparent);padding:3px 9px;border-radius:999px;white-space:nowrap}
+.bub-chip{font-size:11px;color:var(--a3);background:color-mix(in srgb, var(--a1) 8%, transparent);padding:3px 9px;border-radius:999px}
+.bub-title{flex:1 1 200px;font-weight:700;font-size:.95rem;line-height:1.32;color:var(--tx)}
+.bub-acts{display:flex;gap:6px;margin-left:auto}
+.bub-btn{background:transparent;border:1px solid var(--brd);color:var(--a1);border-radius:12px;
+         padding:5px 10px;font-size:12px;cursor:pointer;line-height:1}
+.bub-btn:hover{border-color:var(--a1)}
+.bub-btn.del{color:var(--rd)}
+.bub-btn.del:hover{border-color:var(--rd)}
+.bub-stats{display:flex;gap:8px;flex-wrap:wrap}
+.bs{font-size:12px;color:var(--mu);background:rgba(255,255,255,.02);border:1px solid var(--brd);
+    border-radius:12px;padding:6px 11px;white-space:nowrap}
+.bs b{color:var(--tx);font-family:var(--font)}
+.bs .neg{color:var(--rd)}
+.bs.pos b{color:var(--gr)}
+.bs.negp b{color:var(--rd)}
+.bub-id{font-size:11px;color:var(--mu);margin-top:9px;font-family:var(--font);word-break:break-all;opacity:.85}
+/* 🫧 «бульбашки» записів (iOS-style) */
+.bub-wrap{display:flex;flex-direction:column;gap:10px}
+.bub{background:var(--card2);
+     border:1px solid var(--brd);border-radius:20px;padding:14px 16px;transition:.15s}
+.bub:hover{border-color:color-mix(in srgb, var(--a1) 45%, transparent);box-shadow:0 8px 28px rgba(0,0,0,.3)}
+.bub-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+.bub-date{font-size:11px;color:var(--mu);background:color-mix(in srgb, var(--a1) 10%, transparent);padding:3px 9px;border-radius:999px;white-space:nowrap}
+.bub-chip{font-size:11px;color:var(--a3);background:color-mix(in srgb, var(--a1) 8%, transparent);padding:3px 9px;border-radius:999px}
+.bub-title{flex:1 1 200px;font-weight:700;font-size:.95rem;line-height:1.32;color:var(--tx)}
+.bub-acts{display:flex;gap:6px;margin-left:auto}
+.bub-btn{background:transparent;border:1px solid var(--brd);color:var(--a1);border-radius:12px;
+         padding:5px 10px;font-size:12px;cursor:pointer;line-height:1}
+.bub-btn:hover{border-color:var(--a1)}
+.bub-btn.del{color:var(--rd)}
+.bub-btn.del:hover{border-color:var(--rd)}
+.bub-stats{display:flex;gap:8px;flex-wrap:wrap}
+.bs{font-size:12px;color:var(--mu);background:rgba(255,255,255,.02);border:1px solid var(--brd);
+    border-radius:12px;padding:6px 11px;white-space:nowrap}
+.bs b{color:var(--tx);font-family:var(--font)}
+.bs .neg{color:var(--rd)}
+.bs.pos b{color:var(--gr)}
+.bs.negp b{color:var(--rd)}
+.bub-id{font-size:11px;color:var(--mu);margin-top:9px;font-family:var(--font);word-break:break-all;opacity:.85}
+
+/* ── бейджі / прогрес / пагінація ── */
+.profit-pos{color:var(--gr)}.profit-neg{color:var(--rd)}.profit-neu{color:var(--mu)}
+.ilnk{
+  display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:8px;
+  font-size:.78rem;font-weight:600;text-decoration:none;border:1px solid var(--brd);color:var(--mu);transition:.15s;
+}
+.ilnk:hover{border-color:var(--a1);color:var(--a1)}
+.none{text-align:center;padding:34px;color:var(--mu);font-size:.95rem}
+.pag{display:flex;justify-content:center;align-items:center;gap:5px;padding:14px 0 2px;flex-wrap:wrap}
+.pb{
+  background:transparent;border:1px solid var(--brd);color:var(--mu);padding:6px 12px;
+  border-radius:8px;cursor:pointer;font-size:.85rem;font-family:var(--font);transition:.15s;
+}
+.pb:hover,.pb.on{border-color:var(--a1);color:var(--a1);background:color-mix(in srgb, var(--a1) 10%, transparent)}
+.sort-btns{display:flex;gap:5px}
+.sbtn{
+  padding:6px 11px;border:1px solid var(--brd);border-radius:8px;font-size:.8rem;font-weight:600;
+  cursor:pointer;background:transparent;color:var(--mu);font-family:var(--font);transition:.15s;
+}
+.sbtn:hover,.sbtn.on{border-color:var(--a1);color:var(--a1)}
+.cmp-pr{font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pr-cheaper{color:var(--rd)}.pr-same{color:var(--yw)}.pr-expensive{color:var(--gr)}
+
+/* ── записи P&L ── */
+.pur-row{
+  background:var(--card2);border:1px solid var(--brd);border-radius:11px;
+  padding:12px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.pur-title{flex:1;font-weight:700;font-size:.95rem;min-width:160px}
+.pur-badge{font-size:.72rem;padding:3px 8px;border-radius:6px;font-weight:700;border:1px solid}
+.sale-row{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(40,48,63,.55);font-size:.9rem}
+.sale-row:last-child{border-bottom:none}
+
+/* ── сітки / налаштування ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.step{display:flex;gap:14px;margin-bottom:16px}
+.snum{
+  min-width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:800;color:#0a0d16;background:linear-gradient(135deg,var(--a1),var(--a3));flex-shrink:0;
+}
+.stit{font-weight:700;margin-bottom:4px;font-size:.98rem}
+.sdesc{font-size:.88rem;color:var(--mu);line-height:1.7}
+code{
+  background:var(--card2);border:1px solid var(--brd);padding:2px 7px;border-radius:6px;
+  font-size:.86rem;color:var(--a1);font-family:ui-monospace,Consolas,monospace;
+}
+.theme-btn{
+  display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;
+  padding:11px 14px;border-radius:12px;border:2px solid transparent;transition:.15s;
+  font-size:.82rem;color:var(--mu);font-weight:600;
+}
+.theme-btn:hover{border-color:var(--a1);color:var(--tx)}
+.theme-btn.active{border-color:var(--a1);color:var(--a1);background:color-mix(in srgb, var(--a1) 10%, transparent)}
+
+/* ── мобільний ── */
+@media(max-width:780px){
+  #tab-tracker .panel,#tab-eldorado .panel,#tab-inventory .panel,
+  #tab-platforms .panel,#tab-stats .panel{overflow-x:auto}
+  #tab-tracker .sup-table th,#tab-tracker .sup-table td,
+  #tab-eldorado .sup-table th,#tab-eldorado .sup-table td,
+  #tab-inventory .sup-table th,#tab-inventory .sup-table td{font-size:.82rem;padding:8px 6px}
+  #tab-tracker .sup-table th:nth-child(3),#tab-tracker .sup-table td:nth-child(3),
+  #tab-tracker .sup-table th:nth-child(4),#tab-tracker .sup-table td:nth-child(4),
+  #tab-tracker .sup-table th:nth-child(6),#tab-tracker .sup-table td:nth-child(6),
+  #tab-eldorado .sup-table th:nth-child(3),#tab-eldorado .sup-table td:nth-child(3),
+  #tab-eldorado .sup-table th:nth-child(5),#tab-eldorado .sup-table td:nth-child(5),
+  #tab-eldorado .sup-table th:nth-child(6),#tab-eldorado .sup-table td:nth-child(6),
+  #tab-eldorado .sup-table th:nth-child(8),#tab-eldorado .sup-table td:nth-child(8),
+  #tab-inventory .sup-table th:nth-child(3),#tab-inventory .sup-table td:nth-child(3),
+  #tab-inventory .sup-table th:nth-child(5),#tab-inventory .sup-table td:nth-child(5){display:none}
+  #tab-tracker .sup-table td:nth-child(2),#tab-eldorado .sup-table td:nth-child(2),
+  #tab-inventory .sup-table td:nth-child(2){max-width:190px}
+  #tab-tracker .sup-table td:nth-child(7),#tab-eldorado .sup-table td:nth-child(7){white-space:nowrap}
+}
+
+@media(max-width:780px){
+  #tab-taobao .sup-table th:nth-child(5),
+  #tab-taobao .sup-table td:nth-child(5),
+  #tab-taobao .sup-table th:nth-child(6),
+  #tab-taobao .sup-table td:nth-child(6){display:none}
+  #tab-taobao .sup-table td{font-size:.9rem;padding:9px 6px}
+  #tab-taobao .sup-table td:first-child{max-width:100%!important}
+}
+@media(max-width:780px){.g2,.g3{grid-template-columns:1fr}}
+@media(max-width:640px){
+  .w{padding:0 12px 50px}
+  .panel{padding:14px 12px;border-radius:12px}
+  .ph{font-size:.95rem;margin-bottom:12px}
+  .tabs{gap:4px;flex-wrap:wrap;overflow-x:visible}
+  .tab{font-size:.85rem;padding:9px 12px;flex:0 0 auto}
+  #chAll{overflow-x:auto;max-width:100%}
+  #chAll table{min-width:0;width:100%}
+  #chAll table th:nth-child(1),#chAll table td:nth-child(1),
+  #chAll table th:nth-child(4),#chAll table td:nth-child(4){display:none}
+  #tab-channels .panel{overflow-x:hidden}
+  #tab-taobao .ph{flex-wrap:wrap}
+  #tab-taobao .ph > span{display:flex;flex-wrap:wrap;width:100%;gap:8px}
+  #tbStatus{flex:1 1 100%;min-width:0;line-height:1.55;word-break:normal}
+  #tbList{overflow-x:auto}
+  .pur-row{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}
+  .pur-title{font-size:.94rem;min-width:unset;width:100%}
+  .sup-table td,.sup-table th{font-size:.92rem;padding:10px 8px}
+  .stats{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+  .sv{font-size:1.3rem}
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ЗБІЛЬШЕННЯ ДРІБНИХ ІНЛАЙН-НАПИСІВ
+   В HTML сотні style="font-size:9px" — вручну їх не переписати,
+   тому масштабуємо через атрибутні селектори + --fs (кнопки A−/A+)
+   ═══════════════════════════════════════════════════════════════ */
+[style*="font-size:8px"],[style*="font-size:9px"],[style*="font-size:10px"]{
+  font-size:calc(12px * var(--fs))!important;line-height:1.5
+}
+[style*="font-size:11px"],[style*="font-size:12px"]{
+  font-size:calc(13px * var(--fs))!important;line-height:1.5
+}
+[style*="font-size:13px"]{font-size:calc(14px * var(--fs))!important}
+[style*="font-size:14px"]{font-size:calc(15px * var(--fs))!important}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
+</script>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true">
+<symbol id="ic-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="ic-receipt" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17l-2.75-1.8L12 20.5l-2.75-1.8L6.5 20.5v-17z"/><path d="M9.5 8.5h5M9.5 12h5"/></symbol>
+<symbol id="ic-inbox" viewBox="0 0 24 24"><path d="M3.5 13.5l3-8h11l3 8v5.5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-5.5z"/><path d="M3.5 13.5h4.5l1 2h6l1-2h4.5"/></symbol>
+<symbol id="ic-store" viewBox="0 0 24 24"><path d="M4 9.5l1.5-5.5h13L20 9.5"/><path d="M4.5 9.5h15V19a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V9.5z"/><path d="M9.5 20v-5.5h5V20"/></symbol>
+<symbol id="ic-box" viewBox="0 0 24 24"><path d="M12 3.5l8.5 4.75v7.5L12 20.5 3.5 15.75v-7.5L12 3.5z"/><path d="M3.5 8.25L12 13l8.5-4.75M12 13v7.5"/></symbol>
+<symbol id="ic-cart" viewBox="0 0 24 24"><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17.5" cy="19.5" r="1.3"/><path d="M3.5 4.5h2l2.4 10.5h10.2L20.5 7.5H6.5"/></symbol>
+<symbol id="ic-tag" viewBox="0 0 24 24"><path d="M19.5 13.5l-6.5 6.5-8.5-8.5v-6h6l9 8z"/><circle cx="8.5" cy="8.5" r="1.3"/></symbol>
+<symbol id="ic-layers" viewBox="0 0 24 24"><path d="M12 3.5l8.5 4.5-8.5 4.5L3.5 8 12 3.5z"/><path d="M3.5 13L12 17.5 20.5 13"/></symbol>
+<symbol id="ic-chart" viewBox="0 0 24 24"><path d="M4.5 19.5V10M9.5 19.5V4.5M14.5 19.5v-6.5M19.5 19.5v-10M3 21h18"/></symbol>
+<symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></symbol>
+<symbol id="ic-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+<symbol id="ic-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5V12h-7.5"/></symbol>
+<symbol id="ic-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+<symbol id="ic-scale" viewBox="0 0 24 24"><path d="M12 4v16M7 20h10"/><path d="M4 9l4-4 4 4"/><path d="M12 9l4-4 4 4"/><path d="M2 9h8M14 9h8"/></symbol>
+<symbol id="ic-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 7h7M8.5 11.5h1M12 11.5h1M15.5 11.5h1M8.5 15h1M12 15h1M15.5 15h1M8.5 18.5h1M12 18.5h1M15.5 18.5h1"/></symbol>
+<symbol id="ic-key" viewBox="0 0 24 24"><circle cx="8.5" cy="15.5" r="3.6"/><path d="M11.2 12.9L19 5.1M16.3 7.8l2.1 2.1M14.1 10l1.6 1.6"/></symbol>
+<symbol id="ic-mark" viewBox="0 0 24 24"><path d="M12 3.6L21.2 20.4H2.8L12 3.6z" fill="currentColor" stroke="none"/></symbol>
+</svg>
+<div class="w">
+<header>
+  <div class="logo">
+    <svg width="20" height="22" viewBox="0 0 24 24" style="color:var(--tx);flex:none" aria-label="Ledger"><use href="#ic-mark"/></svg>
+    <h1>AccTrack<span data-i18n="hdr.sub">v5 · УГОДИ · КАНАЛИ · ПОШТА</span></h1>
+  </div>
+  <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+    <span id="fsVal" style="font-size:12px;color:var(--mu);min-width:38px;text-align:right"></span>
+    <button class="btn" onclick="setFs(-0.05)" title="Дрібніший шрифт" style="padding:7px 12px;font-size:14px">A−</button>
+    <button class="btn" onclick="setFs(0.05)" title="Більший шрифт" style="padding:7px 12px;font-size:14px">A+</button>
+    <button class="langbtn" id="langUk" onclick="setLang('uk')" title="Українська">UA</button>
+    <button class="langbtn" id="langEn" onclick="setLang('en')" title="English">EN</button>
+    <button class="langbtn" id="langRu" onclick="setLang('ru')" title="Русский">RU</button>
+    <button class="btn" onclick="location.reload()" title="Оновити сторінку" style="padding:7px 12px">↺</button>
+  </div>
+</header>
+
+<div id="onb" class="onb" style="display:none">
+  <div class="onb-card">
+    <div class="onb-step" id="onbStepInfo">1 / 3</div>
+    <h2 id="onbTitle">Welcome to AccTrack</h2>
+    <div id="onbBody"></div>
+    <div class="onb-actions">
+      <button class="btn" onclick="onbSkip()" id="onbSkip">Skip</button>
+      <button class="btn gr" onclick="onbNext()" id="onbNext">Next →</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab on" onclick="sw('overview',this)"><svg class="ic"><use href="#ic-grid"/></svg><span data-i18n="nav.overview">Огляд</span></div>
+  <div class="tab" onclick="sw('tracker',this)"><svg class="ic"><use href="#ic-receipt"/></svg><span data-i18n="nav.deals">Угоди</span></div>
+  <div class="tab" onclick="sw('mail',this);loadMailQueue()"><svg class="ic"><use href="#ic-inbox"/></svg><span data-i18n="nav.orders">Замовлення</span><span id="mailBadge"></span></div>
+  <div class="tab" onclick="sw('channels',this);loadPlatforms();loadEldorado()"><svg class="ic"><use href="#ic-store"/></svg><span data-i18n="nav.channels">Канали</span></div>
+  <div class="tsep"></div>
+  <div class="tab" onclick="sw('supply',this);loadSupply()"><svg class="ic"><use href="#ic-box"/></svg><span data-i18n="nav.catalog">Каталог</span></div>
+  <div class="tab" onclick="sw('buy',this);loadBuyList(true)"><svg class="ic"><use href="#ic-cart"/></svg><span data-i18n="nav.plan">План</span></div>
+  <div class="tab" onclick="sw('taobao',this);loadTaobao()"><svg class="ic"><use href="#ic-tag"/></svg><span data-i18n="nav.taobao">Taobao</span></div>
+  <div class="tab" onclick="sw('inventory',this);loadInventory()"><svg class="ic"><use href="#ic-layers"/></svg><span data-i18n="nav.inventory">Інвентар</span></div>
+  <div class="tsep"></div>
+  <div class="tab" onclick="sw('stats',this);renderStats();setTimeout(renderRevenueChart,80)"><svg class="ic"><use href="#ic-chart"/></svg><span data-i18n="nav.analytics">Аналітика</span></div>
+  <div class="tab" onclick="sw('setup',this);loadBackupList();loadSettings()"><svg class="ic"><use href="#ic-gear"/></svg></div>
+</div>
+
+<div id="tab-overview" class="tc on">
+  <div class="panel">
+    <div class="ph"><span data-i18n="ov.today">Сьогодні</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" onclick="sw('tracker',document.querySelectorAll('.tab')[1])"><svg class="ic"><use href="#ic-plus"/></svg><span data-i18n="ov.add">Угода</span></button>
+        <button class="btn" onclick="sw('channels',document.querySelectorAll('.tab')[3]);loadPlatforms(true)"><svg class="ic"><use href="#ic-refresh"/></svg><span data-i18n="ov.channels">Канали</span></button>
+        <button class="btn" onclick="sw('taobao',document.querySelectorAll('.tab')[6])"><span>Taobao</span></button>
+      </div>
+    </div>
+    <div class="ov-tiles">
+      <div class="ov-tile"><div class="ov-k" data-i18n="ov.profit">Прибуток · місяць</div><div class="ov-v gr" id="ovProfit">—</div><div class="ov-d" id="ovProfitD"></div></div>
+      <div class="ov-tile"><div class="ov-k" data-i18n="ov.actions">Потребує дії</div><div class="ov-v" id="ovActions">—</div><div class="ov-d" id="ovActionsD"></div></div>
+      <div class="ov-tile"><div class="ov-k" data-i18n="ov.stock">Склад</div><div class="ov-v" id="ovStock">—</div><div class="ov-d" id="ovStockD"></div></div>
+      <div class="ov-tile"><div class="ov-k" data-i18n="ov.health">Стан системи</div><div class="ov-v" id="ovHealth" style="font-size:.95rem">—</div><div class="ov-d" id="ovHealthD"></div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><span data-i18n="ov.feed">Що сталось</span></div>
+    <div id="ovFeed" class="bub-wrap"></div>
+  </div>
+</div>
+
+<div id="tab-channels" class="tc">
+  <div class="panel">
+    <div class="ph"><span data-i18n="ph.allch">Усі канали — останні продажі</span>
+      <div style="font-size:12px;color:var(--mu)" id="chAllSum"></div>
+    </div>
+    <div id="chAll"><div class="none">⏳ …</div></div>
+  </div>
+  <div class="panel" style="padding:14px 16px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="seg" id="chSeg">
+        <button class="seg-b on" onclick="chView('bal')"><svg class="ic"><use href="#ic-store"/></svg><span data-i18n="ch.bal">Баланси</span></button>
+        <button class="seg-b" onclick="chView('ed')"><svg class="ic"><use href="#ic-receipt"/></svg><span>Eldorado — продажі</span></button>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="loadPlatforms(true)"><svg class="ic"><use href="#ic-refresh"/></svg><span data-i18n="ch.refresh">Оновити</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="tab-tracker" class="tc">
+  <!-- Додати запис -->
+  <div class="panel">
+    <div class="ph"><span data-i18n="ph.newDeal">+ НОВИЙ ПРОДАЖ</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.title">НАЗВА (необов.)</div>
+        <input id="plTitle" data-i18n-ph="ph.dealTitle" placeholder="напр. Arknights Starter" style="width:220px">
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.platform">ПЛАТФОРМА</div>
+        <input type="hidden" id="plPlatform" value="zeusx">
+        <div class="psel" id="plPlatSel">
+          <button type="button" class="psel-btn" onclick="plPlatToggle(event)">
+            <img class="psel-logo" id="plPlatLogo" src="/logo/zeusx.png" alt="">
+            <span id="plPlatName">ZeusX</span><span class="car">▾</span>
+          </button>
+          <div class="psel-list">
+            <div class="psel-opt on" data-val="zeusx" onclick="plPlatPick('zeusx')">
+              <img class="psel-logo" src="/logo/zeusx.png" alt=""><span>ZeusX</span><span class="fee">−9.5%</span></div>
+            <div class="psel-opt" data-val="funpay" onclick="plPlatPick('funpay')">
+              <img class="psel-logo" src="/logo/funpay.png" alt=""><span>FunPay</span><span class="fee">−1.5%</span></div>
+            <div class="psel-opt" data-val="eldorado" onclick="plPlatPick('eldorado')">
+              <img class="psel-logo" src="/logo/eldorado.png" alt=""><span>Eldorado</span><span class="fee">−10%</span></div>
+            <div class="psel-opt" data-val="other" onclick="plPlatPick('other')">
+              <svg class="ic"><use href="#ic-grid"/></svg><span data-i18n="f.other">Інше (0%)</span><span class="fee">0%</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.buy">КУПИВ $</div>
+        <input type="number" id="plBuy" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.sell">ПРОДАВ $</div>
+        <input type="number" id="plSell" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.after">ПІСЛЯ КОМІСІЇ</div>
+        <div id="plFeePreview" style="font-family:var(--font);font-size:14px;font-weight:700;color:var(--gr);padding:6px 0">$0.00</div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.date">ДАТА</div>
+        <input type="date" id="plDate" style="width:130px">
+      </div>
+      <button class="btn gr" onclick="addPLRecord()" data-i18n="b.add">+ ДОДАТИ</button>
+      <button class="btn" style="font-size:13px" onclick="syncPLToServer()" data-i18n="b.sync">СИНХРОНІЗУВАТИ</button>
+      <button class="btn pu" style="font-size:13px" onclick="openBulkRename()" data-i18n="b.bulk">МАСОВО</button>
+    </div>
+  </div>
+
+  <!-- Таблиця -->
+  <div class="panel">
+    <div class="ph">
+      <span><span data-i18n="k.records">ЗАПИСИ</span> (<span id="purCnt">0</span>)</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input id="purQ" data-i18n-ph="k.search" placeholder="Пошук..." oninput="renderPurchases()" style="width:150px">
+        <select id="purFilter" onchange="renderPurchases()" style="font-size:11px">
+          <option value="" data-i18n="allPlat">Всі платформи</option>
+          <option value="zeusx">⚡ ZeusX</option>
+          <option value="funpay">🔵 FunPay</option>
+          <option value="eldorado">Eldorado</option>
+          <option value="notitle" data-i18n="s.noTitle">⚠ Без назви</option>
+        </select>
+        <select id="plDateFilter" onchange="toggleCustomDateRange();renderPurchases()" style="font-size:11px">
+          <option value="" data-i18n="per.all">Весь час</option>
+          <option value="today" data-i18n="per.today">Сьогодні</option>
+          <option value="week" data-i18n="per.week">Цей тиждень</option>
+          <option value="month" data-i18n="per.month">Цей місяць</option>
+          <optgroup label="Місяці" id="plMonthGroup" data-i18n-label="per.months"></optgroup>
+          <option value="custom">📅 <span data-i18n="per.custom">Свій період</span></option>
+        </select>
+        <div id="plCustomRange" style="display:none;align-items:center;gap:4px">
+          <input type="date" id="plDateFrom" onchange="renderPurchases()" style="font-size:11px;padding:3px 5px;background:var(--card2);border:1px solid var(--brd);border-radius:4px;color:var(--tx)">
+          <span style="color:var(--mu);font-size:11px">—</span>
+          <input type="date" id="plDateTo" onchange="renderPurchases()" style="font-size:11px;padding:3px 5px;background:var(--card2);border:1px solid var(--brd);border-radius:4px;color:var(--tx)">
+        </div>
+        <select id="plSortF" onchange="renderPurchases()" style="font-size:11px">
+          <option value="date_d" data-i18n="s.dateDesc">Дата ↓</option>
+          <option value="date_a" data-i18n="s.dateAsc">Дата ↑</option>
+          <option value="profit_d" data-i18n="s.profitDesc">Прибуток ↓</option>
+          <option value="sell_d" data-i18n="s.sellDesc">Продаж ↓</option>
+        </select>
+        <button class="btn" style="font-size:8px" onclick="exportCSV()">⬇ CSV</button>
+        <button class="btn gr" style="font-size:8px" onclick="exportFullExcel()">📊 Excel (всі дані)</button>
+        <button class="btn rd" style="font-size:8px" onclick="if(confirm('Очистити всі записи?')){purchases=[];savePL();renderPurchases();}">🗑 Очистити</button>
+      </div>
+    </div>
+    <div id="purList"><div class="none">Ще немає записів</div></div>
+    <div id="plPag" class="pag" style="display:none"></div>
+  </div>
+</div>
+
+<div id="tab-eldorado" data-nested="1">
+  <div class="panel">
+    <div class="ph"><span data-i18n="ph.edsales">Eldorado — продажі</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+      <input type="date" id="edDate" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx)">
+      <input type="text" id="edTitle" data-i18n-ph="ed.title" placeholder="Назва товару" onblur="suggestEdBuy()" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);flex:1;min-width:150px">
+      <input type="number" id="edBuy" data-i18n-ph="ed.buy" placeholder="Ціна купівлі $" step="0.01" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:110px">
+      <input type="number" id="edPrice" data-i18n-ph="ed.sell" placeholder="Ціна продажу $" step="0.01" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:110px">
+      <input type="text" id="edOrderId" data-i18n-ph="ed.oid" placeholder="Order ID (необов'язково)" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:200px">
+      <input type="text" id="edCat" list="edCatList" data-i18n-ph="ed.cat" placeholder="Категорія (необов'язково)" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:190px">
+      <datalist id="edCatList"></datalist>
+      <button onclick="addEdorado()" class="btn" style="padding:7px 16px;font-size:13px">➕ Додати</button>
+      <label class="btn" style="padding:7px 16px;font-size:13px;cursor:pointer;background:var(--a2)">📥 Імпорт CSV<input type="file" id="edCsvFile" accept=".csv,.tsv" style="display:none" onchange="importEdCsv(this)"></label>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <input id="edQ" placeholder="🔍 Пошук..." oninput="edPg=1;renderEldorado()" style="width:200px;font-size:13px">
+      <select id="edDateFilter" onchange="toggleEdRange();edPg=1;renderEldorado()" style="font-size:13px">
+        <option value="" data-i18n="per.all">Весь час</option>
+        <option value="today" data-i18n="per.today">Сьогодні</option>
+        <option value="week" data-i18n="per.week">Цей тиждень</option>
+        <option value="month" data-i18n="per.month">Цей місяць</option>
+        <option value="custom" data-i18n="per.custom">📅 Свій період</option>
+      </select>
+      <div id="edCustomRange" style="display:none;align-items:center;gap:4px">
+        <input type="date" id="edFrom" onchange="edPg=1;renderEldorado()" style="font-size:13px">
+        <span style="color:var(--mu)">—</span>
+        <input type="date" id="edTo" onchange="edPg=1;renderEldorado()" style="font-size:13px">
+      </div>
+      <button class="btn" onclick="exportEdCsv()" style="font-size:10px">⬇ <span data-i18n="ed.csvbtn">CSV (фільтр)</span></button>
+    </div>
+    <div id="edList"><div class="none" data-i18n="ed.empty">Ще немає записів</div></div>
+    <div id="edPag" class="pag" style="display:none"></div>
+  </div>
+  <div class="panel" style="margin-top:14px">
+    <div class="ph"><span data-i18n="ph.cats">РОЗБИВКА ПО КАТЕГОРІЯХ</span></div>
+    <div id="edBreakdown"><div class="none">Немає даних</div></div>
+  </div>
+</div>
+<div id="tab-buy" class="tc">
+  <div class="panel">
+    <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
+      <span data-i18n="plan.title">ЩО КУПИТИ СЬОГОДНІ</span>
+      <button class="btn" style="font-size:12px;padding:5px 11px" onclick="loadBuyList(true)"><svg class="ic"><use href="#ic-refresh"/></svg><span data-i18n="btn.refresh">Оновити</span></button>
+    </div>
+    <div style="font-size:12px;color:var(--mu);margin-bottom:12px" data-i18n="plan.hint">Ціна постачальника проти вашої медіани продажу по схожих лотах, комісія ZeusX 9.5%.</div>
+    <div id="buyList"><div class="none">⏳ Рахую...</div></div>
+  </div>
+</div>
+
+<div id="tab-supply" class="tc">
+  <div id="supAl" class="al info">⏳ Завантаження постачальників...</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    <div class="sc"><div class="sl">ВСЬОГО</div><div class="sv" id="supTotal">—</div></div>
+    <div id="supCards" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><span><span data-i18n="ph.products">ТОВАРИ</span> (<span id="supCnt">0</span>)</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input id="supQ" data-i18n-ph="cf.search" placeholder="🔍 Пошук..." oninput="renderSupply()" style="width:180px">
+        <select id="supSrc" onchange="loadSupply()" style="font-size:13px"><option value="" data-i18n="all">All</option></select>
+        <select id="supSort" onchange="renderSupply()" style="font-size:11px">
+          <option value="" data-i18n="cf.sortNone">Без сорт.</option>
+          <option value="new" selected data-i18n="cf.sortNew">Нові першими</option>
+          <option value="updated" data-i18n="cf.sortUpdated">Оновлені першими</option>
+          <option value="pa" data-i18n="cf.priceUp">Ціна ↑</option>
+          <option value="pd" data-i18n="cf.priceDown">Ціна ↓</option>
+          <option value="sale" data-i18n="cf.saleFirst">Sale першими</option>
+        </select>
+        <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px;cursor:pointer">
+          <input type="checkbox" id="supAvail" onchange="renderSupply()"> <span data-i18n="cf.avail">є в наявності</span>
+        </label>
+        <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px;cursor:pointer" title="Товари, які зникли з полиць магазинів за останні 14 днів">
+          <input type="checkbox" id="supGone" onchange="renderSupply()"> <span data-i18n="cf.gone">зниклі</span>
+        </label>
+        <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px;cursor:pointer" title="Товари, які в іншому магазині дешевші">
+          <input type="checkbox" id="supCheaper" onchange="renderSupply()"> <span data-i18n="cf.cheaper">дешевше</span>
+        </label>
+        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="checkNews()" title="Швидка перевірка новинок через sitemap (безкоштовно)">🆕 Новинки</button>
+        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="refreshSuppliers()" title="Повне оновлення бази (витрачає кредити ScraperAPI)">↻ Оновити зараз</button>
+        <span id="supStatus" style="font-size:11px;color:var(--mu)"></span>
+        <button class="btn" style="font-size:9px;padding:3px 9px" onclick="loadSupply(1,true)">↺</button>
+      </div>
+    </div>
+    <div id="supList"><div class="none"><span class="spin">⏳</span></div></div>
+    <div id="supPag" class="pag" style="display:none"></div>
+  </div>
+</div>
+
+<!-- 📥 ЗАМОВЛЕННЯ З ПОШТИ -->
+<div id="tab-mail" class="tc">
+  <div class="panel">
+    <div class="ph"><span data-i18n="ph.orders">ЗАМОВЛЕННЯ З ПОШТИ</span>
+      <button class="btn" style="font-size:12px;padding:5px 11px" onclick="clearMailQueue()">🗑 Очистити всі</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="mailStat" style="font-size:12px;color:var(--mu)"></span>
+        <button class="btn" onclick="loadMailQueue(true)">↺ Оновити</button>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--mu);margin-bottom:14px">
+      Листи від FunPay / ZeusX / Eldorado, які трекер уже розпізнав. Нічого не додається
+      автоматично: перенесіть одним кліком у ELDORADO або P&amp;L, або проігноруйте.
+    </div>
+    <div id="mailHint"></div>
+    <div id="mailList"><div class="none">⏳ Завантаження...</div></div>
+  </div>
+</div>
+
+<!-- 💼 ПЛАТФОРМИ -->
+<div id="tab-platforms" data-nested="1">
+  <div class="panel">
+    <div class="ph"><span data-i18n="ph.channels">Канали</span>
+      <button class="btn" onclick="loadPlatforms(true)">↺ Оновити з кабінетів</button>
+    </div>
+    <div style="font-size:13px;color:var(--mu);margin-bottom:14px">
+      <span data-i18n="ch.src">Дані читаються з ваших кабінетів за збереженими cookie (ZeusX — API, FunPay — сторінка замовлень). Оновлюється не частіше ніж раз на 2 хвилини.</span>
+    </div>
+    <div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:800;margin-bottom:8px"><svg class="ic" style="margin-right:2px"><use href="#ic-key"/></svg> Cookie кабінетів
+        <span id="ckStatus" style="font-weight:400;color:var(--mu);font-size:12px"></span></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <label style="font-size:12px;color:var(--mu)">FunPay (golden_key)<br>
+          <input id="ckFunpay" type="password" placeholder="golden_key=…" style="width:300px;margin-top:4px"></label>
+        <label style="font-size:12px;color:var(--mu)">ZeusX (access_token)<br>
+          <input id="ckZeusx" type="password" placeholder="access_token=…" style="width:300px;margin-top:4px"></label>
+        <button class="btn gr" style="font-size:12px;padding:6px 12px" onclick="saveCookies()">Зберегти cookie</button>
+        <button class="btn" style="font-size:12px;padding:6px 12px" onclick="cookieFromBrowser()" title="Прочитати cookie з відкритого вікна браузера (FunPay/ZeusX)">Взяти з браузера</button>
+        <button class="btn rd" style="font-size:12px;padding:6px 12px" onclick="clearCookies()" data-i18n="set.cookieDisconnect">Disconnect cookies</button>
+      </div>
+      <div style="font-size:11px;color:var(--mu);margin-top:8px" data-i18n="ch.cookieHelp">Chrome/Edge: F12 → Application → Cookies → funpay.com → скопіюйте значення golden_key. Зберігається лише на сервері. Без FunPay-cookie замовлення з FunPay не надходять.</div>
+    </div>
+    <div id="platList"><div class="none">⏳ Завантаження...</div></div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
+      <div style="font-size:15px;font-weight:800;margin-bottom:10px">🏦 Де вигідніше продавати</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+        <label style="font-size:13px;color:var(--mu)">Ціна продажу, $<br>
+          <input id="mpPrice" type="number" min="0" step="1" value="10" oninput="calcMarkets()" style="width:120px;margin-top:4px">
+        </label>
+        <label style="font-size:13px;color:var(--mu)">Собівартість, $<br>
+          <input id="mpCost" type="number" min="0" step="1" value="5" oninput="calcMarkets()" style="width:120px;margin-top:4px">
+        </label>
+        <span style="font-size:12px;color:var(--mu)">Комісії орієнтовні — уточнюйте тарифи майданчика</span>
+      </div>
+      <div id="mpTable"></div>
+    </div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:15px;font-weight:800">🏷 Мої лоти на ZeusX</div>
+        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="loadOffers(true)">↻ Оновити</button>
+      </div>
+      <div id="offersList"><div class="none">⏳ Завантаження...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 🇨🇳 TAOBAO -->
+<div id="tab-taobao" class="tc">
+  <div class="panel">
+    <div class="ph"><span data-i18n="ph.taobao">TAOBAO — ціни з Китаю</span>
+      <span style="display:flex;gap:10px;align-items:center">
+        <span id="tbStatus" style="font-size:12px;color:var(--mu);font-weight:400"></span>
+        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="tbAddManual()" title="Додати лот вручну (посилання + ціна)"><svg class="ic"><use href="#ic-plus"/></svg><span data-i18n="tb.lot">Лот</span></button>
+        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="tbEnrich()" title="Перевірити оплату карткою і кількість варіантів у топ-25 лотів"><span data-i18n="tb.checkPay">Перевірити оплату</span></button>
+        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="tbRequest()"><svg class="ic"><use href="#ic-refresh"/></svg><span data-i18n="tb.collect">Зібрати зараз</span></button>
+      </span></div>
+    <div id="tbProgress" style="display:none;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mu);margin-bottom:5px">
+        <span id="tbProgText">—</span><span id="tbProgPct">0%</span>
+      </div>
+      <div style="height:8px;background:var(--card2);border:1px solid var(--brd);border-radius:999px;overflow:hidden">
+        <div id="tbProgBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--a1),var(--gr));transition:width .4s"></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--mu);margin-bottom:14px">
+      <div data-i18n="tb.d1">Збирається колектором на вашому ПК. Агент працює у фоні (автозапуск при вході в Windows) і сам відкриває вікно браузера, якщо його немає. Капчу проходите ви — колектор чекає. Ціни в юанях, нижче — орієнтовний долар.</div>
+      <div data-i18n="tb.d2" style="margin-top:6px">Мітки: натисніть 💳 біля лота, якщо там оплата карткою, і 🎛 — скільки варіантів акаунтів. Taobao часто блокує автоматичне читання сторінок лотів, тому ручна мітка — найнадійніше.</div>
+      <div data-i18n="tb.need" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--brd);color:var(--tx)">Щоб збір запрацював, потрібно: 1) агент збору на вашому ПК (окремий файл, запускається разом із Windows); 2) акаунт Taobao; 3) один раз увійти в браузері агента — сканування QR-коду з телефона; 4) капчу при першому запиті проходите ви вручну. Після цього лоти оновлюються у фоні, а ви бачите ціни тут.</div>
+      <div data-i18n="tb.d3" style="margin-top:6px">Оплата: картка / Apple Pay через Alipay International (платформа, не продавець). Лоти «代充 / 充值 / 话费» (поповнення балансу, телефон, ключі) не підходять під таку оплату — вони вже відфільтровані.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <input id="tbQ" placeholder="🔍 Пошук по назві..." oninput="renderTaobao()" style="width:220px">
+      <label style="font-size:12px;color:var(--mu);display:flex;align-items:center;gap:5px">
+        мін. ціна ¥<input id="tbMinCny" type="number" min="0" step="0.5" value="2"
+             style="width:64px;font-size:12px" onchange="tbSaveMin()">
+      </label>
+      <select id="tbGame" onchange="tbGame=this.value;renderTaobao()" style="font-size:13px">
+        <option value="" data-i18n="ta.allGames">Всі ігри</option>
+      </select>
+      <select id="tbSeg" onchange="tbSeg=this.value;renderTaobao()" style="font-size:13px">
+        <option value="" data-i18n="ta.allTypes">Всі типи</option>
+        <option value="starter" data-i18n="s.starter">Стартові</option>
+        <option value="developed" data-i18n="s.developed">Розвинені</option>
+        <option value="endgame" data-i18n="s.endgame">Ендгейм</option>
+      </select>
+      <select id="tbRegion" onchange="tbRegion=this.value;renderTaobao()" style="font-size:13px">
+        <option value="" data-i18n="ta.allRegions">Всі регіони</option>
+        <option value="Global">Global</option>
+        <option value="Asia">Asia</option>
+        <option value="EU">EU</option>
+        <option value="NA">NA</option>
+        <option value="JP">JP</option>
+        <option value="TW">TW</option>
+        <option value="KR">KR</option>
+        <option value="CN">CN</option>
+      </select>
+      <select id="tbSort" onchange="tbSort=this.value;renderTaobao()" style="font-size:13px">
+        <option value="price" data-i18n="s.cheapFirst">Дешевші спершу</option>
+        <option value="exp" data-i18n="s.expFirst">Дорожчі спершу</option>
+        <option value="variant" data-i18n="s.moreVariants">🎛 Більше варіантів</option>
+        <option value="card" data-i18n="s.cardOnly">💳 Тільки з оплатою карткою</option>
+      </select>
+    </div>
+    <div id="tbCartInfo" style="font-size:12px;margin-bottom:10px"></div>
+    <div id="tbEnrichInfo" style="font-size:12px;color:var(--mu);margin-bottom:10px"></div>
+    <div id="tbSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px"></div>
+    <div id="tbList"><div class="none">⏳ Завантаження...</div></div>
+    <div id="tbRuns" style="font-size:11px;color:var(--mu);margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- 📦 СКЛАД -->
+<div id="tab-inventory" class="tc">
+  <div class="panel">
+    <div class="ph"><span data-i18n="ph.stock">СКЛАД — куплені акаунти</span>
+      <button class="btn" style="font-size:12px;padding:5px 11px" onclick="loadInventory()">↻ Оновити</button></div>
+    <div style="font-size:13px;color:var(--mu);margin-bottom:14px" data-i18n="inv.intro">Bought accounts: what they cost, from whom, and whether they sold. Shows real margin and how much money is frozen.</div>
+    <div id="invSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.name">Назва</span><br><input id="invTitle" placeholder="Arknights starter" style="width:220px;margin-top:4px"></label>
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.game">Гра</span><br><input id="invGame" placeholder="Arknights" style="width:130px;margin-top:4px"></label>
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.cost">Собівартість, $</span><br><input id="invCost" type="number" min="0" step="0.01" value="0" style="width:110px;margin-top:4px"></label>
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.source">Джерело</span><br><input id="invSource" placeholder="Taobao / store name" style="width:150px;margin-top:4px"></label>
+      <label style="font-size:12px;color:var(--mu);flex:1;min-width:260px"><span data-i18n="inv.account">Дані акаунта (логін / пароль / пошта)</span><br>
+        <textarea id="invAccount" data-i18n-ph="inv.ph" placeholder="логін: user@mail.com&#10;пароль: 12345&#10;пошта: user@mail.com" style="width:100%;height:64px;margin-top:4px;font-family:var(--font);font-size:12px"></textarea>
+      </label>
+      <button class="btn gr" style="font-size:12px;padding:6px 12px" onclick="invAdd()">＋ <span data-i18n="btn.add">Додати</span></button>
+      <input id="lotMarkup" type="hidden" value="30">
+      <button class="btn" style="font-size:12px;padding:6px 11px" onclick="lotsCsv('inventory')" title="CSV лотів зі складу (ціна = собівартість × 1.3)">⬇ <span data-i18n="inv.csvStock">CSV (stock, +30%)</span></button>
+      <button class="btn" style="font-size:12px;padding:6px 11px" onclick="lotsCsv('suppliers')" title="CSV лотів із каталогу постачальників (ціна = закупівля × 1.3)">⬇ <span data-i18n="inv.csvSup">CSV (suppliers, +30%)</span></button>
+      <select id="invFilter" onchange="renderInventory()" style="font-size:13px;margin-left:auto">
+        <option value="" data-i18n="inv.all">Всі</option>
+        <option value="in_stock" data-i18n="inv.inStock">На складі</option>
+        <option value="sold" data-i18n="inv.sold">Продані</option>
+        <option value="written_off" data-i18n="inv.off">Списані</option>
+      </select>
+    </div>
+    <div id="invOld" style="font-size:12px;margin-bottom:10px"></div>
+    <div id="invList"><div class="none">⏳ Завантаження...</div></div>
+  </div>
+</div>
+
+<div id="invModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:900;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;max-width:560px;width:100%;padding:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:15px;font-weight:800" id="invModalTitle" data-i18n="inv.account">Дані акаунта</div>
+      <button class="btn" onclick="closeInvSecret()" style="padding:4px 10px">✕</button>
+    </div>
+    <pre id="invModalText" style="background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:12px;font-size:13px;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;margin:0"></pre>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn gr" style="font-size:12px;padding:6px 12px" onclick="copyInvSecret()">📋 <span data-i18n="copy">Копіювати</span></button>
+      <button class="btn" style="font-size:12px;padding:6px 12px" onclick="closeInvSecret()" data-i18n="close">Закрити</button>
+    </div>
+  </div>
+</div>
+
+<!-- 📊 СТАТИСТИКА ПО ІГРАХ -->
+<div id="tab-stats" class="tc">
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph" style="margin-bottom:12px">📊 ЗВЕДЕНО — ВСІ ЦИФРИ В ОДНОМУ МІСЦІ</div>
+
+    <div style="font-size:11px;letter-spacing:1px;color:var(--mu);margin-bottom:6px">🛒 P&amp;L (трекер закупівель)</div>
+    <div class="stats" id="plStats">
+      <div class="sc cg"><div class="sl">ПРИБУТОК</div><div class="sv" id="plProfit">$0</div></div>
+      <div class="sc c1"><div class="sl">ВИРУЧКА</div><div class="sv" id="plRevenue">$0</div></div>
+      <div class="sc c2"><div class="sl">ВКЛАДЕНО</div><div class="sv" id="plCost">$0</div></div>
+      <div class="sc c3"><div class="sl">МАРЖА</div><div class="sv" id="plMargin">0%</div></div>
+      <div class="sc c4"><div class="sl">УГОД</div><div class="sv" id="plCount">0</div></div>
+      <div class="sc c5"><div class="sl">КОМІСІЇ</div><div class="sv" id="plFees">$0</div></div>
+    </div>
+
+    <div style="border-top:1px dashed var(--brd);margin:16px 0 12px"></div>
+    <div style="font-size:11px;letter-spacing:1px;color:var(--mu);margin-bottom:6px">🟡 ELDORADO — продажі</div>
+    <div id="edSummary" style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px"></div>
+
+    <div style="border-top:1px dashed var(--brd);margin:16px 0 12px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--mu)">📊 ВИТОРГ ПО ДНЯХ (30 днів)</div>
+      <button class="btn" onclick="renderRevenueChart()" style="font-size:10px;padding:3px 10px">↺ Оновити</button>
+    </div>
+    <div style="height:200px;position:relative">
+      <canvas id="revenueChart"></canvas>
+    </div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph" style="margin-bottom:12px">📈 АНАЛІТИКА</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <a class="btn" href="/api/export/csv?what=pl" style="font-size:12px;padding:6px 11px;text-decoration:none">⬇ P&L у CSV</a>
+      <a class="btn" href="/api/export/csv?what=ed" style="font-size:12px;padding:6px 11px;text-decoration:none">⬇ ELDORADO у CSV</a>
+      <button class="btn" style="font-size:12px;padding:6px 11px" onclick="loadAnalytics()">↻ Оновити</button>
+    </div>
+    <div id="anSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:300px"><div style="font-size:12px;color:var(--mu);margin-bottom:6px">ПО ІГРАХ</div><div id="anGames"></div></div>
+      <div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--mu);margin-bottom:6px">ПО МІСЯЦЯХ</div><div id="anMonths"></div></div>
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
+      <div style="font-size:13px;font-weight:800;margin-bottom:10px">⚙️ Розклад і ліміти</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <label style="font-size:12px;color:var(--mu)">Оновлення бази, год<br><input id="stSupHours" type="number" min="1" max="48" step="1" style="width:90px;margin-top:4px"></label>
+        <label style="font-size:12px;color:var(--mu)">Новинки, год<br><input id="stNewsHours" type="number" min="0.25" max="24" step="0.25" style="width:90px;margin-top:4px"></label>
+        <label style="font-size:12px;color:var(--mu)">Кредитів/день<br><input id="stScraperLimit" type="number" min="1" max="5000" step="1" style="width:90px;margin-top:4px"></label>
+        <label style="font-size:12px;color:var(--mu)">Дайджест, год<br><input id="stDigestHour" type="number" min="0" max="23" step="1" style="width:80px;margin-top:4px"></label>
+        <label style="font-size:12px;color:var(--mu)">Алерт Taobao, ×<br><input id="stDealX" type="number" min="1" max="100" step="0.5" style="width:80px;margin-top:4px"></label>
+        <button class="btn" style="font-size:12px;padding:6px 12px" onclick="saveSchedule()">💾 Зберегти</button>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:800">📄 Місячний звіт</div>
+        <input id="repMonth" type="month" style="font-size:13px">
+        <button class="btn" style="font-size:12px;padding:6px 11px" onclick="loadReport()">Показати</button>
+        <a class="btn" id="repCsv" style="font-size:12px;padding:6px 11px;text-decoration:none" href="#">⬇ CSV</a>
+      </div>
+      <div id="repBox"><div class="none">Виберіть місяць</div></div>
+    </div>
+    <div id="anDead" style="margin-top:14px"></div>
+  </div>
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div class="ph" style="margin:0">📊 СТАТИСТИКА ПО ІГРАХ</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="statsPlatform" onchange="renderStats()" style="font-size:11px;padding:4px 8px;background:var(--bg2);border:1px solid var(--brd);border-radius:4px;color:var(--tx)">
+          <option value="" data-i18n="allPlat">Всі платформи</option>
+          <option value="zeusx">⚡ ZeusX</option>
+          <option value="funpay">🔵 FunPay</option>
+          <option value="eldorado">Eldorado</option>
+        </select>
+        <select id="statsPeriod" onchange="renderStats()" style="font-size:11px;padding:4px 8px;background:var(--bg2);border:1px solid var(--brd);border-radius:4px;color:var(--tx)">
+          <option value="" data-i18n="per.all">Весь час</option>
+          <option value="month" data-i18n="per.month">Цей місяць</option>
+          <optgroup label="Місяці" id="statsMonthGroup"></optgroup>
+        </select>
+      </div>
+    </div>
+    <!-- Загальна статистика -->
+    <div id="statsCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:18px"></div>
+    <div id="statsCompare" style="margin-bottom:18px"></div>
+    <!-- Графік по іграх -->
+    <div style="margin-bottom:18px">
+      <div style="font-size:11px;color:var(--mu);letter-spacing:1px;margin-bottom:8px">ТОП ІГРИ ПО ПРИБУТКУ</div>
+      <div style="height:280px;position:relative"><canvas id="statsChart"></canvas></div>
+    </div>
+    <!-- Таблиця по іграх -->
+    <div style="font-size:11px;color:var(--mu);letter-spacing:1px;margin-bottom:8px" data-i18n="an.detail">ДЕТАЛЬНА ТАБЛИЦЯ</div>
+    <div id="statsTable"></div>
+  </div>
+</div>
+
+<!-- ⚙️ НАЛАШТУВАННЯ -->
+<div id="tab-setup" class="tc">
+
+  <div class="panel" id="pwPanel" style="margin-bottom:14px">
+    <div class="ph"><span data-i18n="pw.optional">PASSWORD (OPTIONAL)</span></div>
+    <div style="font-size:12.5px;color:var(--mu);margin-bottom:10px" id="pwStatus">—</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="pw.new8">New password (min 8)</span>
+        <br><input id="pwEnableNew" type="password" placeholder="••••••••" style="width:220px;margin-top:4px" autocomplete="new-password"></label>
+      <button class="btn gr" onclick="pwEnable()" data-i18n="pw.enable">Enable password</button>
+      <button class="btn" onclick="pwDisable()" data-i18n="pw.disable">Disable password</button>
+    </div>
+    <div style="font-size:11.5px;color:var(--mu);margin-top:8px" data-i18n="pw.hint">Without a password anyone who opens the link gets in. Set one if the app is reachable from the internet.</div>
+  </div>
+
+  <div class="panel" id="dataPanel" style="margin-bottom:14px">
+    <div class="ph"><span>ДАНІ Й ДІАГНОСТИКА</span>
+      <button class="btn" style="font-size:12px" onclick="diagLoad()">↻ Оновити</button></div>
+    <div id="diagBox" style="font-size:12.5px;color:var(--mu);margin-bottom:12px">натисніть ↻ Оновити</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn" onclick="demoLoad()">Завантажити демо-дані</button>
+      <button class="btn" onclick="demoClear()">Стерти дані</button>
+      <a class="btn" href="/api/backup/export">Експорт усіх даних</a>
+      <label class="btn" style="cursor:pointer">Імпорт CSV
+        <input type="file" id="csvFile" accept=".csv,text/csv" onchange="csvImport(this)" style="display:none">
+      </label>
+    </div>
+    <div style="border-top:1px solid var(--brd);padding-top:12px">
+      <div style="font-size:12.5px;color:var(--mu);margin-bottom:6px">Мій постачальник (Shopify)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <input id="supNewName" placeholder="Назва магазину" style="width:190px">
+        <input id="supNewBase" placeholder="https://shop.example.com" style="width:260px">
+        <button class="btn gr" onclick="supAdd()">Додати</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--mu);margin-top:6px">Працює для Shopify-магазинів (/products.json).</div>
+    </div>
+  </div>
+
+  <div class="panel" id="contactPanel" style="margin-bottom:14px">
+    <div class="ph"><span data-i18n="ph.contact">ПОТРІБНА АВТОМАТИЗАЦІЯ?</span></div>
+    <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+      <img src="data:image/png;base64,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" alt="Telegram QR" width="132" height="132"
+           style="border-radius:12px;border:1px solid var(--brd);background:#fff;padding:6px;flex:none">
+      <div style="flex:1;min-width:240px;font-size:13px;line-height:1.55">
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px">@ENOUGHT285</div>
+        <div style="font-size:12.5px;margin-bottom:4px">
+          <span style="color:var(--mu)">Email</span>
+          <a href="mailto:dhdueu564@gmail.com" style="color:var(--tx);text-decoration:none">dhdueu564@gmail.com</a>
+        </div>
+        <div style="font-size:12.5px;margin-bottom:6px">
+          <span style="color:var(--mu)">Discord</span>
+          <b style="color:var(--tx)">facemyfear</b>
+        </div>
+        <div style="color:var(--mu)" data-i18n="ph.contact.desc">Хочете таку саму автоматизацію: збір Taobao, FunPay/ZeusX, проходження капчі, авто-імпорт замовлень — напишіть у Telegram.</div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <a class="btn" href="https://t.me/ENOUGHT285" target="_blank" rel="noopener">Telegram →</a>
+          <a class="btn" id="demoBtn" href="/demo?lang=en" target="_blank" rel="noopener" data-i18n="cta.screens">Скріншоти функцій →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎨 ТЕМА -->
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph"><span data-i18n="ph.theme">ТЕМА ІНТЕРФЕЙСУ</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px" id="themePicker">
+      <div class="theme-btn" onclick="pickTheme('ledger')" data-theme="ledger" title="Ledger — лаконічна, без градієнтів">
+        <div style="width:30px;height:30px;border-radius:50%;background:#0B0C0E;border:1px solid #2A2D33;position:relative">
+          <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px">L</span></div>
+        <span>Ledger</span>
+      </div>
+      <div class="theme-btn" onclick="pickTheme('slate')" data-theme="slate" title="Slate — попередня тема">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#0d1017,#7c8cff)"></div>
+        <span>Slate</span>
+      </div>
+      <div class="theme-btn" onclick="pickTheme('nord')" data-theme="nord" title="Nord — холодний синьо-сірий">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#0b1220,#5aa9e6)"></div>
+        <span>Nord</span>
+      </div>
+      <div class="theme-btn" onclick="pickTheme('carbon')" data-theme="carbon" title="Carbon — теплий графіт">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#12100e,#e8a33d)"></div>
+        <span>Carbon</span>
+      </div>
+      <div class="theme-btn" onclick="pickTheme('light')" data-theme="light" title="Світла тема (день)">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#f5f6fa,#7c8cff)"></div>
+        <span>Світла</span>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--mu)">Розмір шрифту — кнопки <b>A−</b> / <b>A+</b> у шапці сторінки (запам'ятовується).</div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph">БЕКАП P&L
+      <button class="btn" style="font-size:10px;padding:3px 10px" onclick="runBackup()">↺ Зробити зараз</button>
+    </div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:10px">Авто-бекап раз на день у папку <code>gt_backups/</code> поруч з трекером. Зберігаються останні 30 файлів (P&L, ELDORADO, ціль).</div>
+    <div id="backupList" style="font-size:11px;color:var(--mu)">⏳ Завантаження...</div>
+    <div style="border-top:1px solid var(--brd);margin:12px 0"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <a class="btn gr" href="/api/backup/export" download style="text-decoration:none">⬇ Експорт усіх даних (zip)</a>
+      <label class="btn" style="cursor:pointer">⬆ Імпорт zip
+        <input type="file" id="importZip" accept=".zip" style="display:none" onchange="importBackup(this)">
+      </label>
+      <span style="font-size:10px;color:var(--mu)">P&amp;L + ELDORADO + ціль + налаштування · без паролів і токенів · sha256-перевірка</span>
+    </div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph"><span id="rateTitle">CURRENCY · USD → UAH</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="cur.title">CURRENCY</div>
+        <select id="curSel" onchange="pickCurrency()" style="font-size:13px">
+          <option value="UAH">UAH ₴</option>
+          <option value="EUR">EUR €</option>
+          <option value="USD">USD $</option>
+          <option value="PLN">PLN zł</option>
+          <option value="CZK">CZK Kč</option>
+          <option value="TRY">TRY ₺</option>
+          <option value="GBP">GBP £</option>
+          <option value="KZT">KZT ₸</option>
+          <option value="GEL">GEL ₾</option>
+          <option value="RUB">RUB ₽</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" id="rateLbl" data-i18n="cur.rate">RATE (₴ per $1)</div>
+        <input id="rateVal" type="number" step="0.01" min="0" placeholder="41.50" style="width:120px;font-family:var(--font)">
+      </div>
+      <div style="font-size:11px;color:var(--mu);padding-bottom:9px" id="rateInfo">—</div>
+      <button class="btn" onclick="refreshRate()">↻ <span data-i18n="cur.refresh">Refresh rate</span></button>
+      <button class="btn gr" onclick="saveRate()">✓ <span data-i18n="cur.save">Save</span></button>
+    </div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph"><span data-i18n="ph.tg">TELEGRAM-СПОВІЩЕННЯ</span></div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="tg.hint">Бот пише лише про те, що прийшло з пошти (нові замовлення й повідомлення FunPay / ZeusX / Eldorado) та про досягнення цілі. Ручне внесення продажу в таблицю не сповіщає. Створи бота у @BotFather, встав токен і свій chat_id (дізнатись у @userinfobot).</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="set.botToken">ТОКЕН БОТА</div>
+        <input id="tgToken" type="password" placeholder="123456789:AA..." autocomplete="off" style="width:250px">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">CHAT ID</div>
+        <input id="tgChat" placeholder="123456789" style="width:150px">
+      </div>
+      <button class="btn gr" onclick="saveTg()">✓ <span data-i18n="save">Зберегти</span></button>
+      <button class="btn" onclick="testTg()">📨 <span data-i18n="set.test">Тест</span></button>
+      <button class="btn rd" onclick="tgDisconnect()" data-i18n="set.telegramDisconnect">Disconnect Telegram</button>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;align-items:center">
+      <label style="cursor:pointer"><input type="checkbox" id="tgEnabled"> Увімкнено</label>
+    </div>
+    <div style="font-size:12px;color:var(--mu);margin-top:12px" data-i18n="set.whatToSend">Що надсилати в Telegram (кожен тип окремо):</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:12px;align-items:center">
+      <label style="cursor:pointer"><input type="checkbox" id="ntOrder"> <span data-i18n="nt.order">💰 Продажі (замовлення)</span></label>
+      <label style="cursor:pointer"><input type="checkbox" id="ntMessage"> <span data-i18n="nt.message">💬 Повідомлення покупців</span></label>
+      <label style="cursor:pointer"><input type="checkbox" id="ntWatchdog"> <span data-i18n="nt.watchdog">⚠️ Watchdog сайту</span></label>
+      <label style="cursor:pointer"><input type="checkbox" id="ntAgent"> <span data-i18n="nt.agent">⚠️ Watchdog агента Taobao</span></label>
+      <label style="cursor:pointer"><input type="checkbox" id="ntDigest"> <span data-i18n="nt.digest">📊 Дайджест (20:00)</span></label>
+      <label style="cursor:pointer"><input type="checkbox" id="ntNew"> <span data-i18n="nt.new">🆕 Нові акаунти</span></label>
+      <label style="cursor:pointer"><input type="checkbox" id="ntPrice"> <span data-i18n="nt.price">💸 Падіння цін</span></label>
+      <label style="cursor:pointer"><input type="checkbox" id="ntRestock"> <span data-i18n="nt.restock">🔄 Ресток</span></label>
+      <label style="cursor:pointer"><input type="checkbox" id="ntDeal"> <span data-i18n="nt.deal">🔥 Вигідні лоти Taobao</span></label>
+    </div>
+    <button class="btn gr" style="margin-top:8px;font-size:12px;padding:6px 12px" onclick="saveNotify()">💾 <span data-i18n="set.notifySave">Зберегти сповіщення</span></button>
+    <div style="display:none">
+    </div>
+    <div style="font-size:12px;color:var(--mu);margin-top:10px;line-height:1.6" data-i18n="tg.cmds">Бот відповідає на команди (тільки ваш чат): /stats — продажі сьогодні й за місяць · /balance — баланс ZeusX / FunPay / Eldorado · /new — останні замовлення · /taobao — топ вигідних лотів · /help</div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph">GMAIL → TELEGRAM
+      <span id="gmailBadge" style="font-size:10px;color:var(--mu)"></span>
+    </div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="gm.hint">Трекер читає пошту (IMAP) і надсилає в Telegram нові замовлення та повідомлення FunPay / ZeusX / Eldorado. Потрібен App Password (не звичайний пароль): Google Account → Security → 2-Step Verification → App passwords + увімкнений IMAP у Gmail.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="set.gmailLabel">GMAIL</div>
+        <input id="gmailUser" placeholder="you@gmail.com" autocomplete="off" style="width:230px">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="set.appPass">APP PASSWORD</div>
+        <input id="gmailPass" type="password" placeholder="xxxx xxxx xxxx xxxx" autocomplete="off" style="width:200px">
+      </div>
+      <button class="btn gr" onclick="saveGmail()">✓ <span data-i18n="save">Зберегти</span></button>
+      <button class="btn" onclick="checkGmailNow()">📥 <span data-i18n="set.checkNow">Перевірити зараз</span></button>
+      <button class="btn rd" onclick="gmailDisconnect()" data-i18n="set.gmailDisconnect">Disconnect Gmail</button>
+    </div>
+    <div id="gmailInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph"><span data-i18n="ph.cloud">ХМАРНИЙ БЕКАП</span></div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="set.cloudHint">Копія бекапів у OneDrive (або будь-яка папка). Порожнє поле = авто: OneDrive/GameTrackerBackups.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:1;min-width:240px">
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="set.folder">ПАПКА</div>
+        <input id="cloudDir" placeholder="C:/Users/User/OneDrive/GameTrackerBackups" style="width:100%">
+      </div>
+      <button class="btn gr" onclick="saveCloud()">✓ Зберегти</button>
+    </div>
+    <div id="cloudInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph"><span data-i18n="ph.sec">БЕЗПЕКА</span></div>
+    <div id="authModeInfo" style="font-size:13px;margin-bottom:10px;display:none"></div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:10px">Зміна пароля діє одразу (браузер попросить його після перезавантаження). HTTPS — для прямого доступу; на хостингу зазвичай уже є проксі з HTTPS.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">ПОТОЧНИЙ ПАРОЛЬ</div>
+        <input id="pwOld" type="password" autocomplete="current-password" style="width:180px">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">НОВИЙ ПАРОЛЬ</div>
+        <input id="pwNew" type="password" autocomplete="new-password" data-i18n-ph="ph.pw6" placeholder="мін. 6 символів" style="width:180px">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">ПОВТОРИ</div>
+        <input id="pwNew2" type="password" autocomplete="new-password" style="width:160px">
+      </div>
+      <button class="btn gr" onclick="changePassword()">✓ Змінити пароль</button>
+    </div>
+    <div style="border-top:1px solid var(--brd);margin:14px 0"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;padding-bottom:9px;cursor:pointer"><input type="checkbox" id="httpsEnabled"> HTTPS</label>
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">CERT (pem/crt)</div>
+        <input id="httpsCert" placeholder="C:/certs/server.crt" style="width:220px">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">KEY (pem/key)</div>
+        <input id="httpsKey" placeholder="C:/certs/server.key" style="width:220px">
+      </div>
+      <button class="btn gr" onclick="saveHttps()">✓ Зберегти</button>
+      <button class="btn" onclick="genHttps()">🔑 Згенерувати self-signed</button>
+    </div>
+    <div id="httpsInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
+    <div id="tunnelInfo" style="font-size:12px;color:var(--mu);margin-top:10px;padding-top:10px;border-top:1px solid var(--brd)">—</div>
+  </div>
+</div>
+</div>
+
+<!-- ➕ МОДАЛ СТВОРЕННЯ ЛОТУ -->
+<div id="bulkRenameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:24px;width:min(600px,95vw);max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="font-weight:700;font-size:15px">✏ <span data-i18n="deal.bulkTitle">Масове заповнення назв</span></span>
+      <button onclick="g('bulkRenameModal').style.display='none'" style="background:none;border:none;color:var(--mu);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:14px" data-i18n="deal.bulkDesc">Записи згруповані по сумі продажу. Введи назву — вона застосується до всіх записів з цією сумою без назви.</div>
+    <div id="bulkRenameList"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn" onclick="g('bulkRenameModal').style.display='none'" data-i18n="cancel">Скасувати</button>
+      <button class="btn gr" onclick="applyBulkRename()">✅ <span data-i18n="apply">Застосувати</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 💰 КАЛЬКУЛЯТОР ЦІНИ -->
+<div id="lotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:24px;width:min(560px,95vw);max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div style="font-family:var(--font);font-size:13px;letter-spacing:2px;color:var(--a1)">💰 <span data-i18n="lot.title">КАЛЬКУЛЯТОР ЦІНИ</span></div>
+      <button onclick="closeLotModal()" style="background:transparent;border:none;color:var(--mu);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button id="lmBtnZX" class="btn on" onclick="setLotPlatform('zeusx')" style="flex:1;font-size:11px">⚡ ZeusX (10%)</button>
+      <button id="lmBtnFP" class="btn" onclick="setLotPlatform('funpay')" style="flex:1;font-size:11px">🔵 FunPay (7%)</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="lot.name">НАЗВА ТОВАРУ</div>
+        <input id="lmTitle" style="width:100%;padding:8px 12px;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;color:var(--tx);font-size:13px" placeholder="Назва...">
+      </div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="lot.buy">ЗАКУПІВЛЯ ($)</div>
+          <input id="lmBuyPrice" type="number" step="0.01" style="width:100%;padding:8px 12px;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;color:var(--tx);font-size:13px;font-family:var(--font)" oninput="calcLotPrice()">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="lot.markup">НАЦІНКА %</div>
+          <input id="lmMarkup" type="number" value="30" min="0" max="500" style="width:100%;padding:8px 12px;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;color:var(--tx);font-size:13px;font-family:var(--font)" oninput="calcLotPrice()">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="lot.sell">ПРОДАЖ ($)</div>
+          <input id="lmSellPrice" type="number" step="0.01" style="width:100%;padding:8px 12px;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;color:var(--gr);font-size:13px;font-family:var(--font);font-weight:700">
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="lot.gameSource">ГРА / ДЖЕРЕЛО</div>
+        <input id="lmGame" style="width:100%;padding:8px 12px;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;color:var(--tx);font-size:13px" placeholder="Genshin Impact...">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="lot.desc">ОПИС</div>
+        <textarea id="lmDesc" rows="3" style="width:100%;padding:8px 12px;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;color:var(--tx);font-size:12px;resize:vertical" data-i18n-ph="ph.desc" placeholder="Опис..."></textarea>
+      </div>
+    </div>
+    <div id="lmSummary" style="margin-top:14px;padding:10px 14px;background:var(--bg2);border-radius:8px;font-size:12px;display:none">
+      <span style="color:var(--mu)"><span data-i18n="an.profit">Прибуток</span>: </span><span id="lmProfit" style="font-family:var(--font);font-weight:700"></span>
+      <span style="color:var(--mu);margin-left:12px" data-i18n="lot.afterFee">Після комісії: </span><span id="lmAfterFee" style="font-family:var(--font);font-weight:700;color:var(--gr)"></span>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button onclick="copyLotLink()" class="btn gr" style="flex:1;font-size:12px;padding:10px">📋 <span data-i18n="lot.copy">КОПІЮВАТИ ДЛЯ ЛОТУ</span></button>
+      <button onclick="closeLotModal()" class="btn" style="font-size:12px;padding:10px">✕</button>
+    </div>
+    <div id="lmResult" style="margin-top:10px;font-size:12px;text-align:center"></div>
+  </div>
+</div>
+
+<!-- ⚖ ПОРІВНЯННЯ ЦІН МІЖ МАГАЗИНАМИ -->
+<div id="cmpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:22px;width:min(680px,95vw);max-height:88vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="ph" style="margin:0">⚖ <span data-i18n="sup.compareTitle">ПОРІВНЯННЯ ЦІН</span></div>
+      <button onclick="closeCmp()" style="background:none;border:none;color:var(--mu);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div id="cmpBody"></div>
+  </div>
+</div>
+
+<!-- 📈 ІСТОРІЯ ЦІНИ -->
+<div id="histModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:22px;width:min(640px,95vw);max-height:88vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="ph" style="margin:0">📈 <span data-i18n="sup.historyTitle">ІСТОРІЯ ЦІНИ</span></div>
+      <button onclick="closeHist()" style="background:none;border:none;color:var(--mu);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div id="histBody"></div>
+  </div>
+</div>
+<script>
+// (v4.5: 326 демо-записів IMPORTED_DATA видалено — вони засівались у реальний P&L)
+// (v4.6: ручне внесення продажу більше не шле Telegram — тільки пошта + ціль)
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let purchases=[];
+let plPg=1, plFilt=[];
+// Комісії приходять з Python (єдине джерело істини: PLATFORM_FEES/PAYOUT_FEES/ED_FEE)
+const FEE_CFG = __FEE_CONFIG__;
+const FEES        = FEE_CFG.fees;                 // комісія майданчика → P&L
+const PAYOUT_FEES = FEE_CFG.payout;               // вивід грошей → калькулятор
+const ED_FEE      = FEE_CFG.ed;                   // ELDORADO
+const PLATFORM_FEES = {                           // калькулятор = майданчик + вивід
+  zeusx:  (FEES.zeusx  || 0) + (PAYOUT_FEES.zeusx  || 0),
+  funpay: (FEES.funpay || 0) + (PAYOUT_FEES.funpay || 0),
+};
+let supLoaded=false;
+const PP=25; // per page
+
+// Локальна дата YYYY-MM-DD (toISOString() дає UTC: з 00:00 до 03:00 в Україні
+// «сьогодні» показувало вчорашній день і записи падали в чужий місяць)
+function localDate(d){
+  const x = d ? new Date(d) : new Date();
+  return new Date(x.getTime() - x.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+function todayLocal(){ return localDate(); }
+function safeParse(text, fallback){
+  try{ const v = JSON.parse(text); return v==null ? fallback : v; }
+  catch(e){ return fallback; }
+}
+function safeArray(text){
+  const v = safeParse(text, []);
+  return Array.isArray(v) ? v : [];
+}
+
+// Динамічні місяці у фільтрах (замість захардкожених «Січень/Лютий 2026»)
+const MONTH_NAMES={
+  uk:['Січень','Лютий','Березень','Квітень','Травень','Червень',
+      'Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'],
+  en:['January','February','March','April','May','June',
+      'July','August','September','October','November','December'],
+  ru:['Январь','Февраль','Март','Апрель','Май','Июнь',
+      'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
+};
+let _monthsSig='';
+function monthLabel(key){
+  const p=String(key).split('-');
+  const names=MONTH_NAMES[LANG]||MONTH_NAMES.uk;
+  return (names[(+p[1])-1]||key)+' '+p[0];
+}
+function fillMonthOptions(){
+  const keys=[...new Set(purchases.map(p=>(p.date||'').slice(0,7)).filter(k=>/^\d{4}-\d{2}$/.test(k)))]
+    .sort().reverse();
+  const sig=LANG+'|'+keys.join(',');
+  if(sig===_monthsSig) return;
+  _monthsSig=sig;
+  const html=keys.map(k=>`<option value="m:${k}">${monthLabel(k)}</option>`).join('');
+  const a=g('plMonthGroup'), b=g('statsMonthGroup');
+  if(a) a.innerHTML=html;
+  if(b) b.innerHTML=html;
+  // після перебудови optgroup повертаємо вибір користувача
+  ['plDateFilter','statsPeriod'].forEach(id=>{
+    const el=g(id); if(!el) return; const v=el.value; el.value=v;
+  });
+}
+// INIT
+
+
+function g(i){return document.getElementById(i)}
+
+// ═══════════════════════════════════════════════
+// 🔐 CSRF: токен з cookie → заголовок X-GT-CSRF для всіх мутацій
+//    (працює за будь-яким доменом/проксі; без нього POST відхиляється)
+// ═══════════════════════════════════════════════
+function csrfToken(){
+  const m = document.cookie.match(/(?:^|;\s*)gt_csrf=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+const _nativeFetch = window.fetch.bind(window);
+window.fetch = function(url, opts){
+  opts = opts || {};
+  const method = (opts.method || 'GET').toUpperCase();
+  if(method !== 'GET' && method !== 'HEAD'){
+    const t = csrfToken();
+    if(t){
+      const h = new Headers(opts.headers || {});
+      h.set('X-GT-CSRF', t);
+      opts.headers = h;
+    }
+  }
+  return _nativeFetch(url, opts);
+};
+
+// ═══════════════════════════════════════════════
+// 🎨 ТЕМИ
+// ═══════════════════════════════════════════════
+const THEMES = {
+  ledger:{bg:'#08090A',bg2:'#0B0C0E',card:'#0B0C0E',card2:'#111214',brd:'#1D1F23',
+          a1:'#EDEEF0',a2:'#D9A05B',a3:'#8B95F0',a4:'#8FBFD9',a5:'#4CB782',
+          tx:'#E6E6E6',mu:'#82878F',gr:'#4CB782',rd:'#E08A8A',yw:'#D9A05B'},
+  slate:{bg:'#0d1017',bg2:'#11151e',card:'#151a24',card2:'#1b2130',brd:'#28303f',
+         a1:'#7c8cff',a2:'#ff7a59',a3:'#a78bfa',a4:'#22d3ee',a5:'#34d399',
+         tx:'#e9ebf2',mu:'#8b95a9',gr:'#34d399',rd:'#f87171',yw:'#fbbf24'},
+  nord:{bg:'#0b1220',bg2:'#0f1728',card:'#131c2e',card2:'#182236',brd:'#26334a',
+        a1:'#5aa9e6',a2:'#f4a259',a3:'#9d8df1',a4:'#38bdf8',a5:'#4ade80',
+        tx:'#e6edf6',mu:'#8ea1bb',gr:'#4ade80',rd:'#fb7185',yw:'#facc15'},
+  carbon:{bg:'#12100e',bg2:'#181512',card:'#1e1a16',card2:'#26211b',brd:'#3a322a',
+        a1:'#e8a33d',a2:'#f2705a',a3:'#c4a2f0',a4:'#68c4b8',a5:'#9ecb6a',
+        tx:'#f2ece4',mu:'#a89a89',gr:'#9ecb6a',rd:'#f2705a',yw:'#e8c547'},
+  light:{bg:'#f5f6fa',bg2:'#ffffff',card:'#ffffff',card2:'#f1f3f8',brd:'#dde2ec',
+        a1:'#4f5bd5',a2:'#e05f3c',a3:'#7c5cd6',a4:'#0e8fa8',a5:'#12876f',
+        tx:'#141a24',mu:'#5d6675',gr:'#0f7a5a',rd:'#c0392b',yw:'#a86a00'},
+};
+const THEME_VARS = ['bg','bg2','card','card2','brd','a1','a2','a3','a4','a5','tx','mu','gr','rd','yw'];
+
+function setTheme(name){
+  const t = THEMES[name] || THEMES.slate;
+  if(!THEMES[name]) name = 'slate';
+  const r = document.documentElement.style;
+  THEME_VARS.forEach(k => { if(t[k]) r.setProperty('--'+k, t[k]); });
+  localStorage.setItem('gt_theme2', name);
+  document.documentElement.dataset.theme = name;
+  document.querySelectorAll('.theme-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.theme===name);
+  });
+}
+
+function pickTheme(name){
+  try{ localStorage.setItem('gt_theme_pick','1'); }catch(e){}
+  setTheme(name);
+}
+
+function loadTheme(){
+  _mergeChannels();
+  const picked = localStorage.getItem('gt_theme_pick') === '1';
+  const t = localStorage.getItem('gt_theme2');
+  setTheme((picked && THEMES[t]) ? t : 'ledger');
+}
+
+// ── розмір шрифту (A− / A+), запам'ятовується в браузері ──
+let _fs = parseFloat(localStorage.getItem('gt_fs') || '1');
+function applyFs(){
+  _fs = Math.min(1.35, Math.max(0.85, Math.round(_fs*100)/100));
+  document.documentElement.style.setProperty('--fs', _fs);
+  localStorage.setItem('gt_fs', _fs);
+  const b = document.getElementById('fsVal');
+  if(b) b.textContent = Math.round(_fs*100)+'%';
+}
+function setFs(d){ _fs += d; applyFs(); }
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+
+// ═══════════════════════════════════════════════
+//  МОВА (UA / EN)
+// ═══════════════════════════════════════════════
+
+
+const I18N = {
+  uk:{'ch.src':'Дані читаються з ваших кабінетів за збереженими cookie (ZeusX — API, FunPay — сторінка замовлень). Оновлюється не частіше ніж раз на 2 хвилини.','an.detail':'ДЕТАЛЬНА ТАБЛИЦЯ','f.other2':'Інше','ta.allGames':'Всі ігри','ta.allTypes':'Всі типи','ta.allRegions':'Всі регіони','s.dateDesc':'Дата ↓','s.dateAsc':'Дата ↑','s.profitDesc':'Прибуток ↓','s.sellDesc':'Продаж ↓','s.cheapFirst':'Дешевші спершу','s.expFirst':'Дорожчі спершу','s.starter':'Стартові','s.developed':'Розвинені','s.endgame':'Ендгейм','s.noTitle':'⚠ Без назви','s.moreVariants':'🎛 Більше варіантів','s.cardOnly':'💳 Тільки з оплатою карткою','ed.title':'Назва товару','ph.dealTitle':'напр. Arknights Starter','ph.pw6':'мін. 6 символів','ph.desc':'Опис...','ed.buy':'Ціна купівлі $','ed.sell':'Ціна продажу $','ed.oid':'Order ID (необов язково)','ed.cat':'Категорія (необов язково)','ed.csvbtn':'CSV (фільтр)','ed.empty':'Ще немає записів', 'nav.overview':'Огляд','nav.deals':'Угоди','nav.orders':'Замовлення','nav.channels':'Канали',
+       'nav.catalog':'Каталог','nav.plan':'План','nav.taobao':'Taobao','nav.inventory':'Інвентар',
+       'nav.analytics':'Аналітика','hdr.sub':'v5 · УГОДИ · КАНАЛИ · ПОШТА',
+       'ov.today':'Сьогодні','ov.add':'Угода','ov.channels':'Канали','ov.profit':'Прибуток · місяць',
+       'ov.actions':'Потребує дії','ov.stock':'Склад','ov.health':'Стан системи','ov.feed':'Що сталось',
+       'ch.title':'Канали','ch.refresh':'Оновити','ch.bal':'Баланси',
+       'th.date':'Дата','th.channel':'Канал','th.game':'Гра','th.buy':'Купив','th.sell':'Продав',
+       'th.fee':'Комісія','th.profit':'Прибуток','st.ok':'Все гаразд','st.bad':'Є проблеми',
+       'u.orders':'замовлення в черзі','u.none':'нічого не чекає','u.frozen':'заморожено',
+       'u.agent':'агент','u.online':'онлайн','u.offline':'офлайн','u.vs':'проти',
+       'ph.newDeal':'+ НОВИЙ ПРОДАЖ','ph.records':'ЗАПИСИ','ph.cats':'РОЗБИВКА ПО КАТЕГОРІЯХ',
+       'ph.products':'ТОВАРИ','ph.orders':'ЗАМОВЛЕННЯ З ПОШТИ','ph.channels':'Канали',
+       'ph.taobao':'TAOBAO — ціни з Китаю','ph.stock':'СКЛАД — куплені акаунти',
+       'ph.theme':'ТЕМА ІНТЕРФЕЙСУ','ph.backup':'БЕКАП P&L','ph.rate':'КУРС USD → UAH',
+       'ph.tg':'TELEGRAM-СПОВІЩЕННЯ','ph.gmail':'GMAIL → TELEGRAM','ph.cloud':'ХМАРНИЙ БЕКАП',
+       'ph.sec':'БЕЗПЕКА','ph.contact':'ПОТРІБНА АВТОМАТИЗАЦІЯ?','ph.contact.desc':'Хочете таку саму автоматизацію: збір Taobao, FunPay/ZeusX, проходження капчі, авто-імпорт замовлень — напишіть у Telegram.','ph.allch':'Усі канали — останні продажі','ph.edsales':'Eldorado — продажі',
+       'btn.add':'Додати','btn.refresh':'Оновити','btn.save':'Зберегти','btn.clear':'Очистити',
+       'btn.csv':'CSV','btn.excel':'Excel (всі дані)','btn.search':'Пошук…','btn.month':'Весь час',
+       'f.title':'НАЗВА (необов.)','f.platform':'ПЛАТФОРМА','f.buy':'КУПИВ $','f.sell':'ПРОДАВ $',
+       'f.after':'ПІСЛЯ КОМІСІЇ','f.date':'ДАТА','f.other':'Інше (0%)',
+       'b.add':'+ ДОДАТИ','b.sync':'СИНХРОНІЗУВАТИ','b.bulk':'МАСОВО','b.clear':'Очистити',
+       'search':'Пошук…','allPlat':'Всі платформи','allTime':'Весь час','byDate':'Дата ↓',
+       'cf.search':'Пошук...','cf.sortNone':'Без сорт.','cf.sortNew':'Нові першими','cf.sortUpdated':'Оновлені першими','cf.priceUp':'Ціна ↑','cf.priceDown':'Ціна ↓','cf.saleFirst':'Sale першими','cf.avail':'є в наявності','cf.gone':'зниклі','cf.cheaper':'дешевше','ct.name':'НАЗВА','ct.src':'ДЖЕРЕЛО','ct.price':'ЦІНА','ct.disc':'ЗНИЖКА','ct.avail':'НАЯ.','ct.date':'ДАТА','cb.shop':'Магазин','cb.history':'Історія','cb.compare':'Порівняти','cb.lot':'Лот','tb.lot':'Лот','tb.checkPay':'Перевірити оплату','tb.collect':'Зібрати зараз','plan.title':'ЩО КУПИТИ СЬОГОДНІ','plan.hint':'Ціна постачальника проти вашої медіани продажу по схожих лотах (та сама гра + спільні слова назви), комісія ZeusX 9.5%.','inv.name':'Назва','inv.game':'Гра','inv.cost':'Собівартість, $','inv.source':'Джерело','inv.account':'Дані акаунта (логін / пароль / пошта)','inv.all':'Всі','inv.inStock':'На складі','inv.sold':'Продані','inv.off':'Списані','inv.intro':'Тут куплені акаунти: скільки коштували, у кого, і чи продані. Дає реальну маржу й показує, скільки грошей «заморожено».','inv.csvStock':'CSV (склад, +30%)','inv.csvSup':'CSV (постач., +30%)','tbth.lot':'ЛОТ','tbth.game':'ГРА','tbth.price':'ЦІНА','tbth.atSup':'У ПОСТАЧАЛЬНИКА','tbth.diff':'РІЗНИЦЯ','tbth.qty':'К-СТЬ','tbth.withAgent':'З ПОСЕРЕДНИКОМ','per.all':'Весь час','per.today':'Сьогодні','per.week':'Цей тиждень','per.month':'Цей місяць','per.months':'Місяці','per.custom':'Свій період','st.setup':'Готово до роботи','tb.d1':'Збирається колектором на вашому ПК. Агент працює у фоні (автозапуск при вході в Windows) і сам відкриває вікно браузера, якщо його немає. Капчу проходите ви — колектор чекає. Ціни в юанях, нижче — орієнтовний долар.','tb.d2':'Мітки: натисніть 💳 біля лота, якщо там оплата карткою, і 🎛 — скільки варіантів акаунтів. Taobao часто блокує автоматичне читання сторінок лотів, тому ручна мітка — найнадійніше.','tb.d3':'Оплата: картка / Apple Pay через Alipay International (платформа, не продавець). Лоти «代充 / 充值 / 话费» (поповнення балансу, телефон, ключі) не підходять під таку оплату — вони вже відфільтровані.','tg.hint':'Бот пише лише про те, що прийшло з пошти (нові замовлення й повідомлення FunPay / ZeusX / Eldorado) та про досягнення цілі. Ручне внесення продажу в таблицю не сповіщає. Створи бота у @BotFather, встав токен і свій chat_id (дізнатись у @userinfobot).','pw.hint':'Без пароля будь-хто, хто відкриє посилання, отримає доступ. Увімкніть пароль, якщо застосунок доступний з інтернету.','tg.cmds':'Бот відповідає на команди (тільки ваш чат): /stats — продажі сьогодні й за місяць · /balance — баланс ZeusX / FunPay / Eldorado · /new — останні замовлення · /taobao — топ вигідних лотів · /help','gm.hint':'Трекер читає пошту (IMAP) і надсилає в Telegram нові замовлення та повідомлення FunPay / ZeusX / Eldorado. Потрібен App Password (не звичайний пароль): Google Account → Security → 2-Step Verification → App passwords + увімкнений IMAP у Gmail.','inv.ph':'логін: user@mail.com\nпароль: 12345\nпошта: user@mail.com','tb.need':'Щоб збір запрацював, потрібно: 1) агент збору на вашому ПК (окремий файл, запускається разом із Windows); 2) акаунт Taobao; 3) один раз увійти в браузері агента — сканування QR-коду з телефона; 4) капчу при першому запиті проходите ви вручну. Після цього лоти оновлюються у фоні, а ви бачите ціни тут.','cta.screens':'Скріншоти функцій →','ed.buy':'Ціна купівлі $','ed.sell':'Ціна продажу $','ed.oid':'Order ID (необов\'язково)','ed.cat':'Категорія (необов\'язково)','ed.csvbtn':'CSV (фільтр)','ed.empty':'Ще немає записів','k.buy':'Купив','k.sell':'Продав','k.fee':'Комісія','k.profit':'Прибуток',
+       'k.records':'ЗАПИСИ','k.search':'Пошук…','k.clear':'Очистити',
+
+     },
+  en:{'ch.src':'Data is read from your accounts using saved cookies (ZeusX — API, FunPay — order page). Refreshed no more than once every 2 minutes.','an.detail':'DETAIL TABLE','f.other2':'Other','ta.allGames':'All games','ta.allTypes':'All types','ta.allRegions':'All regions','s.dateDesc':'Date ↓','s.dateAsc':'Date ↑','s.profitDesc':'Profit ↓','s.sellDesc':'Sale ↓','s.cheapFirst':'Cheapest first','s.expFirst':'Most expensive first','s.starter':'Starter','s.developed':'Developed','s.endgame':'Endgame','s.noTitle':'⚠ Untitled','s.moreVariants':'🎛 More variants','s.cardOnly':'💳 Card payment only','ed.title':'Product name','ph.dealTitle':'e.g. Arknights Starter','ph.pw6':'min. 6 chars','ph.desc':'Description...','ed.buy':'Purchase price $','ed.sell':'Sale price $','ed.oid':'Order ID (optional)','ed.cat':'Category (optional)','ed.csvbtn':'CSV (filter)','ed.empty':'No records yet', 'nav.overview':'Overview','nav.deals':'Deals','nav.orders':'Orders','nav.channels':'Channels',
+       'nav.catalog':'Catalog','nav.plan':'Plan','nav.taobao':'Taobao','nav.inventory':'Inventory',
+       'nav.analytics':'Analytics','hdr.sub':'v5 · DEALS · CHANNELS · MAIL',
+       'ov.today':'Today','ov.add':'Deal','ov.channels':'Channels','ov.profit':'Profit · month',
+       'ov.actions':'Needs action','ov.stock':'Stock','ov.health':'System','ov.feed':'What happened',
+       'ch.title':'Channels','ch.refresh':'Refresh','ch.bal':'Balances',
+       'th.date':'Date','th.channel':'Channel','th.game':'Game','th.buy':'Bought','th.sell':'Sold',
+       'th.fee':'Fee','th.profit':'Profit','st.ok':'All good','st.bad':'Issues found',
+       'u.orders':'orders in queue','u.none':'nothing waiting','u.frozen':'frozen',
+       'u.agent':'agent','u.online':'online','u.offline':'offline','u.vs':'vs',
+       'ph.newDeal':'+ NEW DEAL','ph.records':'RECORDS','ph.cats':'BREAKDOWN BY CATEGORY',
+       'ph.products':'PRODUCTS','ph.orders':'ORDERS FROM MAIL','ph.channels':'Channels',
+       'ph.taobao':'TAOBAO — prices from China','ph.stock':'STOCK — bought accounts',
+       'ph.theme':'INTERFACE THEME','ph.backup':'P&L BACKUP','ph.rate':'USD → UAH RATE',
+       'ph.tg':'TELEGRAM NOTIFICATIONS','ph.gmail':'GMAIL → TELEGRAM','ph.cloud':'CLOUD BACKUP',
+       'ph.sec':'SECURITY','ph.contact':'NEED AUTOMATION?','ph.contact.desc':'Want the same automation: Taobao collection, FunPay/ZeusX, captcha handling, order auto-import — message me on Telegram.','ph.allch':'All channels — recent sales','ph.edsales':'Eldorado — sales',
+       'btn.add':'Add','btn.refresh':'Refresh','btn.save':'Save','btn.clear':'Clear',
+       'btn.csv':'CSV','btn.excel':'Excel (all data)','btn.search':'Search…','btn.month':'All time',
+       'f.title':'TITLE (optional)','f.platform':'PLATFORM','f.buy':'BOUGHT $','f.sell':'SOLD $',
+       'f.after':'AFTER FEE','f.date':'DATE','f.other':'Other (0%)',
+       'b.add':'+ ADD','b.sync':'SYNC','b.bulk':'BULK','b.clear':'Clear',
+       'search':'Search…','allPlat':'All platforms','allTime':'All time','byDate':'Date ↓',
+       'cf.search':'Search...','cf.sortNone':'No sorting','cf.sortNew':'Newest first','cf.sortUpdated':'Recently updated','cf.priceUp':'Price ↑','cf.priceDown':'Price ↓','cf.saleFirst':'On sale first','cf.avail':'in stock','cf.gone':'gone','cf.cheaper':'cheaper','ct.name':'NAME','ct.src':'SOURCE','ct.price':'PRICE','ct.disc':'DISCOUNT','ct.avail':'STOCK','ct.date':'DATE','cb.shop':'Shop','cb.history':'History','cb.compare':'Compare','cb.lot':'Lot','tb.lot':'Lot','tb.checkPay':'Check payment','tb.collect':'Collect now','plan.title':'WHAT TO BUY TODAY','plan.hint':'Supplier price against your median sale price for similar lots (same game + shared title words), ZeusX fee 9.5%.','inv.name':'Name','inv.game':'Game','inv.cost':'Cost, $','inv.source':'Source','inv.account':'Account data (login / password / mail)','inv.all':'All','inv.inStock':'In stock','inv.sold':'Sold','inv.off':'Written off','inv.intro':'Bought accounts: what they cost, from whom, and whether they sold. Shows real margin and how much money is frozen.','inv.csvStock':'CSV (stock, +30%)','inv.csvSup':'CSV (suppliers, +30%)','tbth.lot':'LOT','tbth.game':'GAME','tbth.price':'PRICE','tbth.atSup':'AT SUPPLIER','tbth.diff':'DIFF','tbth.qty':'QTY','tbth.withAgent':'WITH AGENT','per.all':'All time','per.today':'Today','per.week':'This week','per.month':'This month','per.months':'Months','per.custom':'Custom range','st.setup':'Ready to use','tb.d1':'Collected by the agent on your PC. The agent runs in the background (autostart on Windows sign-in) and opens the browser window itself if needed. You pass the captcha — the agent waits. Prices are in CNY; approximate USD below.','tb.d2':'Marks: press 💳 next to a lot if card payment is available there, and 🎛 for how many account variants. Taobao often blocks automatic page reading of lots, so the manual mark is the most reliable.','tb.d3':'Payment: card / Apple Pay via Alipay International (platform, not a seller). Lots «代充 / 充值 / 话费» (balance top-up, phone, keys) do not support this payment — they are already filtered out.','tg.hint':'The bot writes only about what came from mail (new orders and messages from FunPay / ZeusX / Eldorado) and about reaching the goal. Manual sale entries in the table do not notify. Create a bot at @BotFather, paste the token and your chat_id (find it at @userinfobot).','pw.hint':'Without a password anyone who opens the link gets in. Set one if the app is reachable from the internet.','tg.cmds':'The bot answers commands (your chat only): /stats — sales today and for the month · /balance — ZeusX / FunPay / Eldorado balance · /new — latest orders · /taobao — top profitable lots · /help','gm.hint':'The tracker reads mail (IMAP) and sends new orders and messages from FunPay / ZeusX / Eldorado to Telegram. An App Password is required (not a regular password): Google Account → Security → 2-Step Verification → App passwords + IMAP enabled in Gmail.','inv.ph':'login: user@mail.com\npassword: 12345\nmail: user@mail.com','tb.need':'To start collecting you need: 1) the collector agent on your PC (separate file, starts with Windows); 2) a Taobao account; 3) sign in once in the agent\'s browser — scan the QR code with your phone; 4) pass the first captcha yourself. After that lots refresh in the background and you see prices here.','cta.screens':'Feature screenshots →','ed.buy':'Purchase price $','ed.sell':'Sale price $','ed.oid':'Order ID (optional)','ed.cat':'Category (optional)','ed.csvbtn':'CSV (filter)','ed.empty':'No records yet','k.buy':'Bought','k.sell':'Sold','k.fee':'Fee','k.profit':'Profit',
+       'k.records':'RECORDS','k.search':'Search…','k.clear':'Clear',
+
+     },
+  ru:{'ch.src':'Данные читаются из ваших кабинетов по сохранённым cookie (ZeusX — API, FunPay — страница заказов). Обновляется не чаще раза в 2 минуты.','an.detail':'ДЕТАЛЬНАЯ ТАБЛИЦА','f.other2':'Другое','ta.allGames':'Все игры','ta.allTypes':'Все типы','ta.allRegions':'Все регионы','s.dateDesc':'Дата ↓','s.dateAsc':'Дата ↑','s.profitDesc':'Прибыль ↓','s.sellDesc':'Продажа ↓','s.cheapFirst':'Дешевле сначала','s.expFirst':'Дороже сначала','s.starter':'Стартовые','s.developed':'Развитые','s.endgame':'Эндгейм','s.noTitle':'⚠ Без названия','s.moreVariants':'🎛 Больше вариантов','s.cardOnly':'💳 Только с оплатой картой','ed.title':'Название товара','ph.dealTitle':'напр. Arknights Starter','ph.pw6':'мин. 6 символов','ph.desc':'Описание...','ed.buy':'Цена покупки $','ed.sell':'Цена продажи $','ed.oid':'Order ID (необязательно)','ed.cat':'Категория (необязательно)','ed.csvbtn':'CSV (фильтр)','ed.empty':'Пока нет записей', 'nav.overview':'Обзор','nav.deals':'Сделки','nav.orders':'Заказы','nav.channels':'Каналы',
+       'nav.catalog':'Каталог','nav.plan':'План','nav.taobao':'Taobao','nav.inventory':'Инвентарь',
+       'nav.analytics':'Аналитика','hdr.sub':'v5 · СДЕЛКИ · КАНАЛЫ · ПОЧТА',
+       'ov.today':'Сегодня','ov.add':'Сделка','ov.channels':'Каналы','ov.profit':'Прибыль · месяц',
+       'ov.actions':'Требует действия','ov.stock':'Склад','ov.health':'Состояние системы','ov.feed':'Что произошло',
+       'ch.title':'Каналы','ch.refresh':'Обновить','ch.bal':'Балансы',
+       'th.date':'Дата','th.channel':'Канал','th.game':'Игра','th.buy':'Купил','th.sell':'Продал',
+       'th.fee':'Комиссия','th.profit':'Прибыль','st.ok':'Всё хорошо','st.bad':'Есть проблемы',
+       'u.orders':'заказов в очереди','u.none':'ничего не ждёт','u.frozen':'заморожено',
+       'u.agent':'агент','u.online':'онлайн','u.offline':'офлайн','u.vs':'против',
+       'ph.newDeal':'+ НОВАЯ ПРОДАЖА','ph.records':'ЗАПИСИ','ph.cats':'РАЗБИВКА ПО КАТЕГОРИЯМ',
+       'ph.products':'ТОВАРЫ','ph.orders':'ЗАКАЗЫ ИЗ ПОЧТЫ','ph.channels':'Каналы',
+       'ph.taobao':'TAOBAO — цены из Китая','ph.stock':'СКЛАД — купленные аккаунты',
+       'ph.theme':'ТЕМА ИНТЕРФЕЙСА','ph.backup':'БЭКАП P&L','ph.rate':'КУРС USD → UAH',
+       'ph.tg':'TELEGRAM-УВЕДОМЛЕНИЯ','ph.gmail':'GMAIL → TELEGRAM','ph.cloud':'ОБЛАЧНЫЙ БЭКАП',
+       'ph.sec':'БЕЗОПАСНОСТЬ','ph.contact':'НУЖНА АВТОМАТИЗАЦИЯ?','ph.contact.desc':'Хотите такую же автоматизацию: сбор Taobao, FunPay/ZeusX, прохождение капчи, авто-импорт заказов — напишите в Telegram.','ph.allch':'Все каналы — последние продажи','ph.edsales':'Eldorado — продажи',
+       'btn.add':'Добавить','btn.refresh':'Обновить','btn.save':'Сохранить','btn.clear':'Очистить',
+       'btn.csv':'CSV','btn.excel':'Excel (все данные)','btn.search':'Поиск…','btn.month':'Всё время',
+       'f.title':'НАЗВАНИЕ (необяз.)','f.platform':'ПЛАТФОРМА','f.buy':'КУПИЛ $','f.sell':'ПРОДАЛ $',
+       'f.after':'ПОСЛЕ КОМИССИИ','f.date':'ДАТА','f.other':'Другое (0%)',
+       'b.add':'+ ДОБАВИТЬ','b.sync':'СИНХРОНИЗИРОВАТЬ','b.bulk':'МАССОВО','b.clear':'Очистить',
+       'search':'Поиск…','allPlat':'Все платформы','allTime':'Всё время','byDate':'Дата ↓',
+       'cf.search':'Поиск...','cf.sortNone':'Без сорт.','cf.sortNew':'Новые первыми','cf.sortUpdated':'Обновлённые','cf.priceUp':'Цена ↑','cf.priceDown':'Цена ↓','cf.saleFirst':'Sale первыми','cf.avail':'в наличии','cf.gone':'исчезли','cf.cheaper':'дешевле','ct.name':'НАЗВАНИЕ','ct.src':'ИСТОЧНИК','ct.price':'ЦЕНА','ct.disc':'СКИДКА','ct.avail':'В НАЛ.','ct.date':'ДАТА','cb.shop':'Магазин','cb.history':'История','cb.compare':'Сравнить','cb.lot':'Лот','tb.lot':'Лот','tb.checkPay':'Проверить оплату','tb.collect':'Собрать сейчас','plan.title':'ЧТО КУПИТЬ СЕГОДНЯ','plan.hint':'Цена поставщика против вашей медианы продажи по похожим лотам (та же игра + общие слова названия), комиссия ZeusX 9.5%.','inv.name':'Название','inv.game':'Игра','inv.cost':'Себестоимость, $','inv.source':'Источник','inv.account':'Данные аккаунта (логин / пароль / почта)','inv.all':'Все','inv.inStock':'На складе','inv.sold':'Проданы','inv.off':'Списаны','inv.intro':'Купленные аккаунты: сколько стоили, у кого, и проданы ли. Даёт реальную маржу и показывает, сколько денег «заморожено».','inv.csvStock':'CSV (склад, +30%)','inv.csvSup':'CSV (постав., +30%)','tbth.lot':'ЛОТ','tbth.game':'ИГРА','tbth.price':'ЦЕНА','tbth.atSup':'У ПОСТАВЩИКА','tbth.diff':'РАЗНИЦА','tbth.qty':'КОЛ-ВО','tbth.withAgent':'С ПОСРЕДНИКОМ','per.all':'Все время','per.today':'Сегодня','per.week':'Эта неделя','per.month':'Этот месяц','per.months':'Месяцы','per.custom':'Свой период','st.setup':'Готово к работе','tb.d1':'Собирается коллектором на вашем ПК. Агент работает в фоне (автозапуск при входе в Windows) и сам открывает окно браузера, если его нет. Капчу проходите вы — коллектор ждёт. Цены в юанях, ниже — ориентировочный доллар.','tb.d2':'Метки: нажмите 💳 у лота, если там оплата картой, и 🎛 — сколько вариантов аккаунтов. Taobao часто блокирует автоматическое чтение страниц лотов, поэтому ручная метка — надёжнее всего.','tb.d3':'Оплата: карта / Apple Pay через Alipay International (площадка, не продавец). Лоты «代充 / 充值 / 话费» (пополнение баланса, телефон, ключи) не поддерживают такую оплату — они уже отфильтрованы.','tg.hint':'Бот пишет только о том, что пришло из почты (новые заказы и сообщения FunPay / ZeusX / Eldorado) и о достижении цели. Ручное внесение продажи в таблицу не уведомляет. Создай бота в @BotFather, вставь токен и свой chat_id (узнать в @userinfobot).','pw.hint':'Без пароля любой, кто откроет ссылку, получит доступ. Включите пароль, если приложение доступно из интернета.','tg.cmds':'Бот отвечает на команды (только ваш чат): /stats — продажи сегодня и за месяц · /balance — баланс ZeusX / FunPay / Eldorado · /new — последние заказы · /taobao — топ выгодных лотов · /help','gm.hint':'Трекер читает почту (IMAP) и отправляет в Telegram новые заказы и сообщения FunPay / ZeusX / Eldorado. Нужен App Password (не обычный пароль): Google Account → Security → 2-Step Verification → App passwords + включённый IMAP в Gmail.','inv.ph':'логин: user@mail.com\nпароль: 12345\nпочта: user@mail.com','tb.need':'Чтобы сбор заработал, нужно: 1) агент сбора на вашем ПК (отдельный файл, запускается вместе с Windows); 2) аккаунт Taobao; 3) один раз войти в браузере агента — сканирование QR-кода с телефона; 4) капчу при первом запросе проходите вы вручную. После этого лоты обновляются в фоне, а вы видите цены здесь.','cta.screens':'Скриншоты функций →','ed.buy':'Цена покупки $','ed.sell':'Цена продажи $','ed.oid':'Order ID (необязательно)','ed.cat':'Категория (необязательно)','ed.csvbtn':'CSV (фильтр)','ed.empty':'Пока нет записей','k.buy':'Купил','k.sell':'Продал','k.fee':'Комиссия','k.profit':'Прибыль',
+       'k.records':'ЗАПИСИ','k.search':'Поиск…','k.clear':'Очистить' },
+};
+// ── Додаткові ключі для динамічного UI (не чіпаючи великі словники вище) ──
+const EXTRA_I18N = {
+  uk: {
+    "all":"Всі","total":"ВСЬОГО","loading":"Завантаження…","noData":"Немає даних",
+    "save":"Зберегти","close":"Закрити","copy":"Копіювати","delete":"Видалити",
+    "edit":"Редагувати","show":"Показати","refresh":"Оновити","cancel":"Скасувати",
+    "apply":"Застосувати","disconnect":"Відключити",
+    "inv.costShort":"Собівартість","inv.status":"Статус","inv.inStockShort":"на складі",
+    "inv.soldShort":"продано","inv.offShort":"списано","inv.sourceShort":"Джерело",
+    "inv.empty":"Порожньо — додайте першу закупівлю","inv.dead":"Мертвий склад",
+    "inv.noDead":"Мертвого складу немає","inv.oldest":"найстаріша позиція",
+    "inv.added":"Додано на склад","inv.soldToast":"Позначено як продано",
+    "inv.offToast":"Списано","inv.returnToast":"Повернуто на склад","inv.deleted":"Видалено",
+    "inv.deleteConfirm":"Видалити запис зі складу?","inv.noAccount":"(даних немає)",
+    "inv.enterName":"Введіть назву",
+    "an.deals":"Угод","an.revenue":"Виручка","an.profit":"Прибуток","an.margin":"Маржа",
+    "an.games":"Різних ігор","an.best":"Найкраща","an.total":"РАЗОМ P&L + ELD",
+    "an.totalIn":"Разом у","an.game":"ГРА","an.dealsCol":"УГОД","an.revenueCol":"ВИРУЧКА",
+    "an.profitCol":"ПРИБУТОК","an.marginCol":"МАРЖА",
+    "an.thisVsLast":"ЦЕЙ МІСЯЦЬ ПРОТИ МИНУЛОГО","an.profitPL":"Прибуток P&L",
+    "an.revenuePL":"Виторг P&L","an.profitED":"Прибуток ELDORADO",
+    "an.totalProfit":"Разом прибуток","an.was":"було","an.new":"новий",
+    "an.revenueChart":"Виторг $","an.profitChart":"Прибуток $","an.noData":"Немає даних",
+    "rep.count":"Продажів","rep.revenue":"Виторг","rep.fees":"Комісії",
+    "rep.cogs":"Собівартість проданого","rep.profit":"Прибуток",
+    "rep.purchases":"Закупівлі за місяць","rep.cash":"Касовий потік",
+    "rep.stock":"На складі зараз",
+    "rep.formula":"Прибуток = виторг − комісії − собівартість проданого. Касовий потік = виторг − комісії − закупівлі цього місяця.",
+    "rep.calculating":"Рахую…",
+    "sup.noSuppliers":"Ще немає постачальників — додайте у ⚙ → Постачальники",
+    "sup.none":"Нічого не знайдено","sup.empty":"База порожня — натисни ↺ або зачекай оновлення",
+    "sup.sale":"ЗНИЖКА","sup.availYes":"є","sup.availNo":"нема","sup.gone":"зник",
+    "sup.compareTitle":"Порівняння цін","sup.compareBase":"Базовий",
+    "sup.compareFound":"Схожі товари в інших магазинах","sup.compareNone":"Схожих товарів не знайдено",
+    "sup.historyTitle":"Історія ціни",
+    "sup.historyEmpty":"Історії ще немає. Вона зʼявляється після змін ціни (каталог оновлюється раз на добу).",
+    "sup.notFound":"Товар не знайдено","sup.added":"Постачальника додано",
+    "sup.enterName":"Введіть назву магазину та URL",
+    "sup.badUrl":"URL має починатися з http:// або https://",
+    "plan.supplier":"Постачальник","plan.yourSale":"Ваш продаж","plan.margin":"Маржа",
+    "plan.demand":"Попит","plan.sales":"продажів",
+    "tb.type":"ТИП","tb.lastRuns":"Останні збори","tb.cartEmpty":"Кошик порожній — натисніть 🛒 біля лота, щоб додати",
+    "tb.cart":"Кошик","tb.lotOne":"лот","tb.lotMany":"лотів",
+    "tb.cardWithMiddleman":"на картці з посередником","tb.clear":"Очистити",
+    "tb.fromSupplier":"у постачальника від",
+    "tb.notChecked":"Ще не перевіряли. Натисніть «💳 Перевірити оплату» — потрібен вхід у Taobao у вікні браузера.",
+    "tb.added":"Лот додано","tb.pricePositive":"Ціна має бути > 0",
+    "tb.manualLink":"Посилання на лот Taobao (item.taobao.com/item.htm?id=…)",
+    "tb.manualTitle":"Назва лота (коротко)","tb.manualPrice":"Ціна в юанях (¥)",
+    "tb.cardQuestion":"Оплата карткою доступна в цьому лоті?",
+    "tb.optionsQuestion":"Скільки варіантів акаунтів у лоті? (0 — невідомо)",
+    "tb.markedCard":"Позначено: оплата карткою","tb.cardRemoved":"Мітку знято",
+    "tb.options":"Варіантів",
+    "tb.clearCartConfirm":"Очистити кошик (зняти мітки 🛒 з усіх лотів)?",
+    "tb.checkConfirm":"Перевірити оплату карткою та кількість варіантів у топ-25 лотів?\n\nКолектор відкриє кожен лот у браузері (~2 хв). Потрібен вхід у Taobao.",
+    "tb.collectConfirm":"Запустити збір з Taobao зараз?\n\nЯкщо вікно браузера закрите — агент відкриє його сам (start_cf_debug.bat). Увійдіть у Taobao і пройдіть капчу, збір почнеться автоматично.",
+    "tb.collectCooldown":"Збір уже був %s хв тому (кулдаун 3 год). Все одно запустити зараз?",
+    "tb.collectRequested":"Запит надіслано",
+    "bk.typePL":"P&L","bk.typeED":"ELDORADO","bk.typeGoal":"Ціль",
+    "bk.typeSettings":"Налаштування","bk.typeMail":"Пошта","bk.typeInventory":"Склад",
+    "bk.typeArchive":"Архів","bk.typeOther":"Інше","bk.restore":"Відновити",
+    "bk.notRestorable":"—","bk.none":"Бекапів ще немає",
+    "bk.restoreConfirm":"Відновити «%s»?\n\nПоточна версія буде збережена як …_before_restore_….json",
+    "bk.restored":"Відновлено","bk.saved":"Бекап збережено! Файлів:","bk.error":"Помилка бекапу:",
+    "pw.optional":"ПАРОЛЬ (НЕОБОВ'ЯЗКОВО)","pw.new8":"Новий пароль (мін. 8)",
+    "pw.enable":"Увімкнути пароль","pw.disable":"Вимкнути пароль",
+    "pw.statusOn":"Пароль увімкнено","pw.statusOff":"Без пароля",
+    "pw.enabledToast":"Пароль увімкнено. Перезавантажте сторінку і увійдіть.",
+    "pw.disabledToast":"Пароль вимкнено","pw.short":"Пароль має бути мінімум 8 символів",
+    "pw.mismatch":"Паролі не співпадають",
+    "pw.changed":"Пароль змінено. Перезавантажте сторінку і увійдіть.",
+    "cur.title":"ВАЛЮТА","cur.rate":"КУРС (₴ за $1)","cur.refresh":"Оновити курс",
+    "cur.save":"Зберегти","cur.updated":"оновлено","cur.manual":"вручну","cur.base":"база",
+    "cur.baseToast":"USD — базова валюта (1.00)","cur.set":"Курс збережено",
+    "cur.nbu":"Оновлюю курс з НБУ…","cur.nbuFail":"НБУ недоступний — введіть курс вручну",
+    "cur.refreshed":"Курс:","nt.saved":"Сповіщення: увімкнено %s з 9",
+    "diag.refresh":"Оновити","diag.loading":"Завантажую діагностику…",
+    "diag.counts":"Записи","diag.tokens":"Токени","diag.version":"Версія",
+    "diag.error":"Помилка діагностики:",
+    "demo.loadConfirm":"Завантажити демо-дані? Поточні дані буде замінено.",
+    "demo.loaded":"Демо-дані завантажено",
+    "demo.clearConfirm":"Стерти всі дані? Це незворотно.","demo.cleared":"Дані стерто",
+    "csv.importConfirm":"Імпортувати «%s»?\n\nПоточні дані буде збережено в gt_backups/ перед заміною.",
+    "csv.imported":"Імпортовано: додано %s, пропущено %s","csv.empty":"Порожній файл",
+    "mail.empty":"Поки порожньо. Сюди потрапляють нові замовлення й повідомлення, які трекер знайшов у пошті.",
+    "mail.stat":"листів · нових","mail.clearConfirm":"Очистити всю чергу?\n\nВидалені замовлення більше не зявляться.",
+    "mail.cleared":"Видалено:","mail.amountPrompt":"У листі немає суми. Введіть суму замовлення, $?",
+    "mail.amountPositive":"Сума має бути більшою за 0",
+    "mail.gamePrompt":"Гра (для статистики):\nнапр. Identity V, Zenless Zone Zero, Genshin",
+    "mail.inStock":"На складі: %s — $%s\nСобівартість для обліку, $? (Enter = взяти зі складу)",
+    "mail.costPrompt":"Скільки коштував цей акаунт (собівартість), $?\n0 — якщо купували не ви",
+    "mail.added":"Додано в","mail.fromStock":"(зі складу)","mail.ignored":"Проігноровано","mail.removed":"Видалено",
+    "deal.enterPrices":"Введи ціни!","deal.added":"Запис додано","deal.addedED":"Додано в Eldorado",
+    "deal.updated":"Запис оновлено","deal.deleteConfirm":"Видалити цей запис?",
+    "deal.bulkTitle":"Масове заповнення назв",
+    "deal.bulkDesc":"Записи згруповані по сумі продажу. Введи назву — вона застосується до всіх записів з цією сумою без назви.",
+    "deal.bulkPlaceholder":"Введи назву...","deal.bulkEmpty":"Немає записів без назви",
+    "deal.bulkNeedName":"Нічого не змінено — введи хоча б одну назву",
+    "deal.bulkDone":"Заповнено %s записів","deal.bulkNoTitles":"Всі записи вже мають назви!",
+    "deal.synced":"Синхронізовано %s записів","deal.syncError":"Помилка синхронізації:",
+    "deal.csvDone":"CSV завантажено","deal.excelDone":"Excel завантажено! 4 аркуші",
+    "deal.clearConfirm":"Очистити всі записи?",
+    "deal.recalcPurchase":"Підставлено закупівлю $%s з P&L",
+    "ed.editTitle":"Редагувати запис ELDORADO","ed.category":"Категорія",
+    "ed.profitHint":"Прибуток рахується сам: продав − комісія − купив",
+    "ed.deleteConfirm":"Видалити цей запис Eldorado?","ed.csvDone":"CSV ELDORADO завантажено",
+    "lot.title":"КАЛЬКУЛЯТОР ЦІНИ","lot.name":"НАЗВА ТОВАРУ","lot.buy":"ЗАКУПІВЛЯ ($)",
+    "lot.markup":"НАЦІНКА %","lot.sell":"ПРОДАЖ ($)","lot.gameSource":"ГРА / ДЖЕРЕЛО",
+    "lot.desc":"ОПИС","lot.afterFee":"Після комісії:","lot.copy":"КОПІЮВАТИ ДЛЯ ЛОТУ",
+    "lot.copied":"Скопійовано для лоту!","lot.enterName":"Введи назву",
+    "lot.clipboard":"Буфер обміну недоступний",
+    "onb.hint":"Змінити мову можна пізніше в ⚙ Налаштування",
+    "set.whatToSend":"Що надсилати в Telegram (кожен тип окремо):",
+    "set.notifySave":"Зберегти сповіщення","set.chatId":"CHAT ID",
+    "set.gmail":"GMAIL","set.appPass":"APP PASSWORD","set.selfSigned":"Згенерувати self-signed",
+    "set.cert":"CERT (pem/crt)","set.key":"KEY (pem/key)","set.https":"HTTPS",
+    "set.watchdogSite":"⚠️ Watchdog сайту","set.watchdogAgent":"⚠️ Watchdog агента Taobao"
+  },
+  en: {
+    "all":"All","total":"TOTAL","loading":"Loading…","noData":"No data",
+    "save":"Save","close":"Close","copy":"Copy","delete":"Delete","edit":"Edit","show":"Show",
+    "refresh":"Refresh","cancel":"Cancel","apply":"Apply","disconnect":"Disconnect",
+    "inv.costShort":"Cost","inv.status":"Status","inv.inStockShort":"in stock",
+    "inv.soldShort":"sold","inv.offShort":"written off","inv.sourceShort":"Source",
+    "inv.empty":"Empty — add your first purchase","inv.dead":"Dead stock",
+    "inv.noDead":"No dead stock","inv.oldest":"oldest item",
+    "inv.added":"Added to stock","inv.soldToast":"Marked as sold","inv.offToast":"Written off",
+    "inv.returnToast":"Returned to stock","inv.deleted":"Deleted",
+    "inv.deleteConfirm":"Delete this stock item?","inv.noAccount":"(no data)","inv.enterName":"Enter a name",
+    "an.deals":"Deals","an.revenue":"Revenue","an.profit":"Profit","an.margin":"Margin",
+    "an.games":"Different games","an.best":"Best","an.total":"TOTAL P&L + ELD",
+    "an.totalIn":"Total in","an.game":"GAME","an.dealsCol":"DEALS","an.revenueCol":"REVENUE",
+    "an.profitCol":"PROFIT","an.marginCol":"MARGIN",
+    "an.thisVsLast":"THIS MONTH VS LAST","an.profitPL":"Profit P&L","an.revenuePL":"Revenue P&L",
+    "an.profitED":"Profit ELDORADO","an.totalProfit":"Total profit","an.was":"was","an.new":"new",
+    "an.revenueChart":"Revenue $","an.profitChart":"Profit $","an.noData":"No data",
+    "rep.count":"Sales","rep.revenue":"Revenue","rep.fees":"Fees",
+    "rep.cogs":"Cost of goods sold","rep.profit":"Profit","rep.purchases":"Purchases this month",
+    "rep.cash":"Cash flow","rep.stock":"In stock now",
+    "rep.formula":"Profit = revenue − fees − cost of goods sold. Cash flow = revenue − fees − purchases this month.",
+    "rep.calculating":"Calculating…",
+    "sup.noSuppliers":"No suppliers yet — add one in ⚙ → Suppliers",
+    "sup.none":"Nothing found","sup.empty":"Database is empty — press ↺ or wait for refresh",
+    "sup.sale":"SALE","sup.availYes":"in stock","sup.availNo":"out of stock","sup.gone":"gone",
+    "sup.compareTitle":"Price comparison","sup.compareBase":"Base",
+    "sup.compareFound":"Similar products in other shops","sup.compareNone":"No similar products found",
+    "sup.historyTitle":"Price history",
+    "sup.historyEmpty":"No history yet. It appears after price changes (catalog refreshes once a day).",
+    "sup.notFound":"Product not found","sup.added":"Supplier added",
+    "sup.enterName":"Enter shop name and URL","sup.badUrl":"URL must start with http:// or https://",
+    "plan.supplier":"Supplier","plan.yourSale":"Your sale","plan.margin":"Margin",
+    "plan.demand":"Demand","plan.sales":"sales",
+    "tb.type":"TYPE","tb.lastRuns":"Last runs","tb.cartEmpty":"Cart is empty — press 🛒 next to a lot to add it",
+    "tb.cart":"Cart","tb.lotOne":"lot","tb.lotMany":"lots",
+    "tb.cardWithMiddleman":"card + middleman","tb.clear":"Clear",
+    "tb.fromSupplier":"at supplier from",
+    "tb.notChecked":"Not checked yet. Press «💳 Check payment» — sign in to Taobao in the browser window.",
+    "tb.added":"Lot added","tb.pricePositive":"Price must be > 0",
+    "tb.manualLink":"Taobao lot link (item.taobao.com/item.htm?id=…)",
+    "tb.manualTitle":"Lot title (short)","tb.manualPrice":"Price in CNY (¥)",
+    "tb.cardQuestion":"Is card payment available for this lot?",
+    "tb.optionsQuestion":"How many account variants? (0 — unknown)",
+    "tb.markedCard":"Card payment marked","tb.cardRemoved":"Card mark removed",
+    "tb.options":"Variants",
+    "tb.clearCartConfirm":"Clear cart (remove 🛒 marks from all lots)?",
+    "tb.checkConfirm":"Check card payment and account variants for top 25 lots?\n\nThe collector will open each lot in a browser (~2 min). Taobao sign-in required.",
+    "tb.collectConfirm":"Start Taobao collection now?\n\nIf the browser window is closed, the agent will open it (start_cf_debug.bat). Sign in to Taobao and pass the captcha; collection starts automatically.",
+    "tb.collectCooldown":"Collection ran %s min ago (3 h cooldown). Start anyway?",
+    "tb.collectRequested":"Request sent",
+    "bk.typePL":"P&L","bk.typeED":"ELDORADO","bk.typeGoal":"Goal",
+    "bk.typeSettings":"Settings","bk.typeMail":"Mail","bk.typeInventory":"Inventory",
+    "bk.typeArchive":"Archive","bk.typeOther":"Other","bk.restore":"Restore",
+    "bk.notRestorable":"—","bk.none":"No backups yet",
+    "bk.restoreConfirm":"Restore «%s»?\n\nThe current version will be saved as …_before_restore_….json",
+    "bk.restored":"Restored","bk.saved":"Backup saved! Files:","bk.error":"Backup error:",
+    "pw.optional":"PASSWORD (OPTIONAL)","pw.new8":"New password (min 8)",
+    "pw.enable":"Enable password","pw.disable":"Disable password",
+    "pw.statusOn":"Password enabled","pw.statusOff":"No password",
+    "pw.enabledToast":"Password enabled. Reload and sign in.",
+    "pw.disabledToast":"Password disabled","pw.short":"Password must be at least 8 characters",
+    "pw.mismatch":"Passwords do not match",
+    "pw.changed":"Password changed. Reload and sign in.",
+    "cur.title":"CURRENCY","cur.rate":"RATE ($ per $1)","cur.refresh":"Refresh rate",
+    "cur.save":"Save","cur.updated":"updated","cur.manual":"manual","cur.base":"base",
+    "cur.baseToast":"USD is the base currency (1.00)","cur.set":"Rate saved",
+    "cur.nbu":"Updating rate from NBU…","cur.nbuFail":"NBU unavailable — enter rate manually",
+    "cur.refreshed":"Rate:","nt.saved":"Notifications: %s of 9 enabled",
+    "diag.refresh":"Refresh","diag.loading":"Loading diagnostics…",
+    "diag.counts":"Records","diag.tokens":"Tokens","diag.version":"Version",
+    "diag.error":"Diagnostics error:",
+    "demo.loadConfirm":"Load demo data? Current data will be replaced.",
+    "demo.loaded":"Demo data loaded",
+    "demo.clearConfirm":"Erase all data? This cannot be undone.","demo.cleared":"Data erased",
+    "csv.importConfirm":"Import «%s»?\n\nCurrent data will be saved to gt_backups/ before replacing.",
+    "csv.imported":"Imported: added %s, skipped %s","csv.empty":"Empty file",
+    "mail.empty":"Empty for now. New orders and messages that the tracker found in mail land here.",
+    "mail.stat":"emails · new","mail.clearConfirm":"Clear the whole queue?\n\nDeleted orders will not come back.",
+    "mail.cleared":"Removed:","mail.amountPrompt":"No amount in the email. Enter order amount, $?",
+    "mail.amountPositive":"Amount must be greater than 0",
+    "mail.gamePrompt":"Game (for stats):\ne.g. Identity V, Zenless Zone Zero, Genshin",
+    "mail.inStock":"In stock: %s — $%s\nCost for accounting, $? (Enter = take from stock)",
+    "mail.costPrompt":"How much did this account cost? $?\n0 — if you did not buy it",
+    "mail.added":"Added to","mail.fromStock":"(from stock)","mail.ignored":"Ignored","mail.removed":"Deleted",
+    "deal.enterPrices":"Enter prices!","deal.added":"Record added","deal.addedED":"Added to Eldorado",
+    "deal.updated":"Record updated","deal.deleteConfirm":"Delete this record?",
+    "deal.bulkTitle":"Bulk rename",
+    "deal.bulkDesc":"Records are grouped by sale amount. Enter a name — it will be applied to all records with that amount without a name.",
+    "deal.bulkPlaceholder":"Enter a name...","deal.bulkEmpty":"No records without a name",
+    "deal.bulkNeedName":"Nothing changed — enter at least one name",
+    "deal.bulkDone":"Filled %s records","deal.bulkNoTitles":"All records already have names!",
+    "deal.synced":"Synced %s records","deal.syncError":"Sync error:",
+    "deal.csvDone":"CSV downloaded","deal.excelDone":"Excel downloaded: 4 sheets",
+    "deal.clearConfirm":"Clear all records?",
+    "deal.recalcPurchase":"Purchase price $%s filled from P&L",
+    "ed.editTitle":"Edit ELDORADO record","ed.category":"Category",
+    "ed.profitHint":"Profit is calculated automatically: sold − fee − bought",
+    "ed.deleteConfirm":"Delete this Eldorado record?","ed.csvDone":"ELDORADO CSV downloaded",
+    "lot.title":"PRICE CALCULATOR","lot.name":"PRODUCT NAME","lot.buy":"PURCHASE ($)",
+    "lot.markup":"MARKUP %","lot.sell":"SALE ($)","lot.gameSource":"GAME / SOURCE",
+    "lot.desc":"DESCRIPTION","lot.afterFee":"After fee:","lot.copy":"COPY FOR LOT",
+    "lot.copied":"Copied for lot!","lot.enterName":"Enter a name",
+    "lot.clipboard":"Clipboard unavailable",
+    "onb.hint":"You can change this later in ⚙ Settings",
+    "set.whatToSend":"What to send to Telegram (each type separately):",
+    "set.notifySave":"Save notifications","set.chatId":"CHAT ID",
+    "set.gmail":"GMAIL","set.appPass":"APP PASSWORD","set.selfSigned":"Generate self-signed",
+    "set.cert":"CERT (pem/crt)","set.key":"KEY (pem/key)","set.https":"HTTPS",
+    "set.watchdogSite":"⚠️ Site watchdog","set.watchdogAgent":"⚠️ Taobao agent watchdog"
+  },
+  ru: {
+    "all":"Все","total":"ВСЕГО","loading":"Загрузка…","noData":"Нет данных",
+    "save":"Сохранить","close":"Закрыть","copy":"Копировать","delete":"Удалить","edit":"Редактировать",
+    "show":"Показать","refresh":"Обновить","cancel":"Отмена","apply":"Применить","disconnect":"Отключить",
+    "inv.costShort":"Себестоимость","inv.status":"Статус","inv.inStockShort":"на складе",
+    "inv.soldShort":"продан","inv.offShort":"списан","inv.sourceShort":"Источник",
+    "inv.empty":"Пусто — добавьте первую закупку","inv.dead":"Мёртвый склад",
+    "inv.noDead":"Мёртвого склада нет","inv.oldest":"самая старая позиция",
+    "inv.added":"Добавлено на склад","inv.soldToast":"Отмечено как продан",
+    "inv.offToast":"Списано","inv.returnToast":"Возвращено на склад","inv.deleted":"Удалено",
+    "inv.deleteConfirm":"Удалить запись со склада?","inv.noAccount":"(данных нет)",
+    "inv.enterName":"Введите название",
+    "an.deals":"Сделок","an.revenue":"Выручка","an.profit":"Прибыль","an.margin":"Маржа",
+    "an.games":"Разных игр","an.best":"Лучшая","an.total":"ИТОГО P&L + ELD",
+    "an.totalIn":"Итого в","an.game":"ИГРА","an.dealsCol":"СДЕЛОК","an.revenueCol":"ВЫРУЧКА",
+    "an.profitCol":"ПРИБЫЛЬ","an.marginCol":"МАРЖА",
+    "an.thisVsLast":"ЭТОТ МЕСЯЦ ПРОТИВ ПРОШЛОГО","an.profitPL":"Прибыль P&L",
+    "an.revenuePL":"Выручка P&L","an.profitED":"Прибыль ELDORADO",
+    "an.totalProfit":"Итого прибыль","an.was":"было","an.new":"новый",
+    "an.revenueChart":"Выручка $","an.profitChart":"Прибыль $","an.noData":"Нет данных",
+    "rep.count":"Продаж","rep.revenue":"Выручка","rep.fees":"Комиссии",
+    "rep.cogs":"Себестоимость проданного","rep.profit":"Прибыль",
+    "rep.purchases":"Закупки за месяц","rep.cash":"Денежный поток",
+    "rep.stock":"На складе сейчас",
+    "rep.formula":"Прибыль = выручка − комиссии − себестоимость проданного. Денежный поток = выручка − комиссии − закупки за месяц.",
+    "rep.calculating":"Считаю…",
+    "sup.noSuppliers":"Пока нет поставщиков — добавьте в ⚙ → Поставщики",
+    "sup.none":"Ничего не найдено","sup.empty":"База пуста — нажми ↺ или подожди обновления",
+    "sup.sale":"СКИДКА","sup.availYes":"в наличии","sup.availNo":"нет в наличии","sup.gone":"исчез",
+    "sup.compareTitle":"Сравнение цен","sup.compareBase":"Базовый",
+    "sup.compareFound":"Похожие товары в других магазинах","sup.compareNone":"Похожих товаров не найдено",
+    "sup.historyTitle":"История цены",
+    "sup.historyEmpty":"Истории ещё нет. Она появляется после изменения цены (каталог обновляется раз в сутки).",
+    "sup.notFound":"Товар не найден","sup.added":"Поставщик добавлен",
+    "sup.enterName":"Введите название магазина и URL",
+    "sup.badUrl":"URL должен начинаться с http:// или https://",
+    "plan.supplier":"Поставщик","plan.yourSale":"Ваша продажа","plan.margin":"Маржа",
+    "plan.demand":"Спрос","plan.sales":"продаж",
+    "tb.type":"ТИП","tb.lastRuns":"Последние сборы","tb.cartEmpty":"Корзина пуста — нажмите 🛒 у лота, чтобы добавить",
+    "tb.cart":"Корзина","tb.lotOne":"лот","tb.lotMany":"лотов",
+    "tb.cardWithMiddleman":"на карте с посредником","tb.clear":"Очистить",
+    "tb.fromSupplier":"у поставщика от",
+    "tb.notChecked":"Ещё не проверяли. Нажмите «💳 Проверить оплату» — нужен вход в Taobao в окне браузера.",
+    "tb.added":"Лот добавлен","tb.pricePositive":"Цена должна быть > 0",
+    "tb.manualLink":"Ссылка на лот Taobao (item.taobao.com/item.htm?id=…)",
+    "tb.manualTitle":"Название лота (кратко)","tb.manualPrice":"Цена в юанях (¥)",
+    "tb.cardQuestion":"Оплата картой доступна в этом лоте?",
+    "tb.optionsQuestion":"Сколько вариантов аккаунтов в лоте? (0 — неизвестно)",
+    "tb.markedCard":"Отмечено: оплата картой","tb.cardRemoved":"Метка снята",
+    "tb.options":"Вариантов",
+    "tb.clearCartConfirm":"Очистить корзину (снять метки 🛒 со всех лотов)?",
+    "tb.checkConfirm":"Проверить оплату картой и количество вариантов у топ-25 лотов?\n\nКоллектор откроет каждый лот в браузере (~2 мин). Нужен вход в Taobao.",
+    "tb.collectConfirm":"Запустить сбор с Taobao сейчас?\n\nЕсли окно браузера закрыто — агент откроет его сам (start_cf_debug.bat). Войдите в Taobao и пройдите капчу, сбор начнётся автоматически.",
+    "tb.collectCooldown":"Сбор уже был %s мин назад (кулдаун 3 ч). Всё равно запустить сейчас?",
+    "tb.collectRequested":"Запрос отправлен",
+    "bk.typePL":"P&L","bk.typeED":"ELDORADO","bk.typeGoal":"Цель",
+    "bk.typeSettings":"Настройки","bk.typeMail":"Почта","bk.typeInventory":"Склад",
+    "bk.typeArchive":"Архив","bk.typeOther":"Другое","bk.restore":"Восстановить",
+    "bk.notRestorable":"—","bk.none":"Бэкапов ещё нет",
+    "bk.restoreConfirm":"Восстановить «%s»?\n\nТекущая версия будет сохранена как …_before_restore_….json",
+    "bk.restored":"Восстановлено","bk.saved":"Бэкап сохранён! Файлов:","bk.error":"Ошибка бэкапа:",
+    "pw.optional":"ПАРОЛЬ (ОПЦИОНАЛЬНО)","pw.new8":"Новый пароль (мин. 8)",
+    "pw.enable":"Включить пароль","pw.disable":"Отключить пароль",
+    "pw.statusOn":"Пароль включён","pw.statusOff":"Без пароля",
+    "pw.enabledToast":"Пароль включён. Перезагрузите страницу и войдите.",
+    "pw.disabledToast":"Пароль отключён","pw.short":"Пароль должен быть минимум 8 символов",
+    "pw.mismatch":"Пароли не совпадают",
+    "pw.changed":"Пароль изменён. Перезагрузите страницу и войдите.",
+    "cur.title":"ВАЛЮТА","cur.rate":"КУРС (₴ за $1)","cur.refresh":"Обновить курс",
+    "cur.save":"Сохранить","cur.updated":"обновлено","cur.manual":"вручную","cur.base":"база",
+    "cur.baseToast":"USD — базовая валюта (1.00)","cur.set":"Курс сохранён",
+    "cur.nbu":"Обновляю курс из НБУ…","cur.nbuFail":"НБУ недоступен — введите курс вручную",
+    "cur.refreshed":"Курс:","nt.saved":"Уведомления: включено %s из 9",
+    "diag.refresh":"Обновить","diag.loading":"Загружаю диагностику…",
+    "diag.counts":"Записи","diag.tokens":"Токены","diag.version":"Версия",
+    "diag.error":"Ошибка диагностики:",
+    "demo.loadConfirm":"Загрузить демо-данные? Текущие данные будут заменены.",
+    "demo.loaded":"Демо-данные загружены",
+    "demo.clearConfirm":"Стереть все данные? Это необратимо.","demo.cleared":"Данные стёрты",
+    "csv.importConfirm":"Импортировать «%s»?\n\nТекущие данные будут сохранены в gt_backups/ перед заменой.",
+    "csv.imported":"Импортировано: добавлено %s, пропущено %s","csv.empty":"Пустой файл",
+    "mail.empty":"Пока пусто. Сюда попадают новые заказы и сообщения, которые трекер нашёл в почте.",
+    "mail.stat":"писем · новых","mail.clearConfirm":"Очистить всю очередь?\n\nУдалённые заказы больше не появятся.",
+    "mail.cleared":"Удалено:","mail.amountPrompt":"В письме нет суммы. Введите сумму заказа, $?",
+    "mail.amountPositive":"Сумма должна быть больше 0",
+    "mail.gamePrompt":"Игра (для статистики):\nнапр. Identity V, Zenless Zone Zero, Genshin",
+    "mail.inStock":"На складе: %s — $%s\nСебестоимость для учёта, $? (Enter = взять со склада)",
+    "mail.costPrompt":"Сколько стоил этот аккаунт (себестоимость), $?\n0 — если покупали не вы",
+    "mail.added":"Добавлено в","mail.fromStock":"(со склада)","mail.ignored":"Проигнорировано","mail.removed":"Удалено",
+    "deal.enterPrices":"Введи цены!","deal.added":"Запись добавлена","deal.addedED":"Добавлено в Eldorado",
+    "deal.updated":"Запись обновлена","deal.deleteConfirm":"Удалить эту запись?",
+    "deal.bulkTitle":"Массовое заполнение названий",
+    "deal.bulkDesc":"Записи сгруппированы по сумме продажи. Введи название — оно применится ко всем записям с этой суммой без названия.",
+    "deal.bulkPlaceholder":"Введи название...","deal.bulkEmpty":"Нет записей без названия",
+    "deal.bulkNeedName":"Ничего не изменено — введи хотя бы одно название",
+    "deal.bulkDone":"Заполнено %s записей","deal.bulkNoTitles":"Все записи уже имеют названия!",
+    "deal.synced":"Синхронизировано %s записей","deal.syncError":"Ошибка синхронизации:",
+    "deal.csvDone":"CSV загружен","deal.excelDone":"Excel загружен! 4 листа",
+    "deal.clearConfirm":"Очистить все записи?",
+    "deal.recalcPurchase":"Подставлена закупка $%s из P&L",
+    "ed.editTitle":"Редактировать запись ELDORADO","ed.category":"Категория",
+    "ed.profitHint":"Прибыль считается сама: продал − комиссия − купил",
+    "ed.deleteConfirm":"Удалить эту запись Eldorado?","ed.csvDone":"CSV ELDORADO загружен",
+    "lot.title":"КАЛЬКУЛЯТОР ЦЕНЫ","lot.name":"НАЗВАНИЕ ТОВАРА","lot.buy":"ЗАКУПКА ($)",
+    "lot.markup":"НАЦЕНКА %","lot.sell":"ПРОДАЖА ($)","lot.gameSource":"ИГРА / ИСТОЧНИК",
+    "lot.desc":"ОПИСАНИЕ","lot.afterFee":"После комиссии:","lot.copy":"КОПИРОВАТЬ ДЛЯ ЛОТА",
+    "lot.copied":"Скопировано для лота!","lot.enterName":"Введи название",
+    "lot.clipboard":"Буфер обмена недоступен",
+    "onb.hint":"Изменить язык можно позже в ⚙ Настройки",
+    "set.whatToSend":"Что отправлять в Telegram (каждый тип отдельно):",
+    "set.notifySave":"Сохранить уведомления","set.chatId":"CHAT ID",
+    "set.gmail":"GMAIL","set.appPass":"APP PASSWORD","set.selfSigned":"Сгенерировать self-signed",
+    "set.cert":"CERT (pem/crt)","set.key":"KEY (pem/key)","set.https":"HTTPS",
+    "set.watchdogSite":"⚠️ Watchdog сайта","set.watchdogAgent":"⚠️ Watchdog агента Taobao"
+  }
+};
+Object.keys(EXTRA_I18N).forEach(function(l){ Object.assign(I18N[l], EXTRA_I18N[l]); });
+const EXTRA_I18N2 = {
+  uk: {"set.telegramSaved":"✅ Telegram збережено","set.cloudSaved":"✅ Папку хмари збережено",
+       "set.gmailOk":"✅ Gmail підключено — сповіщення активні",
+       "set.httpsSaved":"✅ HTTPS-налаштування збережено. Перезапусти трекер.",
+       "set.certCreated":"🔑 Сертифікат створено. Натисни «Зберегти» і перезапусти.",
+       "set.gmailNeed":"⚠ Введи Gmail-адресу","set.gmailBad":"⚠ Невірна Gmail-адреса",
+       "set.cookieNeed":"⚠ Вставте хоча б один cookie","set.telegramDisconnect":"Відключити Telegram",
+       "set.gmailDisconnect":"Відключити Gmail","set.cookieDisconnect":"Відключити cookie"},
+  en: {"set.telegramSaved":"✅ Telegram saved","set.cloudSaved":"✅ Cloud folder saved",
+       "set.gmailOk":"✅ Gmail connected — notifications active",
+       "set.httpsSaved":"✅ HTTPS settings saved. Restart the tracker.",
+       "set.certCreated":"🔑 Certificate created. Press “Save” and restart.",
+       "set.gmailNeed":"⚠ Enter a Gmail address","set.gmailBad":"⚠ Invalid Gmail address",
+       "set.cookieNeed":"⚠ Paste at least one cookie","set.telegramDisconnect":"Disconnect Telegram",
+       "set.gmailDisconnect":"Disconnect Gmail","set.cookieDisconnect":"Disconnect cookies"},
+  ru: {"set.telegramSaved":"✅ Telegram сохранён","set.cloudSaved":"✅ Папка облака сохранена",
+       "set.gmailOk":"✅ Gmail подключён — уведомления активны",
+       "set.httpsSaved":"✅ Настройки HTTPS сохранены. Перезапусти трекер.",
+       "set.certCreated":"🔑 Сертификат создан. Нажми «Сохранить» и перезапусти.",
+       "set.gmailNeed":"⚠ Введи Gmail-адрес","set.gmailBad":"⚠ Неверный Gmail-адрес",
+       "set.cookieNeed":"⚠ Вставь хотя бы один cookie","set.telegramDisconnect":"Отключить Telegram",
+       "set.gmailDisconnect":"Отключить Gmail","set.cookieDisconnect":"Отключить cookie"}
+};
+Object.keys(EXTRA_I18N2).forEach(function(l){ Object.assign(I18N[l], EXTRA_I18N2[l]); });
+const EXTRA_I18N3 = {
+  uk: {"set.test":"Тест","set.checkNow":"Перевірити зараз","set.botToken":"ТОКЕН БОТА",
+       "set.folder":"ПАПКА","set.gmailLabel":"GMAIL","set.appPass":"APP PASSWORD",
+       "set.cloudHint":"Копія бекапів у OneDrive (або будь-яка папка). Порожнє поле = авто: OneDrive/GameTrackerBackups.",
+       "nt.order":"💰 Продажі (замовлення)","nt.message":"💬 Повідомлення покупців",
+       "nt.watchdog":"⚠️ Watchdog сайту","nt.agent":"⚠️ Watchdog агента Taobao",
+       "nt.digest":"📊 Дайджест (20:00)","nt.new":"🆕 Нові акаунти",
+       "nt.price":"💸 Падіння цін","nt.restock":"🔄 Ресток","nt.deal":"🔥 Вигідні лоти Taobao"},
+  en: {"set.test":"Test","set.checkNow":"Check now","set.botToken":"BOT TOKEN",
+       "set.folder":"FOLDER","set.gmailLabel":"GMAIL","set.appPass":"APP PASSWORD",
+       "set.cloudHint":"Copy backups to OneDrive (or any folder). Empty field = auto: OneDrive/GameTrackerBackups.",
+       "nt.order":"💰 Sales (orders)","nt.message":"💬 Buyer messages",
+       "nt.watchdog":"⚠️ Site watchdog","nt.agent":"⚠️ Taobao agent watchdog",
+       "nt.digest":"📊 Digest (20:00)","nt.new":"🆕 New accounts",
+       "nt.price":"💸 Price drops","nt.restock":"🔄 Restock","nt.deal":"🔥 Profitable Taobao lots"},
+  ru: {"set.test":"Тест","set.checkNow":"Проверить сейчас","set.botToken":"ТОКЕН БОТА",
+       "set.folder":"ПАПКА","set.gmailLabel":"GMAIL","set.appPass":"APP PASSWORD",
+       "set.cloudHint":"Копия бэкапов в OneDrive (или любая папка). Пустое поле = авто: OneDrive/GameTrackerBackups.",
+       "nt.order":"💰 Продажи (заказы)","nt.message":"💬 Сообщения покупателей",
+       "nt.watchdog":"⚠️ Watchdog сайта","nt.agent":"⚠️ Watchdog агента Taobao",
+       "nt.digest":"📊 Дайджест (20:00)","nt.new":"🆕 Новые аккаунты",
+       "nt.price":"💸 Падение цен","nt.restock":"🔄 Ресток","nt.deal":"🔥 Выгодные лоты Taobao"}
+};
+Object.keys(EXTRA_I18N3).forEach(function(l){ Object.assign(I18N[l], EXTRA_I18N3[l]); });
+I18N.uk['ph.pw6'] = 'мін. 8 символів';
+I18N.en['ph.pw6'] = 'min. 8 chars';
+I18N.ru['ph.pw6'] = 'мин. 8 символов';
+I18N.uk['cf.saleFirst'] = 'Спочатку зі знижкою';
+I18N.ru['cf.saleFirst'] = 'Сначала со скидкой';
+I18N.uk['ch.cookieHelp'] = 'Chrome/Edge: F12 → Application → Cookies → funpay.com → скопіюйте значення golden_key. Зберігається лише на сервері. Без FunPay-cookie замовлення з FunPay не надходять.';
+I18N.en['ch.cookieHelp'] = 'Chrome/Edge: F12 → Application → Cookies → funpay.com → copy the golden_key value. Stored on the server only. Without a FunPay cookie, FunPay orders do not arrive.';
+I18N.ru['ch.cookieHelp'] = 'Chrome/Edge: F12 → Application → Cookie → funpay.com → скопируйте значение golden_key. Хранится только на сервере. Без FunPay-cookie заказы с FunPay не поступают.';
+I18N.uk['set.appPass'] = 'ПАРОЛЬ ДОДАТКА';
+I18N.ru['set.appPass'] = 'ПАРОЛЬ ПРИЛОЖЕНИЯ';
+const PLURAL = {
+  uk: {products:["товар","товари","товарів"],records:["запис","записи","записів"],
+       sales:["продаж","продажі","продажів"],lots:["лот","лоти","лотів"],
+       emails:["лист","листи","листів"]},
+  en: {products:["product","products","products"],records:["record","records","records"],
+       sales:["sale","sales","sales"],lots:["lot","lots","lots"],
+       emails:["email","emails","emails"]},
+  ru: {products:["товар","товара","товаров"],records:["запись","записи","записей"],
+       sales:["продажа","продажи","продаж"],lots:["лот","лота","лотов"],
+       emails:["письмо","письма","писем"]}
+};
+function plural(n, key){
+  const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
+  n = Math.abs(Number(n) || 0);
+  if(LANG === 'en') return n === 1 ? forms[0] : forms[1];
+  const n10 = n % 10, n100 = n % 100;
+  if(n10 === 1 && n100 !== 11) return forms[0];
+  if(n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return forms[1];
+  return forms[2];
+}
+let LANG = localStorage.getItem('gt_lang') || 'en';
+function t(k){ return (I18N[LANG] && I18N[LANG][k]) || (I18N.uk[k] || k); }
+function dateLocale(){ return LANG==='ru' ? 'ru-RU' : LANG==='en' ? 'en-GB' : 'uk-UA'; }
+
+// ── Переклад діалогів/тостів: точні рядки + шаблони ──
+const DIALOG_EXACT = {
+  "Введи ціни!":"deal.enterPrices",
+  "✅ Запис додано!":"deal.added",
+  "✅ Додано в Eldorado":"deal.addedED",
+  "✅ Запис оновлено!":"deal.updated",
+  "✅ Запис оновлено":"deal.updated",
+  "✅ Всі записи вже мають назви!":"deal.bulkNoTitles",
+  "Нічого не змінено — введи хоча б одну назву":"deal.bulkNeedName",
+  "✅ CSV завантажено!":"deal.csvDone",
+  "✅ CSV ELDORADO завантажено!":"ed.csvDone",
+  "✅ Додано на склад":"inv.added",
+  "✅ Позначено як продано":"inv.soldToast",
+  "🚫 Списано":"inv.offToast",
+  "↩ Повернуто на склад":"inv.returnToast",
+  "🗑 Видалено":"inv.deleted",
+  "Видалити запис зі складу?":"inv.deleteConfirm",
+  "Введіть назву":"inv.enterName",
+  "📋 Скопійовано":"lot.copied",
+  "📋 Скопійовано для лоту!":"lot.copied",
+  "Очистити всі записи?":"deal.clearConfirm",
+  "Очистити кошик (зняти мітки 🛒 з усіх лотів)?":"tb.clearCartConfirm",
+  "Видалити цей запис?":"deal.deleteConfirm",
+  "Видалити цей запис Eldorado?":"ed.deleteConfirm",
+  "Скільки коштував цей акаунт (собівартість), $?\n0 — якщо купували не ви":"mail.costPrompt",
+  "Гра (для статистики):\nнапр. Identity V, Zenless Zone Zero, Genshin":"mail.gamePrompt",
+  "У листі немає суми. Введіть суму замовлення, $?":"mail.amountPrompt",
+  "Скільки варіантів акаунтів у лоті? (0 — невідомо)":"tb.optionsQuestion",
+  "Оплата карткою доступна в цьому лоті?":"tb.cardQuestion",
+  "Очистити всю чергу?\n\nВидалені замовлення більше не зявляться.":"mail.clearConfirm",
+  "Перевірити оплату карткою та кількість варіантів у топ-25 лотів?\n\nКолектор відкриє кожен лот у браузері (~2 хв). Потрібен вхід у Taobao.":"tb.checkConfirm",
+  "Запустити збір з Taobao зараз?\n\nЯкщо вікно браузера закрите — агент відкриє його сам (start_cf_debug.bat). Увійдіть у Taobao і пройдіть капчу, збір почнеться автоматично.":"tb.collectConfirm",
+  "✅ Лот додано":"tb.added",
+  "💳 Позначено: оплата карткою":"tb.markedCard",
+  "💳 Мітку знято":"tb.cardRemoved",
+  "✅ Telegram збережено":"set.telegramSaved",
+  "✅ Папку хмари збережено":"set.cloudSaved",
+  "✅ Збережено":"save",
+  "✅ Gmail підключено — сповіщення активні":"set.gmailOk",
+  "✅ HTTPS-налаштування збережено. Перезапусти трекер.":"set.httpsSaved",
+  "🔑 Сертифікат створено. Натисни «Зберегти» і перезапусти.":"set.certCreated",
+  "✅ Sale додано!":"deal.addedED",
+  "⚠ Порожній файл":"csv.empty",
+  "⚠ Введи Gmail-адресу":"set.gmailNeed",
+  "⚠ Невірна Gmail-адреса":"set.gmailBad",
+  "⚠ Вставте хоча б один cookie":"set.cookieNeed",
+  "⚠ Сума має бути більшою за 0":"mail.amountPositive",
+  "⚠ Ціна має бути > 0":"tb.pricePositive",
+  "⚠ Новий пароль — мінімум 6 символів":"pw.short",
+  "⚠ Паролі не співпадають":"pw.mismatch",
+  "⚠ Сума має бути більшою за 0 ":"mail.amountPositive"
+};
+const DIALOG_PATTERNS = [
+  [/^✅ Заповнено (\d+) записів!$/, m => t('deal.bulkDone').replace('%s', m[1])],
+  [/^☁ Синхронізовано (\d+) записів!$/, m => t('deal.synced').replace('%s', m[1])],
+  [/^✅ Cookie збережено: (.+)$/, m => LANG==='ru' ? ('Cookie сохранены: '+m[1]) : (LANG==='en' ? ('Cookies saved: '+m[1]) : m[0])],
+  [/^✅ Cookie скопійовано з браузера$/, () => LANG==='ru' ? 'Cookie скопированы из браузера' : (LANG==='en' ? 'Cookies copied from browser' : '✅ Cookie скопійовано з браузера')],
+  [/^⏳ Прошу агента скопіювати cookie з браузера…$/, () => LANG==='ru' ? 'Прошу агента скопировать cookie из браузера…' : (LANG==='en' ? 'Asking the agent to copy cookies from the browser…' : '⏳ Прошу агента скопіювати cookie з браузера…')],
+  [/^⚠ Не вдалось: відкрийте funpay\.com і zeusx\.com у вікні агента$/, () => LANG==='ru' ? 'Не удалось: откройте funpay.com и zeusx.com в окне агента' : (LANG==='en' ? 'Failed: open funpay.com and zeusx.com in the agent window' : '⚠ Не вдалось: відкрийте funpay.com і zeusx.com у вікні агента')],
+  [/^⚠ Помилка: (.*)$/, m => LANG==='ru' ? ('Ошибка: '+m[1]) : (LANG==='en' ? ('Error: '+m[1]) : m[0])],
+  [/^⚠ Помилка синхронізації: (.*)$/, m => LANG==='ru' ? ('Ошибка синхронизации: '+m[1]) : (LANG==='en' ? ('Sync error: '+m[1]) : m[0])],
+  [/^💾 Бекап збережено! Файлів: (\d+)(.*)$/, m => LANG==='ru' ? ('Бэкап сохранён! Файлов: '+m[1]+m[2]) : (LANG==='en' ? ('Backup saved! Files: '+m[1]+m[2]) : m[0])],
+  [/^⚠ Помилка бекапу: (.*)$/, m => LANG==='ru' ? ('Ошибка бэкапа: '+m[1]) : (LANG==='en' ? ('Backup error: '+m[1]) : m[0])],
+  [/^✅ Відновлено: (.+?) · (\d+) записів$/, m => LANG==='ru' ? ('Восстановлено: '+m[1]+' · '+m[2]+' записей') : (LANG==='en' ? ('Restored: '+m[1]+' · '+m[2]+' records') : m[0])],
+  [/^✅ Імпортовано: (.*)$/, m => LANG==='ru' ? ('Импортировано: '+m[1]) : (LANG==='en' ? ('Imported: '+m[1]) : m[0])],
+  [/^✅ Excel завантажено! 4 аркуші: (.*)$/, m => LANG==='ru' ? ('Excel загружен! 4 листа: '+m[1]) : (LANG==='en' ? ('Excel downloaded: 4 sheets: '+m[1]) : m[0])],
+  [/^⬇ CSV лотів \((.+), націнка (\d+)%\)$/, m => LANG==='ru' ? ('⬇ CSV лотов ('+m[1]+', наценка '+m[2]+'%)') : (LANG==='en' ? ('⬇ CSV lots ('+m[1]+', markup '+m[2]+'%)') : m[0])],
+  [/^🎛 Варіантів: (\d+)$/, m => LANG==='ru' ? ('Вариантов: '+m[1]) : (LANG==='en' ? ('Variants: '+m[1]) : m[0])],
+  [/^✅ Мінімальна ціна ¥([\d.]+) — нові лоти нижче не зберігаються$/, m => LANG==='ru' ? ('Минимальная цена ¥'+m[1]+' — новые лоты ниже не сохраняются') : (LANG==='en' ? ('Minimum price ¥'+m[1]+' — new lots below are not saved') : m[0])],
+  [/^💱 Курс: ([\d.]+) ₴$/, m => LANG==='ru' ? ('Курс: '+m[1]+' ₴') : (LANG==='en' ? ('Rate: '+m[1]+' ₴') : m[0])],
+  [/^📧 Листів: (\d+) · надіслано: (\d+)$/, m => LANG==='ru' ? ('Писем: '+m[1]+' · отправлено: '+m[2]) : (LANG==='en' ? ('Emails: '+m[1]+' · sent: '+m[2]) : m[0])],
+  [/^✅ Сповіщення: увімкнено (\d+) з 9$/, m => LANG==='ru' ? ('Уведомления: включено '+m[1]+' из 9') : (LANG==='en' ? ('Notifications: '+m[1]+' of 9 enabled') : m[0])],
+  [/^✅ Додано в (.+)$/, m => LANG==='ru' ? ('Добавлено в '+m[1]) : (LANG==='en' ? ('Added to '+m[1]) : m[0])],
+  [/^Відновити «(.+)»\?\n\n.*$/, m => t('bk.restoreConfirm').replace('%s', m[1])],
+  [/^Імпортувати «(.+)»\?\n\n.*$/, m => t('csv.importConfirm').replace('%s', m[1])],
+  [/^Збір уже був (\d+) хв тому.*$/, m => t('tb.collectCooldown').replace('%s', m[1])],
+  [/^Посилання на лот Taobao.*$/, () => t('tb.manualLink')],
+  [/^Назва лота \(коротко\).*$/, () => t('tb.manualTitle')],
+  [/^Ціна в юанях \(¥\).*$/, () => t('tb.manualPrice')],
+  [/^На складі: (.+) — \$([\d.]+)\nСобівартість для обліку, \$\? \(Enter = взяти зі складу\)$/, m => t('mail.inStock').replace('%s', m[1]).replace('%s', m[2])],
+  [/^Схожий запис уже є:\n(.+)$/, m => LANG==='ru' ? ('Похожая запись уже есть:\n'+m[1]) : (LANG==='en' ? ('A similar record already exists:\n'+m[1]) : m[0])]
+];
+function trDialog(msg){
+  if(LANG === 'uk') return msg;
+  const key = DIALOG_EXACT[msg];
+  if(key) return t(key);
+  for(const pair of DIALOG_PATTERNS){
+    const m = String(msg).match(pair[0]);
+    if(m) return pair[1](m);
+  }
+  try{ return _trText(String(msg)); }catch(e){ return msg; }
+}
+const _nativeConfirm = window.confirm.bind(window);
+const _nativePrompt = window.prompt.bind(window);
+const _nativeAlert = window.alert.bind(window);
+window.confirm = function(m){ return _nativeConfirm(trDialog(m)); };
+window.prompt = function(m, d){ return _nativePrompt(trDialog(m), d); };
+window.alert = function(m){ return _nativeAlert(trDialog(m)); };
+
+function applyAppName(){
+  const nm = (window._appName || 'AccTrack');
+  const h = document.querySelector('header h1');
+  if(h){
+    const span = h.querySelector('span');
+    h.textContent = nm;
+    if(span) h.appendChild(span);
+  }
+  document.title = nm;
+}
+
+function syncDemoLink(){
+  const a = g('demoBtn'); if(a) a.href = '/demo?lang=' + LANG;
+}
+function applyLang(){
+  document.documentElement.lang = LANG;
+  const _mg = document.getElementById('plMonthGroup');
+  if(_mg) _mg.setAttribute('label', t('per.months'));
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
+  if(g('langUk')) g('langUk').classList.toggle('on', LANG==='uk');
+  if(g('langEn')) g('langEn').classList.toggle('on', LANG==='en');
+  if(g('langRu')) g('langRu').classList.toggle('on', LANG==='ru');
+  document.title = (window._appName || 'AccTrack');
+  try{ syncDemoLink(); }catch(e){}
+}
+async function refreshActiveTab(){
+  const act = document.querySelector('.tc.on');
+  const id = act ? act.id.replace('tab-','') : '';
+  try{
+    if(id==='tracker'){ renderPurchases(); if(typeof renderRevenueChart==='function') renderRevenueChart(); }
+    else if(id==='mail'){ await loadMailQueue(true); }
+    else if(id==='channels'){ await loadPlatforms(); await renderChAll(); renderEldorado(); }
+    else if(id==='supply'){ await loadSupply(1, true); }
+    else if(id==='buy'){ await loadBuyList(true); }
+    else if(id==='taobao'){ await loadTaobao(); }
+    else if(id==='inventory'){ await loadInventory(); }
+    else if(id==='stats'){ renderStats(); if(typeof renderRevenueChart==='function') renderRevenueChart(); }
+    else if(id==='setup'){ await loadSettings(); loadBackupList(); }
+    else if(id==='overview'){ renderOverview(); }
+    try{ translateAll(); }catch(e){}
+  }catch(e){}
+}
+async function setLang(l){
+  LANG = (l==='en') ? 'en' : (l==='ru' ? 'ru' : 'uk');
+  try{ localStorage.setItem('gt_lang', LANG); }catch(e){}
+  applyLang();
+  try{ applyCurrency(); }catch(e){}
+  try{ if(g('onb') && g('onb').style.display === 'flex') onbRender(); }catch(e){}
+  renderOverview();
+  try{ renderPurchases(); if(typeof renderEldorado==='function') renderEldorado(); }catch(e){}
+  try{ translateAll(); }catch(e){}
+  try{ await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({lang: LANG})}); }catch(e){}
+  try{ await refreshActiveTab(); }catch(e){}
+}
+
+// ═══════════════════════════════════════════════
+//  ОГЛЯД
+// ═══════════════════════════════════════════════
+function _mon(d){ return String(d||'').slice(0,7); }
+async function renderOverview(){
+  try{
+    const [pl, q, tb, inv, ed] = await Promise.all([
+      fetch('/api/pl').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/mail/queue').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/taobao').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/inventory').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/eldorado').then(r=>r.json()).catch(()=>({}))
+    ]);
+    const pur = Array.isArray(pl.purchases) ? pl.purchases : [];
+    const now = new Date();
+    const cur = now.toISOString().slice(0,7);
+    const prevD = new Date(now.getFullYear(), now.getMonth()-1, 15);
+    const prev = prevD.toISOString().slice(0,7);
+    const edRows = (ed.sales||[]).map(x=>({date:x.date, title:x.title, src:'eldorado',
+      srcName:'Eldorado', sell:Number(x.price||0), buy:Number(x.buy||0),
+      afterFee:Number(x.profit||0), _ed:true}));
+    const all = (pl.purchases||[]).concat(edRows);
+    const sum = (m)=> all.filter(r=>_mon(r.date)===m)
+                        .reduce((a,r)=>a+Number(r.afterFee||0),0);
+    const profit = sum(cur), profitPrev = sum(prev);
+    const delta = profitPrev ? ((profit-profitPrev)/Math.abs(profitPrev)*100) : 0;
+    if(g('ovProfit')) g('ovProfit').textContent = (profit>=0?'+':'')+'$'+profit.toFixed(2);
+    if(g('ovProfitD')) g('ovProfitD').textContent = profitPrev
+      ? (t('u.vs')+' '+(delta>=0?'+':'')+delta.toFixed(1)+'%') : '';
+    const nq = Number(q.new||0);
+    if(g('ovActions')) g('ovActions').textContent = nq;
+    if(g('ovActionsD')) g('ovActionsD').textContent = nq ? t('u.orders') : t('u.none');
+    if(g('ovStock')) g('ovStock').textContent = Number(inv.in_stock||0);
+    if(g('ovStockD')) g('ovStockD').textContent = t('u.frozen')+' $'+Number(inv.frozen||0).toFixed(2);
+    const agentOk = !!tb.agent_online;
+    const bad = !agentOk;
+    if(g('ovHealth')){
+      // нейтрально: агент — опційна функція, його відсутність не «проблема»
+      g('ovHealth').textContent = bad ? t('st.setup') : t('st.ok');
+      g('ovHealth').style.color = bad ? 'var(--mu)' : 'var(--gr)';
+    }
+    if(g('ovHealthD')) g('ovHealthD').textContent =
+      t('u.agent')+': '+(agentOk?t('u.online'):t('u.offline'));
+    const feed = all.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,6);
+    if(g('ovFeed')){
+      g('ovFeed').innerHTML = feed.length ? feed.map(r=>{
+        const p = Number(r.afterFee||0);
+        return '<div class="bub" style="padding:11px 13px">'
+          + '<div style="display:flex;justify-content:space-between;gap:10px">'
+          + '<div style="font-weight:600;font-size:.86rem">'+esc(String(r.title||'—')).slice(0,80)+'</div>'
+          + '<div style="color:'+(p>=0?'var(--gr)':'var(--rd)')+';font-weight:600;white-space:nowrap">'
+          + (p>=0?'+':'')+'$'+p.toFixed(2)+'</div></div>'
+          + '<div style="font-size:.72rem;color:var(--mu);margin-top:4px">'+esc(String(r.date||''))
+          + ' · '+esc(String(r.srcName||r.src||''))+'</div></div>';
+      }).join('') : '<div class="none">'+(LANG==='en'?'No deals yet':LANG==='ru'?'Пока нет сделок':'Ще немає угод')+'</div>';
+    }
+  }catch(e){ console.warn('overview', e); }
+}
+
+// ═══════════════════════════════════════════════
+//  КАНАЛИ: Eldorado + Платформи в одній вкладці
+// ═══════════════════════════════════════════════
+async function renderChAll(){
+  const box = g('chAll'); if(!box) return;
+  try{
+    const [pl, ed] = await Promise.all([
+      fetch('/api/pl').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/eldorado').then(r=>r.json()).catch(()=>({}))
+    ]);
+    const rows = [];
+    const clean = (t)=>String(t||'').replace(/^[\u{1F000}-\u{1FAFF}\u2600-\u27BF]+\s*/u,'');
+    (pl.purchases||[]).forEach(r=>rows.push({d:r.date, ch:clean(r.srcName||r.src||'—'),
+      game:String(r.title||'—'), sell:Number(r.sell||0), pf:Number(r.afterFee||0)}));
+    (ed.sales||[]).forEach(r=>rows.push({d:r.date, ch:'Eldorado',
+      game:String(r.title||'—'), sell:Number(r.price||0), pf:Number(r.profit||0)}));
+    rows.sort((a,b)=>String(b.d||'').localeCompare(String(a.d||'')));
+    const top = rows.slice(0, 15);
+    const month = new Date().toISOString().slice(0,7);
+    const msum = rows.filter(r=>String(r.d||'').startsWith(month)).reduce((s,r)=>s+r.pf,0);
+    if(g('chAllSum')) g('chAllSum').textContent = (LANG==='ru'?'прибыль за месяц: ':LANG==='en'?'profit this month: ':'прибуток за місяць: ') + (msum>=0?'+':'') + '$' + msum.toFixed(2);
+    if(!top.length){ box.innerHTML = '<div class="none">'+(LANG==='ru'?'Пока нет продаж':LANG==='en'?'No sales yet':'Ще немає продажів')+'</div>'; return; }
+    const LOGO = {'FunPay':'/logo/funpay.png','Eldorado':'/logo/eldorado.png','ZeusX':'/logo/zeusx.png'};
+    const logoOf = (ch)=> LOGO[ch] ? '<img src="'+LOGO[ch]+'" alt="" style="width:14px;height:14px;border-radius:3px;object-fit:contain">' : '';
+    const th = (al, t) => '<th style="text-align:'+al+';font-size:11px;color:var(--mu);padding:6px 8px;border-bottom:1px solid var(--brd)">'+t+'</th>';
+    box.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:.85rem">'
+      + '<tr>' + th('left',t('th.date')) + th('left',t('th.channel')) + th('left',t('th.game')) + th('right',t('th.sell')) + th('right',t('th.profit')) + '</tr>'
+      + top.map(r=>'<tr><td style="padding:8px;color:var(--mu);white-space:nowrap">'+esc(String(r.d||''))+'</td>'
+        + '<td style="padding:8px"><span style="display:inline-flex;align-items:center;gap:6px">'
+        + logoOf(r.ch)
+        + esc(r.ch)+'</span></td>'
+        + '<td style="padding:8px;max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.game.slice(0,90))+'</td>'
+        + '<td style="padding:8px;text-align:right;white-space:nowrap">$'+r.sell.toFixed(2)+'</td>'
+        + '<td style="padding:8px;text-align:right;white-space:nowrap;color:'+(r.pf>=0?'var(--gr)':'var(--rd)')+';font-weight:600">'
+        + (r.pf>=0?'+':'')+'$'+r.pf.toFixed(2)+'</td></tr>').join('')
+      + '</table>';
+  }catch(e){ box.innerHTML = '<div class="none">Помилка: '+esc(String(e))+'</div>'; }
+}
+
+function chView(v){
+  const host = g('tab-channels'); if(!host) return;
+  const pl = g('tab-platforms'), ed = g('tab-eldorado');
+  if(pl) pl.style.display = (v === 'ed') ? 'none' : 'block';
+  if(ed) ed.style.display = (v === 'ed') ? 'block' : 'none';
+  document.querySelectorAll('#chSeg .seg-b').forEach((b,i)=>{
+    b.classList.toggle('on', (i===0 && v!=='ed') || (i===1 && v==='ed'));
+  });
+}
+
+function _mergeChannels(){
+  const host = g('tab-channels'); if(!host) return;
+  ['tab-platforms','tab-eldorado'].forEach(id=>{
+    const el = g(id);
+    if(el && el.parentElement !== host){
+      host.appendChild(el);
+    }
+  });
+  chView('bal');
+  renderChAll();
+}
+
+function sw(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on'); g('tab-'+id).classList.add('on');
+  try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
+  if(id==='overview'){ renderOverview(); }
+  if(id==='tracker'){ setTimeout(()=>{ renderPurchases(); renderRevenueChart(); },50); }
+  if(id==='channels'){ renderChAll(); setTimeout(()=>{ try{ translateAll(); }catch(e){} }, 700); }
+}
+function toast(msg,ok=true){
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:28px;right:28px;background:${ok?'#10b981':'#ef4444'};color:#fff;padding:11px 18px;border-radius:8px;font-family:var(--font);font-size:11px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3)`;
+  t.textContent=trDialog(msg);document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
+}
+
+// ═══════════════════════════════════════════════
+// 💰 P&L ТРЕКЕР
+// ═══════════════════════════════════════════════
+
+// Встановлюємо сьогоднішню дату в формі
+;(()=>{ const d=g('plDate'); if(d) d.value=todayLocal(); })();
+
+function updateFeePreview(){
+  const sell = parseFloat(g('plSell').value)||0;
+  const buy  = parseFloat(g('plBuy').value)||0;
+  const plat = g('plPlatform').value;
+  const fee  = FEES[plat]||0;
+  const after = sell*(1-fee) - buy;
+  const el = g('plFeePreview');
+  el.textContent = (after>=0?'+':'')+'$'+after.toFixed(2);
+  el.style.color = after>0?'var(--gr)':after<0?'var(--rd)':'var(--mu)';
+}
+
+const PKEY = 'gt4_pl_v2';
+let _plSaving = 0;
+let _plDirty = false;      // локальні зміни ще не на сервері
+let _plRetry = null;
+async function savePL(){
+  _plSaving++;
+  try{
+    const r = await fetch('/api/pl/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({purchases, force: purchases.length === 0})});
+    const res = await r.json().catch(()=>({}));
+    if(!r.ok || res.ok === false) throw new Error(res.error || ('HTTP '+r.status));
+    _plDirty = false;
+  }catch(e){
+    // локальна копія + повтор, щоб авто-синхронізація не затерла запис
+    _plDirty = true;
+    try{ localStorage.setItem(PKEY, JSON.stringify(purchases)); }catch(e2){}
+    toast('⚠ Не збережено на сервері: '+e+' — повторю', false);
+    if(_plRetry) clearTimeout(_plRetry);
+    _plRetry = setTimeout(()=>{ _plRetry=null; if(_plDirty) savePL(); }, 10000);
+  } finally {
+    _plSaving--;
+  }
+}
+
+async function runBackup(){
+  try{
+    const r = await fetch('/api/backup/run',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(x=>x.json());
+    if(r.ok){
+      const cl = r.cloud||{};
+      const extra = cl.copied && cl.copied.length ? (' · ☁ '+cl.copied.length) : (cl.error ? (' · ⚠ '+cl.error) : '');
+      toast(t('bk.saved')+' '+(r.files||[]).length+extra);
+      loadBackupList(); loadSettings();
+    }
+  }catch(e){ toast(t('bk.error')+' '+e, false); }
+}
+
+async function diagLoad(){
+  const box = g('diagBox'); if(!box) return;
+  box.textContent = t('diag.loading');
+  try{
+    const d = await fetch('/api/diag').then(r=>r.json());
+    if(!d.ok) throw new Error(d.error || '');
+    const c = d.counts || {}, tk = d.tokens || {};
+    box.innerHTML = '<div style="line-height:1.7">'
+      + '<b>'+t('diag.version')+':</b> '+esc(d.version||'—')+' · uptime '+Math.round(d.uptime||0)+' s<br>'
+      + '<b>'+t('diag.counts')+':</b> P&L '+Number(c.purchases||0)
+      + ' · ELDORADO '+Number(c.eldorado||0)
+      + ' · '+t('bk.typeInventory')+' '+Number(c.inventory||0)
+      + ' · products '+Number(c.suppliers||0)+'<br>'
+      + '<b>'+t('diag.tokens')+':</b> FunPay '+(tk.funpay?'✅':'❌')
+      + ' · ZeusX '+(tk.zeusx?'✅':'❌')
+      + ' · Gmail '+(tk.gmail?'✅':'❌')+'</div>';
+  }catch(e){
+    box.innerHTML = '<span style="color:var(--rd)">⚠ '+esc(String(e))+'</span>';
+  }
+}
+
+async function reloadAllData(){
+  try{ const pl = await fetch('/api/pl').then(r=>r.json()); purchases = pl.purchases || []; }catch(e){}
+  try{ const ed = await fetch('/api/eldorado').then(r=>r.json()); edSales = ed.sales || []; edLoaded = true; }catch(e){}
+  try{ await loadInventory(); }catch(e){}
+  try{ renderPurchases(); renderEldorado(); renderStats(); renderOverview(); }catch(e){}
+}
+
+async function demoLoad(){
+  if(!confirm(t('demo.loadConfirm'))) return;
+  try{
+    const d = await fetch('/api/demo/load',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    await reloadAllData();
+    toast(t('demo.loaded'));
+    loadSettings();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function demoClear(){
+  if(!confirm(t('demo.clearConfirm'))) return;
+  try{
+    const d = await fetch('/api/demo/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    await reloadAllData();
+    toast(t('demo.cleared'));
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function csvImport(input){
+  const f = input && input.files && input.files[0];
+  if(input) input.value = '';
+  if(!f) return;
+  if(!confirm(t('csv.importConfirm').replace('%s', f.name))) return;
+  try{
+    const text = await f.text();
+    if(!text.trim()){ toast(t('csv.empty'), false); return; }
+    const d = await fetch('/api/import/csv',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({csv:text})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    await reloadAllData();
+    toast(t('csv.imported').replace('%s', d.added||0).replace('%s', d.skipped||0));
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function supAdd(){
+  const name = (g('supNewName')?.value || '').trim();
+  const base = (g('supNewBase')?.value || '').trim();
+  if(!name || !base){ toast(t('sup.enterName'), false); return; }
+  if(!/^https?:\/\//i.test(base)){ toast(t('sup.badUrl'), false); return; }
+  try{
+    const d = await fetch('/api/suppliers/add',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name, base})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    g('supNewName').value=''; g('supNewBase').value='';
+    toast(t('sup.added'));
+    loadSupStatus(); loadSupply(1, true);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function pwEnable(){
+  const el = g('pwEnableNew'); const pw = (el && el.value) || '';
+  if(pw.length < 8){ toast(t('pw.short'), false); return; }
+  try{
+    const d = await fetch('/api/auth/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({enabled:true,new:pw})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(el) el.value='';
+    toast(t('pw.enabledToast'));
+    setTimeout(()=>location.reload(), 1000);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function pwDisable(){
+  if(!confirm(t('pw.disable')+'?')) return;
+  try{
+    const d = await fetch('/api/auth/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({enabled:false})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    toast(t('pw.disabledToast'));
+    loadSettings();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+function backupTypeKey(f){
+  if(f.startsWith('gt_eldorado_') || f.startsWith('snap_ed_') || /^gt_eldorado_before_restore/.test(f)) return 'bk.typeED';
+  if(f.startsWith('gt_goal_')) return 'bk.typeGoal';
+  if(f.startsWith('gt_pl_') || f.startsWith('snap_pl_') || /^gt_pl_before_restore/.test(f)) return 'bk.typePL';
+  if(f.startsWith('gt_settings_') || f.startsWith('snap_settings_')) return 'bk.typeSettings';
+  if(f.startsWith('gt_inventory_') || f.startsWith('snap_inv_')) return 'bk.typeInventory';
+  if(f.startsWith('gt_mail_') || f.startsWith('snap_mail_')) return 'bk.typeMail';
+  if(f.startsWith('archive')) return 'bk.typeArchive';
+  return 'bk.typeOther';
+}
+function backupRestorable(f){
+  return /^(gt_pl_|gt_eldorado_|gt_goal_|snap_pl_|snap_ed_|snap_settings_|snap_inv_|snap_mail_)/.test(f);
+}
+
+async function loadBackupList(){
+  try{
+    const r = await fetch('/api/backup/list').then(x=>x.json());
+    const el = g('backupList');
+    if(!el) return;
+    if(!r.files||!r.files.length){ el.textContent=t('bk.none'); return; }
+    el.innerHTML = r.files.map(f=>{
+      const type = t(backupTypeKey(f));
+      const btn = backupRestorable(f)
+        ? '<button class="btn" data-restore="'+esc(f)+'" style="font-size:9px;padding:2px 8px;white-space:nowrap">↩ '+t('bk.restore')+'</button>'
+        : '<span style="font-size:9px;color:var(--mu)">'+t('bk.notRestorable')+'</span>';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--brd)">'
+        + '<span style="font-size:11px">📄 '+esc(f)+' <span style="color:var(--a3);font-size:9px;margin-left:4px">'+type+'</span></span>'
+        + btn
+        + '</div>';
+    }).join('');
+  }catch(e){}
+}
+
+async function restoreBackup(name){
+  if(!confirm(t('bk.restoreConfirm').replace('%s', name))) return;
+  try{
+    const d = await fetch('/api/backup/restore',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({file:name})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||'error'), false); return; }
+    await reloadAllData();
+    try{ await loadSettings(); }catch(e){}
+    try{ await loadMailQueue(); }catch(e){}
+    loadBackupList();
+    toast(t('bk.restored')+': '+name+(d.count!=null?(' · '+d.count+' '+plural(d.count,'records')):''));
+    if(d.kind === 'settings') setTimeout(()=>location.reload(), 1100);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function importBackup(input){
+  const f = input.files && input.files[0];
+  input.value = '';
+  if(!f) return;
+  if(!confirm(t('csv.importConfirm').replace('%s', f.name))) return;
+  try{
+    toast(t('loading'));
+    const r = await fetch('/api/backup/import',{method:'POST',
+      headers:{'Content-Type':'application/zip'}, body:f});
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok || d.ok === false){ toast('⚠ '+(d.error||('HTTP '+r.status)), false); return; }
+    await reloadAllData();
+    loadSettings(); loadBackupList();
+    toast(LANG==='ru' ? ('Импортировано: '+(d.files||[]).join(', ')) : LANG==='en' ? ('Imported: '+(d.files||[]).join(', ')) : ('✅ Імпортовано: '+(d.files||[]).join(', ')));
+    setTimeout(()=>location.reload(), 1100);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+// ═══════════════════════════════════════════════
+// ⚙️ НАЛАШТУВАННЯ: курс, Telegram, хмара
+// ═══════════════════════════════════════════════
+let _rate = 0;
+
+const CUR_SYM = {UAH:'₴', EUR:'€', USD:'$', PLN:'zł', CZK:'Kč', TRY:'₺', GBP:'£', KZT:'₸', GEL:'₾', RUB:'₽'};
+let _cur = 'USD';
+function curSym(){ return CUR_SYM[_cur] || _cur; }
+function fmtUah(usd){
+  return _rate ? curSym()+(usd*_rate).toFixed(2) : '';
+}
+function applyCurrency(){
+  if(g('curSel')) g('curSel').value = _cur;
+  const s = curSym();
+  const L = ({uk:{t:'ВАЛЮТА',l:'КУРС (',p:' за $1)'},en:{t:'CURRENCY',l:'RATE (',p:' per $1)'},ru:{t:'ВАЛЮТА',l:'КУРС (',p:' за $1)'}})[LANG] || {t:'CURRENCY',l:'RATE (',p:' per $1)'};
+  if(g('rateLbl')) g('rateLbl').textContent = L.l + s + L.p;
+  if(g('rateTitle')) g('rateTitle').textContent = _cur==='USD' ? (L.t+' · USD') : (L.t+' · USD → '+_cur);
+}
+async function pickCurrency(){
+  _cur = (g('curSel') && g('curSel').value) || 'USD';
+  applyCurrency();
+  try{
+    await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({currency: _cur})});
+    await refreshRate();
+  }catch(e){}
+}
+
+async function loadSettings(){
+  try{
+    const d = await fetch('/api/settings').then(r=>r.json());
+    _rate = parseFloat(d.usd_uah)||0;
+    if(d.currency) _cur = d.currency;
+    applyCurrency();
+    if(g('rateVal')) g('rateVal').value = _rate ? _rate.toFixed(2) : '';
+    if(g('rateInfo')) g('rateInfo').textContent = d.rate_ts
+      ? (t('cur.updated')+' '+new Date(d.rate_ts*1000).toLocaleString(dateLocale())+' · '+(d.rate_source||''))
+      : (LANG==='ru'?'курс ещё не задан':LANG==='en'?'rate not set yet':'курс ще не задано');
+    if(g('cloudDir')) g('cloudDir').value = d.cloud_dir || '';
+    if(g('cloudInfo')) g('cloudInfo').innerHTML = d.cloud_effective
+      ? ((LANG==='ru'?'Копирование в: ':LANG==='en'?'Copying to: ':'Копіювання у: ')+'<code>'+esc(d.cloud_effective)+'</code> '+(d.cloud_exists?'✓':(LANG==='ru'?'· папка создастся при бэкапе':LANG==='en'?'· folder will be created on backup':'· папка створиться при бекапі')))
+      : (LANG==='ru'?'⚠ Облако не найдено — укажи папку вручную':LANG==='en'?'⚠ Cloud folder not found — set it manually':'⚠ Хмару не знайдено — вкажи папку вручну');
+    const https = d.https||{};
+    if(g('httpsEnabled')) g('httpsEnabled').checked = !!https.enabled;
+    if(g('httpsCert')) g('httpsCert').value = https.cert||'';
+    if(g('httpsKey')) g('httpsKey').value = https.key||'';
+    if(g('httpsInfo')) g('httpsInfo').textContent = https.active
+      ? (LANG==='ru'?'✅ HTTPS активен (после перезапуска)':LANG==='en'?'✅ HTTPS active (after restart)':'✅ HTTPS активний (після перезапуску)')
+      : https.enabled
+        ? (LANG==='ru'?'⚠ включён, но cert/key не найден — исправь и перезапусти':LANG==='en'?'⚠ enabled, but cert/key not found — fix and restart':'⚠ увімкнено, але cert/key не знайдено — виправ і перезапусти')
+        : (LANG==='ru'?'HTTPS отключён · на хостинге HTTPS обычно обеспечивает прокси':LANG==='en'?'HTTPS disabled · on hosting a proxy usually provides HTTPS':'HTTPS вимкнено · на хостингу HTTPS зазвичай забезпечує проксі');
+    const tg = d.tg||{};
+    if(g('tgChat')) g('tgChat').value = tg.chat_id||'';
+    if(typeof d.onboarded !== 'undefined') _onboarded = !!d.onboarded;
+    if(d.app_name){ window._appName = d.app_name; try{ localStorage.setItem('gt_appname', d.app_name); }catch(e){} applyAppName(); }
+  if(d.lang && d.lang !== LANG){ LANG = d.lang; try{ localStorage.setItem('gt_lang', LANG); }catch(e){} }
+  applyLang();
+  if(g('tgEnabled')) g('tgEnabled').checked = !!tg.enabled;
+  const nt = d.notify || {};
+  const map = {ntOrder:'order', ntMessage:'message', ntWatchdog:'watchdog', ntAgent:'agent',
+               ntDigest:'digest', ntNew:'new', ntPrice:'price', ntRestock:'restock', ntDeal:'deal'};
+  Object.keys(map).forEach(id => { if(g(id)) g(id).checked = !!nt[map[id]]; });
+    if(g('tgPrice')) g('tgPrice').checked = tg.notify_price !== false;
+    if(g('tgNew')) g('tgNew').checked = tg.notify_new !== false;
+    if(g('tgMail')) g('tgMail').checked = tg.notify_mail !== false;
+    if(g('tgStatus')) g('tgStatus').textContent = tg.configured
+      ? ('✅ '+(LANG==='ru'?'настроено':LANG==='en'?'configured':'налаштовано')+(tg.enabled?(LANG==='ru'?' · включено':LANG==='en'?' · enabled':' · увімкнено'):(LANG==='ru'?' · отключено':LANG==='en'?' · disabled':' · вимкнено')))
+      : (LANG==='ru'?'⚠ не настроено':LANG==='en'?'⚠ not configured':'⚠ не налаштовано');
+    const gm = d.gmail || {};
+    if(g('gmailUser')) g('gmailUser').value = gm.user || '';
+    renderGmailInfo(gm);
+    const au = d.auth || {};
+    if(g('pwStatus')) g('pwStatus').textContent = d.auth_enabled ? t('pw.statusOn') : t('pw.statusOff');
+    const am = g('authModeInfo');
+    if(am){
+      if(au.mode === 'off'){
+        am.style.display='block';
+        const _off = LANG==='ru'
+          ? 'Доступ открыт для всех, у кого есть ссылка. Включите пароль, если приложение доступно из интернета.'
+          : LANG==='en'
+            ? 'Access is open to anyone with the link. Enable a password if the app is reachable from the internet.'
+            : 'Доступ відкритий для всіх, хто має посилання. Увімкніть пароль, якщо застосунок доступний з інтернету.';
+        am.innerHTML = '🔓 <b>'+t('pw.statusOff')+'</b>' + (au.access_required ? ' · Access header required' : '') + '. ' + _off;
+      } else { am.style.display='none'; am.innerHTML=''; }
+    }
+    fetch('/api/tunnel').then(r=>r.json()).then(t=>{
+      const el=g('tunnelInfo'); if(!el) return;
+      el.innerHTML = (t && t.url)
+        ? '🌐 '+(LANG==='ru'?'Туннель: ':LANG==='en'?'Tunnel: ':'Тунель: ')+'<a href="'+esc(t.url)+'" target="_blank" style="color:var(--a1)">'
+          + esc(t.url.replace('https://','')) + '</a>'
+        : (LANG==='ru'?'🌐 Туннель: адрес не найден (нет лога cloudflared)':LANG==='en'?'🌐 Tunnel: no address found (no cloudflared log)':'🌐 Тунель: адресу не знайдено (немає логу cloudflared)');
+    }).catch(()=>{});
+    if(g('statsTable') && g('tab-stats') && g('tab-stats').classList.contains('on')) renderStats();
+    if(g('edList')) renderEldorado();
+    // Якщо курс ще не заданий — тихо пробуємо взяти з НБУ
+    if(!_rate){
+      fetch('/api/rate').then(r=>r.json()).then(d=>{
+        if(!d.ok) return;
+        _rate = parseFloat(d.usd_uah)||0;
+        if(g('rateVal')) g('rateVal').value = _rate?_rate.toFixed(2):'';
+        if(g('rateInfo')) g('rateInfo').textContent = t('cur.updated')+' '+new Date((d.rate_ts||0)*1000).toLocaleString(dateLocale())+' · '+(d.source||'');
+        if(g('edList')) renderEldorado();
+        if(g('tab-stats') && g('tab-stats').classList.contains('on')) renderStats();
+      }).catch(()=>{});
+    }
+    if(g('tab-setup') && g('tab-setup').classList.contains('on')) diagLoad();
+  }catch(e){}
+}
+
+async function refreshRate(){
+  try{
+    if(_cur === 'USD'){
+      _rate = 1;
+      toast(t('cur.baseToast'));
+      await loadSettings();
+      return;
+    }
+    toast(t('cur.nbu'));
+    const d = await fetch('/api/rate?refresh=1').then(r=>r.json());
+    if(d.ok){ _rate = parseFloat(d.usd_uah)||0; toast(t('cur.refreshed')+' '+_rate.toFixed(2)+' '+curSym()); await loadSettings(); }
+    else toast(t('cur.nbuFail'), false);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function saveRate(){
+  const v = parseFloat(g('rateVal').value)||0;
+  try{
+    await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({usd_uah:v})});
+    _rate = v;
+    toast(t('cur.set')+': '+v.toFixed(2)+' '+curSym());
+    await loadSettings(); renderStats();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function tgDisconnect(){
+  const q = LANG==='ru' ? 'Отключить Telegram-бота?' : LANG==='en' ? 'Disconnect the Telegram bot?' : 'Відключити Telegram-бота?';
+  if(!confirm(q)) return;
+  try{
+    const d = await fetch('/api/tg/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({clear:true})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    toast(LANG==='ru'?'✅ Telegram отключён':LANG==='en'?'✅ Telegram disconnected':'✅ Telegram відключено');
+    loadSettings();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function gmailDisconnect(){
+  const q = LANG==='ru' ? 'Отключить Gmail?' : LANG==='en' ? 'Disconnect Gmail?' : 'Відключити Gmail?';
+  if(!confirm(q)) return;
+  try{
+    const d = await fetch('/api/gmail/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({clear:true})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    toast(LANG==='ru'?'✅ Gmail отключён':LANG==='en'?'✅ Gmail disconnected':'✅ Gmail відключено');
+    loadSettings(); loadGmailStatus();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function saveTg(){
+  const body = {
+    token: (g('tgToken').value||'').trim(),
+    chat_id: (g('tgChat').value||'').trim(),
+    enabled: g('tgEnabled').checked,
+    notify_mail: g('tgMail') ? g('tgMail').checked : true,
+  };
+  try{
+    const d = await fetch('/api/tg/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)}).then(r=>r.json());
+    if(d.ok){ g('tgToken').value=''; toast('✅ Telegram збережено'); await loadSettings(); }
+    else toast('⚠ '+(d.error||'помилка'), false);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function saveNotify(){
+  const val = {
+    order: !!(g('ntOrder') && g('ntOrder').checked),
+    message: !!(g('ntMessage') && g('ntMessage').checked),
+    watchdog: !!(g('ntWatchdog') && g('ntWatchdog').checked),
+    agent: !!(g('ntAgent') && g('ntAgent').checked),
+    digest: !!(g('ntDigest') && g('ntDigest').checked),
+    new: !!(g('ntNew') && g('ntNew').checked),
+    price: !!(g('ntPrice') && g('ntPrice').checked),
+    restock: !!(g('ntRestock') && g('ntRestock').checked),
+    deal: !!(g('ntDeal') && g('ntDeal').checked),
+  };
+  try{
+    const d = await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({notify: val})}).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || 'помилка'), false); return; }
+    const on = Object.keys(val).filter(k => val[k]).length;
+    toast('✅ Сповіщення: увімкнено ' + on + ' з 9');
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function testTg(){
+  try{
+    toast('⏳ Надсилаю тест...');
+    const d = await fetch('/api/tg/test',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:'{}'}).then(r=>r.json());
+    toast(d.ok?'📨 Тест надіслано в Telegram!':'⚠ '+(d.error||'не вдалось'), !!d.ok);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+// ═══════════════════════════════════════════════
+// 📧 GMAIL → TELEGRAM
+// ═══════════════════════════════════════════════
+function renderGmailInfo(gm){
+  const el = g('gmailInfo');
+  const badge = g('gmailBadge');
+  if(badge) badge.textContent = gm && gm.configured
+    ? ((LANG==='ru'?'проверка каждые ':LANG==='en'?'check every ':'перевірка кожні ')+Math.round((gm.interval||120)/60)+(LANG==='ru'?' мин':LANG==='en'?' min':' хв')) : '';
+  if(!el) return;
+  if(!gm || !gm.configured){
+    el.innerHTML = LANG==='ru' ? '⚠ Gmail не настроен — уведомлений из почты не будет'
+      : LANG==='en' ? '⚠ Gmail not configured — no mail notifications'
+      : '⚠ Gmail не налаштовано — сповіщень з пошти не буде';
+    return;
+  }
+  let s = '✅ ' + esc(gm.user || 'Gmail');
+  if(gm.has_pass === false) s += ' · <span style="color:var(--yw)">'+(LANG==='ru'?'нет App Password':LANG==='en'?'no App Password':'немає App Password')+'</span>';
+  if(gm.last_ok) s += ' · '+(LANG==='ru'?'проверено ':LANG==='en'?'checked ':'перевірено ') + new Date(gm.last_ok*1000).toLocaleString(dateLocale());
+  if(gm.last_found) s += ' · '+(LANG==='ru'?'писем: ':LANG==='en'?'emails: ':'листів: ') + gm.last_found + ', '+(LANG==='ru'?'отправлено: ':LANG==='en'?'sent: ':'надіслано: ') + (gm.last_sent||0);
+  if(gm.last_error) s += ' · <span style="color:var(--rd)">⚠ ' + esc(gm.last_error) + '</span>';
+  el.innerHTML = s;
+}
+
+async function loadGmailStatus(){
+  try{
+    const d = await fetch('/api/gmail/status').then(r=>r.json());
+    if(d && d.ok) renderGmailInfo(d);
+  }catch(e){}
+}
+
+async function saveGmail(){
+  const user = (g('gmailUser')?.value||'').trim();
+  const password = (g('gmailPass')?.value||'').trim();
+  if(!user){ toast('⚠ Введи Gmail-адресу', false); return; }
+  try{
+    toast('⏳ Перевіряю Gmail...');
+    const d = await fetch('/api/gmail/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user, password})}).then(r=>r.json());
+    if(d.ok){
+      g('gmailPass').value = '';
+      toast('✅ Gmail підключено — сповіщення активні');
+      loadGmailStatus();
+    } else {
+      let msg = d.error || '';
+      if(/Gmail-адрес/i.test(msg)) msg = t('set.gmailBad');
+      else if(/Нема що зберігати/i.test(msg)) msg = LANG==='ru'?'Введи адрес и пароль':LANG==='en'?'Enter the address and password':'Введи адресу і пароль';
+      else if(/App Password/i.test(msg)) msg = LANG==='ru'?'Нужен App Password (16 символов)':LANG==='en'?'App Password required (16 characters)':'Потрібен App Password (16 символів)';
+      toast('⚠ '+msg, false);
+    }
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function checkGmailNow(){
+  try{
+    toast('⏳ Перевіряю пошту...');
+    const d = await fetch('/api/gmail/check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:'{}'}).then(r=>r.json());
+    if(d.ok) toast('📧 Листів: '+(d.found||0)+' · надіслано: '+(d.sent||0));
+    else toast('⚠ '+(d.error||'помилка'), false);
+    loadGmailStatus();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function saveCloud(){
+  try{
+    await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({cloud_dir:(g('cloudDir').value||'').trim()})});
+    toast('✅ Папку хмари збережено');
+    await loadSettings();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function changePassword(){
+  const old = (g('pwOld').value||'');
+  const n1  = (g('pwNew').value||'');
+  const n2  = (g('pwNew2').value||'');
+  if(n1.length < 8){ toast(t('pw.short'), false); return; }
+  if(n1 !== n2){ toast(t('pw.mismatch'), false); return; }
+  try{
+    const d = await fetch('/api/auth/password',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({old,new:n1})}).then(r=>r.json());
+    if(d.ok){
+      g('pwOld').value=''; g('pwNew').value=''; g('pwNew2').value='';
+      toast(t('pw.changed'));
+      setTimeout(()=>location.reload(), 1100);
+    } else {
+      let msg = d.error || '';
+      if(d.reason === 'auth_off') msg = LANG==='ru' ? 'Пароль отключён. Включите его в блоке «Пароль» выше.' : LANG==='en' ? 'Password is disabled. Enable it in the Password block above.' : 'Пароль вимкнено. Увімкніть його в блоці «Пароль» вище.';
+      else if(/Невірний/i.test(msg)) msg = LANG==='ru' ? 'Неверный текущий пароль' : LANG==='en' ? 'Wrong current password' : 'Невірний поточний пароль';
+      else if(/мінімум 8/i.test(msg)) msg = t('pw.short');
+      toast('⚠ '+msg, false);
+    }
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function saveHttps(){
+  try{
+    const d = await fetch('/api/https/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        enabled: g('httpsEnabled').checked,
+        cert: (g('httpsCert').value||'').trim(),
+        key:  (g('httpsKey').value||'').trim(),
+      })}).then(r=>r.json());
+    if(d.ok){ toast('✅ HTTPS-налаштування збережено. Перезапусти трекер.'); await loadSettings(); }
+    else toast('⚠ '+(d.error||'помилка'), false);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function genHttps(){
+  try{
+    toast(t('loading'));
+    const d = await fetch('/api/https/generate',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:'{}'}).then(r=>r.json());
+    if(d.ok){
+      g('httpsCert').value = d.cert;
+      g('httpsKey').value = d.key;
+      toast(t('set.certCreated'));
+    } else {
+      const er = String(d.error || '');
+      const msg = /openssl/i.test(er)
+        ? (LANG==='ru'?'OpenSSL не найден. Установи OpenSSL или укажи cert/key вручную.':LANG==='en'?'OpenSSL not found. Install OpenSSL or specify cert/key manually.':'OpenSSL не знайдено. Встанови OpenSSL або вкажи cert/key вручну.')
+        : (LANG==='ru'?'Не удалось создать сертификат.':LANG==='en'?'Could not create the certificate.':'Не вдалося створити сертифікат.');
+      toast('⚠ '+msg, false);
+    }
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+function openBulkRename(){
+  // Групуємо записи без назви по сумі продажу + платформа
+  const noTitle = purchases.filter(p=>!(p.title||'').trim());
+  if(!noTitle.length){toast(t('deal.bulkNoTitles'));return;}
+
+  // Групуємо по ключу src+sell (округлено до цента)
+  const groups = {};
+  noTitle.forEach(p=>{
+    const key = `${p.src||'zeusx'}|${(p.sell||0).toFixed(2)}`;
+    if(!groups[key]) groups[key]={src:p.src,sell:p.sell,count:0,dates:[],ids:[]};
+    groups[key].count++;
+    if(groups[key].dates.length<3) groups[key].dates.push(p.date||'');
+    groups[key].ids.push(p.id);
+  });
+
+  // Сортуємо по кількості (найчастіші зверху)
+  const sorted = Object.entries(groups).sort((a,b)=>b[1].count-a[1].count);
+
+  const srcIcon = s=>s==='funpay'?'🔵':'⚡';
+  let html = sorted.map(([key,g])=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--brd)">
+      <div style="min-width:140px;font-size:11px">
+        <span style="font-family:var(--font);font-weight:700;color:var(--gr)">$${parseFloat(g.sell).toFixed(2)}</span>
+        <span style="color:var(--mu);margin-left:6px">${srcIcon(g.src)} ×${g.count}</span>
+        <div style="font-size:9px;color:var(--mu)">${g.dates.join(', ')}</div>
+      </div>
+      <input data-key="${key}" placeholder="${t('deal.bulkPlaceholder')}" style="flex:1;font-size:12px;padding:4px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx)">
+    </div>`).join('');
+
+  g('bulkRenameList').innerHTML = html || '<div style="color:var(--mu);text-align:center;padding:20px">'+t('deal.bulkEmpty')+'</div>';
+  g('bulkRenameModal').style.display = 'flex';
+}
+
+async function applyBulkRename(){
+  const inputs = g('bulkRenameList').querySelectorAll('input[data-key]');
+  let changed = 0;
+  inputs.forEach(inp=>{
+    const title = inp.value.trim();
+    if(!title) return;
+    const [src, sell] = inp.dataset.key.split('|');
+    const sellVal = parseFloat(sell);
+    purchases.forEach(p=>{
+      if((p.title||'').trim()) return;
+      if((p.src||'zeusx')===src && Math.abs((p.sell||0)-sellVal)<0.01){
+        p.title = title;
+        changed++;
+      }
+    });
+  });
+  if(changed){
+    await savePL();
+    renderPurchases();
+    renderStats();
+    g('bulkRenameModal').style.display='none';
+    toast(t('deal.bulkDone').replace('%s', changed));
+  } else {
+    toast(t('deal.bulkNeedName'));
+  }
+}
+
+async function syncPLToServer(){
+  try{
+    // Явна дія користувача: відправляємо поточний стан (без «воскрешання»
+    // видалених записів із localStorage — це вже одного разу губило дані)
+    const resp = await fetch('/api/pl/save',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({purchases, force: purchases.length === 0})
+    });
+    const result = await resp.json().catch(()=>({}));
+    if(resp.ok && result.ok){
+      _plDirty = false;
+      renderPurchases();
+      toast(t('deal.synced').replace('%s', purchases.length));
+    } else {
+      toast('⚠ ' + (result.error||resp.status), false);
+    }
+  }catch(e){
+    console.error('Sync error:', e);
+    toast(t('deal.syncError')+' '+e, false);
+  }
+}
+
+const PL_INFO = {
+  zeusx:{name:'ZeusX', logo:'/logo/zeusx.png'},
+  funpay:{name:'FunPay', logo:'/logo/funpay.png'},
+  eldorado:{name:'Eldorado', logo:'/logo/eldorado.png'},
+  other:{name:'Інше', logo:''}
+};
+function plPlatToggle(ev){
+  if(ev) ev.stopPropagation();
+  const el = g('plPlatSel'); if(!el) return;
+  el.classList.toggle('open');
+}
+function plPlatPick(val){
+  const hid = g('plPlatform'), info = PL_INFO[val] || PL_INFO.other;
+  if(hid) hid.value = val;
+  if(g('plPlatName')) g('plPlatName').textContent = val==='other' ? t('f.other2') : info.name;
+  const lg = g('plPlatLogo');
+  if(lg){
+    if(info.logo){ lg.style.display=''; lg.src = info.logo; }
+    else { lg.style.display='none'; }
+  }
+  document.querySelectorAll('#plPlatSel .psel-opt').forEach(o=>o.classList.toggle('on', o.dataset.val===val));
+  const el = g('plPlatSel'); if(el) el.classList.remove('open');
+  try{ updateFeePreview(); }catch(e){}
+}
+document.addEventListener('click', (e)=>{
+  const el = g('plPlatSel');
+  if(el && !el.contains(e.target)) el.classList.remove('open');
+});
+
+async function addPLRecord(){
+  const sell = parseFloat(g('plSell').value)||0;
+  const buy  = parseFloat(g('plBuy').value)||0;
+  if(!sell && !buy){ alert(t('deal.enterPrices')); return; }
+  const plat = g('plPlatform').value;
+  const fee  = plat==='eldorado' ? ED_FEE : (FEES[plat]||0);
+
+  if(plat === 'eldorado'){
+    // Eldorado веде окремий облік — пишемо туди, щоб не було дублів
+    const rec = { id: Date.now(), date: g('plDate')?.value || todayLocal(),
+      title: g('plTitle')?.value.trim() || 'Eldorado', price: sell, buy,
+      fee: Math.round(sell*fee*100)/100,
+      profit: Math.round((sell - sell*fee - buy)*100)/100,
+      orderId: '', category: 'Eldorado' };
+    edSales.unshift(rec);
+    await saveED();
+    g('plTitle').value=''; g('plBuy').value=''; g('plSell').value='';
+    g('plFeePreview').textContent='$0.00';
+    plPg=1; renderPurchases();
+    if(typeof renderEldorado==='function') renderEldorado();
+    toast(t('deal.addedED'));
+    return;
+  }
+  const afterFee = sell*(1-fee) - buy;
+  purchases.unshift({
+    id: Date.now(),
+    title: g('plTitle').value.trim(),
+    src: plat,
+    srcName: plat==='zeusx'?'ZeusX':plat==='funpay'?'FunPay':plat==='eldorado'?'Eldorado':t('f.other2'),
+    buy, sell, afterFee: Math.round(afterFee*10000)/10000,
+    qty: 1,
+    date: g('plDate').value || todayLocal(),
+    platform: plat,
+  });
+  await savePL();
+  g('plTitle').value=''; g('plBuy').value=''; g('plSell').value='';
+  g('plFeePreview').textContent='$0.00';
+  plPg=1; renderPurchases();
+  toast(t('deal.added'));
+  // v4.6: без Telegram-сповіщення — це ручне внесення, користувач і так знає
+}
+
+async function delPurchase(id){
+  if(!confirm(t('deal.deleteConfirm'))) return;
+  purchases = purchases.filter(p=>p.id!==id);
+  await savePL(); renderPurchases();
+}
+
+function edAsPL(){
+  return (edSales||[]).map(s=>({
+    id: 'ed:' + s.id, date: s.date, title: s.title,
+    src: 'eldorado', srcName: 'Eldorado',
+    buy: Number(s.buy||0), sell: Number(s.price||0),
+    afterFee: Number(s.profit||0), fee: Number(s.fee||0), qty: 1, platform: 'eldorado',
+    _ed: true, _edId: s.id
+  }));
+}
+
+function allDeals(){
+  return (purchases||[]).concat(edAsPL());
+}
+
+function renderPurchases(){
+  fillMonthOptions();
+  const q   = (g('purQ')?.value||'').toLowerCase();
+  const sf  = g('purFilter')?.value||'';
+  const df  = g('plDateFilter')?.value||'';
+  const srt = g('plSortF')?.value||'date_d';
+  const now = new Date();
+  const todayStr = localDate(now);
+  const wkStart = new Date(now); wkStart.setDate(now.getDate()-now.getDay());
+  const moStart = todayStr.slice(0,7);
+
+  plFilt = allDeals().filter(p=>{
+    if(sf==='notitle') return !(p.title||'').trim();
+    if(sf && p.src!==sf) return false;
+    if(q && !(p.title||'').toLowerCase().includes(q) && !(p.srcName||'').toLowerCase().includes(q)) return false;
+    if(df){
+      const d = p.date||'';
+      if(df==='today' && d!==todayStr) return false;
+      if(df==='week' && d<localDate(wkStart)) return false;
+      if(df==='month' && !d.startsWith(moStart)) return false;
+      if(df.startsWith('m:') && !d.startsWith(df.slice(2))) return false;
+      if(df==='custom'){
+        const from=g('plDateFrom')?.value||'';
+        const to=g('plDateTo')?.value||'';
+        if(from && d<from) return false;
+        if(to && d>to) return false;
+      }
+    }
+    return true;
+  });
+
+  // Sort
+  if(srt==='date_d') plFilt=[...plFilt].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  else if(srt==='date_a') plFilt=[...plFilt].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  else if(srt==='profit_d') plFilt=[...plFilt].sort((a,b)=>(b.afterFee||0)-(a.afterFee||0));
+  else if(srt==='sell_d') plFilt=[...plFilt].sort((a,b)=>(b.sell||0)-(a.sell||0));
+
+  // Stats
+  const totalSell   = plFilt.reduce((s,p)=>s+(p.sell||0),0);
+  const totalBuy    = plFilt.reduce((s,p)=>s+(p.buy||0),0);
+  const totalProfit = plFilt.reduce((s,p)=>s+(p.afterFee||0),0);
+  const totalFees   = plFilt.reduce((s,p)=>s+(p.sell||0)*(FEES[p.src]||0),0);
+  const margin      = totalBuy>0?(totalProfit/totalBuy*100).toFixed(1):0;
+
+  g('purCnt').textContent = plFilt.length;
+  if(g('plProfit')){
+    g('plProfit').textContent=(totalProfit>=0?'+':'')+'$'+totalProfit.toFixed(2);
+    g('plProfit').style.color=totalProfit>0?'var(--gr)':totalProfit<0?'var(--rd)':'var(--mu)';
+    g('plRevenue').textContent='$'+totalSell.toFixed(2);
+    g('plCost').textContent='$'+totalBuy.toFixed(2);
+    g('plMargin').textContent=margin+'%';
+    g('plMargin').style.color=parseFloat(margin)>0?'var(--gr)':'var(--mu)';
+    g('plCount').textContent=plFilt.length;
+    g('plFees').textContent='$'+totalFees.toFixed(2);
+  }
+
+  // Render rows
+  const pp=50, page=plFilt.slice((plPg-1)*pp, plPg*pp);
+  const el=g('purList');
+  if(!el) return;
+  if(!page.length){el.innerHTML='<div class="none">Записів не знайдено</div>';g('plPag').style.display='none';return;}
+
+  const inpStyle='width:100%;background:var(--bg2);border:1px solid var(--a1);border-radius:4px;color:var(--tx);padding:2px 4px;font-size:11px;font-family:inherit';
+  el.innerHTML = '<div class="bub-wrap">' + page.map(p=>{
+    const fee=p._ed?Number(p.fee||0):(p.sell||0)*(FEES[p.src]||0);
+    const profit=p.afterFee!=null?p.afterFee:((p.sell||0)*(1-(FEES[p.src]||0))-(p.buy||0));
+    const platClr=p._ed?'var(--yw)':p.src==='zeusx'?'var(--a1)':p.src==='funpay'?'var(--a3)':'var(--mu)';
+    const LOGO2={zeusx:'/logo/zeusx.png',funpay:'/logo/funpay.png',eldorado:'/logo/eldorado.png'};
+    const logoImg=LOGO2[p.src]?'<img src="'+LOGO2[p.src]+'" alt="" style="width:13px;height:13px;border-radius:3px;object-fit:contain;vertical-align:-2px;margin-right:4px">':'';
+    if(_editId===p.id){
+      return '<div class="bub" style="border-color:color-mix(in srgb, var(--a1) 55%, transparent)">'
+        + '<div style="display:flex;flex-direction:column;gap:8px">'
+        + '<input id="ei_date" value="'+esc(p.date||'')+'" type="date" style="'+inpStyle+'">'
+        + '<input id="ei_title" value="'+esc(p.title||'')+'" placeholder="Назва" style="'+inpStyle+'">'
+        + '<select id="ei_plat" style="'+inpStyle+'"><option value="zeusx"'+(p.src==='zeusx'?' selected':'')+'>⚡ ZeusX</option><option value="funpay"'+(p.src==='funpay'?' selected':'')+'>🔵 FunPay</option><option value="other"'+(p.src==='other'?' selected':'')+' data-i18n="f.other2">Інше</option></select>'
+        + '<div style="display:flex;gap:8px"><input id="ei_buy" value="'+(p.buy||0).toFixed(2)+'" type="number" step="0.01" placeholder="Купив" style="'+inpStyle+';flex:1"><input id="ei_sell" value="'+(p.sell||0).toFixed(2)+'" type="number" step="0.01" placeholder="Продав" style="'+inpStyle+';flex:1"></div>'
+        + '<div style="display:flex;gap:8px">'
+        + '<button onclick="saveEdit('+p.id+')" style="flex:1;background:var(--gr);border:none;color:#000;padding:9px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700">✓ Зберегти</button>'
+        + '<button onclick="cancelEdit()" style="flex:1;background:transparent;border:1px solid var(--brd);color:var(--mu);padding:9px;border-radius:8px;font-size:13px;cursor:pointer">✕ Скасувати</button>'
+        + '</div></div></div>';
+    }
+    return '<div class="bub">'
+      + '<div class="bub-head">'
+      + '<span class="bub-date">'+esc(p.date||'')+'</span>'
+      + '<span class="bub-chip" style="color:'+platClr+'">'+logoImg+esc(p.srcName||p.src)+'</span>'
+      + '<span class="bub-title">'+esc(p.title||'—')+'</span>'
+      + '<div class="bub-acts">'
+      + (p._ed
+          ? '<button class="bub-btn" onclick="editEdSale('+p._edId+')" title="Редагувати">✏</button>'
+            + '<button class="bub-btn del" onclick="delEdSale('+p._edId+')" title="Видалити">🗑</button>'
+          : '<button class="bub-btn" onclick="startEdit('+p.id+')" title="Редагувати">✏</button>'
+            + '<button class="bub-btn del" onclick="delPurchase('+p.id+')" title="Видалити">🗑</button>')
+      + '</div></div>'
+      + '<div class="bub-stats">'
+      + '<span class="bs">'+t('k.buy')+' <b>$'+(p.buy||0).toFixed(2)+'</b></span>'
+      + '<span class="bs">'+t('k.sell')+' <b>$'+(p.sell||0).toFixed(2)+'</b></span>'
+      + '<span class="bs">'+t('k.fee')+' <b class="neg">-$'+fee.toFixed(2)+'</b></span>'
+      + '<span class="bs '+(profit>=0?'pos':'negp')+'">'+t('k.profit')+' <b>'+(profit>=0?'+':'')+'$'+profit.toFixed(2)+'</b></span>'
+      + '</div></div>';
+  }).join('') + '</div>';
+
+  // Pagination
+  const tot=Math.ceil(plFilt.length/pp), pag=g('plPag');
+  if(tot<=1){pag.style.display='none';return;}
+  let h='';
+  if(plPg>1)h+=`<button class="pb" onclick="plGo(${plPg-1})">←</button>`;
+  const s=Math.max(1,plPg-2),en=Math.min(tot,plPg+2);
+  for(let i=s;i<=en;i++)h+=`<button class="pb${i===plPg?' on':''}" onclick="plGo(${i})">${i}</button>`;
+  if(plPg<tot)h+=`<button class="pb" onclick="plGo(${tot})">→</button>`;
+  h+=`<span style="font-size:10px;color:var(--mu)">${plFilt.length} записів</span>`;
+  pag.innerHTML=h; pag.style.display='flex';
+}
+function plGo(n){plPg=n;renderPurchases();window.scrollTo({top:0,behavior:'smooth'});}
+
+
+
+// ═══════════════════════════════════════════════
+// 📊 СТАТИСТИКА ПО ІГРАХ
+// ═══════════════════════════════════════════════
+let _statsChart = null;
+
+function renderStats(){
+  fillMonthOptions();
+  const platform = g('statsPlatform')?.value || '';
+  const period   = g('statsPeriod')?.value || '';
+  const now      = new Date();
+  const moStart  = localDate(now).slice(0,7);
+
+  // Фільтр
+  let recs = purchases.filter(p=>{
+    if(platform && p.src !== platform) return false;
+    if(period === 'month' && !(p.date||'').startsWith(moStart)) return false;
+    if(period.startsWith('m:') && !(p.date||'').startsWith(period.slice(2))) return false;
+    return true;
+  });
+
+  // Групуємо по грі (з назви лоту або srcName)
+  const gameMap = {};
+  recs.forEach(p=>{
+    let game = (p.game || p.base_name || '').trim();
+    if(!game){
+      const t = (p.title||'').trim();
+      if(t){
+        game = t.length > 50 ? t.substring(0,50) : t;
+      } else {
+        // Без назви — одна група (раніше кожен запис ставав окремим рядком)
+        game = '__noname__';
+      }
+    }
+    if(!gameMap[game]) gameMap[game] = {count:0, revenue:0, profit:0, buy:0,
+      displayName: game === '__noname__' ? 'Без назви' : game};
+    gameMap[game].count++;
+    gameMap[game].revenue += p.sell||0;
+    gameMap[game].profit  += p.afterFee||0;
+    gameMap[game].buy     += p.buy||0;
+  });
+
+  const games = Object.entries(gameMap)
+    .map(([key,s])=>({name: s.displayName||key, ...s, margin: s.buy>0?(s.profit/s.buy*100):0}))
+    .sort((a,b)=>b.profit-a.profit);
+
+  const top = games.slice(0,15);
+
+  // Картки загальної статистики
+  const totRev    = recs.reduce((s,p)=>s+(p.sell||0),0);
+  const totProfit = recs.reduce((s,p)=>s+(p.afterFee||0),0);
+  const totBuy    = recs.reduce((s,p)=>s+(p.buy||0),0);
+  const avgMargin = totBuy>0?(totProfit/totBuy*100).toFixed(1):0;
+
+  // Зведений підсумок P&L + ELDORADO (весь час)
+  const plAllProfit = purchases.reduce((s,p)=>s+(p.afterFee||0),0);
+  const edAllProfit = edSales.reduce((s,x)=>s+(x.profit||0),0);
+  const plAllRev    = purchases.reduce((s,p)=>s+(p.sell||0),0);
+  const edAllRev    = edSales.reduce((s,x)=>s+(x.price||0),0);
+  const combinedAll = plAllProfit + edAllProfit;
+  const combinedRev = plAllRev + edAllRev;
+
+  const cards = g('statsCards');
+  if(cards) cards.innerHTML = [
+    {l:t('an.deals'),       v:recs.length,                    c:'var(--a1)'},
+    {l:t('an.revenue'),     v:'$'+totRev.toFixed(2),           c:'var(--tx)'},
+    {l:t('an.profit'),      v:(totProfit>=0?'+':'')+'$'+totProfit.toFixed(2), c:'var(--gr)'},
+    {l:t('an.margin'),      v:avgMargin+'%',                   c:'var(--yw)'},
+    {l:t('an.games'),       v:games.length,                    c:'var(--a3)'},
+    {l:t('an.best'),        v:(top[0]?.name||'—').substring(0,18), c:'var(--gr)'},
+    {l:'ELDORADO',          v:(edAllProfit>=0?'+':'')+'$'+edAllProfit.toFixed(2), c:'var(--a3)'},
+    {l:t('an.total'),       v:(combinedAll>=0?'+':'')+'$'+combinedAll.toFixed(2), c:combinedAll>=0?'var(--gr)':'var(--rd)'},
+  ].concat(_rate ? [
+    {l:t('an.totalIn')+' '+curSym(), v:curSym()+(combinedAll*_rate).toFixed(2), c:'var(--a1)'},
+  ] : []).map(c=>`<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px 14px">
+    <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">${c.l}</div>
+    <div style="font-size:18px;font-weight:700;color:${c.c};font-family:var(--font)">${c.v}</div>
+  </div>`).join('');
+
+  // ── Порівняння місяць до місяця ──
+  const cmpEl = g('statsCompare');
+  if(cmpEl){
+    const curKey   = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const prevDate = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    const prevKey  = prevDate.getFullYear()+'-'+String(prevDate.getMonth()+1).padStart(2,'0');
+    const ym   = p => (p.date||'').slice(0,7);
+    const plSum = (key, field) => purchases.filter(p=>ym(p)===key).reduce((s,p)=>s+(p[field]||0),0);
+    const edSum = (key, field) => edSales.filter(s=>ym(s)===key).reduce((s,x)=>s+(x[field]||0),0);
+    const rows = [
+      {l:t('an.profitPL'),   cur:plSum(curKey,'afterFee'), prev:plSum(prevKey,'afterFee')},
+      {l:t('an.revenuePL'),  cur:plSum(curKey,'sell'),     prev:plSum(prevKey,'sell')},
+      {l:t('an.profitED'),   cur:edSum(curKey,'profit'), prev:edSum(prevKey,'profit')},
+      {l:t('an.totalProfit'), cur:plSum(curKey,'afterFee')+edSum(curKey,'profit'),
+                            prev:plSum(prevKey,'afterFee')+edSum(prevKey,'profit')},
+    ];
+    const pct = (a,b)=> b>0 ? ((a-b)/b*100) : (a>0?100:0);
+    const fmtPct = (a,b)=> b>0 ? ((a-b)>=0?'+':'')+pct(a,b).toFixed(1)+'%' : (a>0?t('an.new'):'—');
+    cmpEl.innerHTML = '<div style="font-size:11px;color:var(--mu);letter-spacing:1px;margin-bottom:8px">'+t('an.thisVsLast')+' ('+prevKey+' → '+curKey+')</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px">'+
+      rows.map(r=>{
+        const good = (r.cur-r.prev) >= 0;
+        return `<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px 14px">
+          <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">${r.l}</div>
+          <div style="font-size:17px;font-weight:700;font-family:var(--font);color:${good?'var(--gr)':'var(--rd)'}">${r.cur>=0?'+':''}$${r.cur.toFixed(2)}</div>
+          <div style="font-size:11px;color:var(--mu);margin-top:3px">${t('an.was')} $${r.prev.toFixed(2)} · <b style="color:${good?'var(--gr)':'var(--rd)'}">${fmtPct(r.cur,r.prev)}</b></div>
+        </div>`;
+      }).join('')+'</div>';
+  }
+
+  // Графік
+  if(_statsChart){_statsChart.destroy();_statsChart=null;}
+  const ctx = g('statsChart');
+  if(ctx && top.length){
+    _statsChart = new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels: top.map(g=>g.name.length>15?g.name.substring(0,15)+'…':g.name),
+        datasets:[
+          {label:t('an.profitChart'), data:top.map(g=>parseFloat(g.profit.toFixed(2))),
+           backgroundColor:'rgba(16,185,129,.5)',borderColor:'rgba(16,185,129,.9)',borderWidth:1,borderRadius:4},
+          {label:t('an.revenueChart'),  data:top.map(g=>parseFloat(g.revenue.toFixed(2))),
+           backgroundColor:'rgba(99,102,241,.35)',borderColor:'rgba(99,102,241,.8)',borderWidth:1,borderRadius:4},
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
+        scales:{
+          x:{ticks:{color:'#64748b',font:{size:9},maxRotation:35},grid:{color:'rgba(255,255,255,.04)'}},
+          y:{ticks:{color:'#64748b',callback:v=>'$'+v},grid:{color:'rgba(255,255,255,.05)'}},
+        }
+      }
+    });
+  }
+
+  // Таблиця
+  const tbl = g('statsTable');
+  if(tbl){
+    if(!top.length){tbl.innerHTML='<div class="none">'+t('an.noData')+'</div>';return;}
+    tbl.innerHTML='<table class="sup-table"><thead><tr>'+
+      '<th>#</th><th>'+t('an.game')+'</th><th style="text-align:right">'+t('an.dealsCol')+'</th>'+
+      '<th style="text-align:right">'+t('an.revenueCol')+'</th><th style="text-align:right">'+t('an.profitCol')+'</th><th style="text-align:right">'+t('an.marginCol')+'</th>'+
+      '</tr></thead><tbody>'+
+      games.map((g2,i)=>{
+        const pcls=g2.profit>0?'profit-pos':g2.profit<0?'profit-neg':'profit-neu';
+        const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+        return `<tr>
+          <td style="color:var(--mu);font-size:11px">${medal||('#'+(i+1))}</td>
+          <td style="font-weight:600;max-width:200px">${esc(g2.name)}</td>
+          <td style="text-align:right;color:var(--mu)">${g2.count}</td>
+          <td style="text-align:right;font-family:var(--font);font-size:11px">$${g2.revenue.toFixed(2)}</td>
+          <td style="text-align:right;font-family:var(--font);font-size:12px;font-weight:700" class="${pcls}">${g2.profit>=0?'+':''}$${g2.profit.toFixed(2)}</td>
+          <td style="text-align:right;font-size:11px;color:${g2.margin>50?'var(--gr)':g2.margin>20?'var(--yw)':'var(--mu)'}">${g2.margin.toFixed(0)}%</td>
+        </tr>`;
+      }).join('')+'</tbody></table>';
+  }
+}
+
+let _editId = null;
+
+function startEdit(id){ _editId=id; renderPurchases(); }
+function cancelEdit(){ _editId=null; renderPurchases(); }
+
+async function saveEdit(id){
+  const p = purchases.find(x=>x.id===id);
+  if(!p) return;
+  const buy  = parseFloat(g('ei_buy').value)||0;
+  const sell = parseFloat(g('ei_sell').value)||0;
+  const plat = g('ei_plat').value;
+  const fee  = FEES[plat]||0;
+  p.title    = g('ei_title').value.trim();
+  p.date     = g('ei_date').value;
+  p.buy      = buy;
+  p.sell     = sell;
+  p.src      = plat;
+  p.srcName  = plat==='zeusx'?'ZeusX':plat==='funpay'?'FunPay':t('f.other2');
+  p.afterFee = Math.round((sell*(1-fee)-buy)*10000)/10000;
+  _editId    = null;
+  await savePL(); renderPurchases();
+  toast(t('deal.updated'));
+}
+
+// Графік виторгу по днях
+let _chartInst = null;
+function renderRevenueChart(){
+  const el = g('revenueChart');
+  if(!el) return;
+  // Беремо останні 30 днів
+  const days = 30;
+  const now = new Date();
+  const labels=[], profits=[], revenues=[];
+  for(let i=days-1;i>=0;i--){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const ds=localDate(d);
+    labels.push(ds.slice(5)); // MM-DD
+    const dayRecs=purchases.filter(p=>p.date===ds);
+    revenues.push(dayRecs.reduce((s,p)=>s+(p.sell||0),0));
+    profits.push(dayRecs.reduce((s,p)=>s+(p.afterFee||0),0));
+  }
+  if(_chartInst){ _chartInst.destroy(); _chartInst=null; }
+  const ctx=el.getContext('2d');
+  _chartInst=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:(LANG==='uk'?'Виторг $':(LANG==='ru'?'Выручка $':'Revenue $')),data:revenues,backgroundColor:'rgba(99,102,241,.35)',borderColor:'rgba(99,102,241,.8)',borderWidth:1,borderRadius:3},
+        {label:(LANG==='uk'?'Прибуток $':(LANG==='ru'?'Прибыль $':'Profit $')),data:profits,backgroundColor:'rgba(16,185,129,.35)',borderColor:'rgba(16,185,129,.8)',borderWidth:1,borderRadius:3},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}},
+        tooltip:{callbacks:{label:ctx=>'$'+ctx.raw.toFixed(2)}}},
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:9},maxRotation:45},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{ticks:{color:'#64748b',font:{size:10},callback:v=>'$'+v},grid:{color:'rgba(255,255,255,.06)'}}
+      }
+    }
+  });
+}
+
+function exportCSV(){
+  // CSV тільки P&L (поточний фільтр)
+  const rows=[[t('th.date'),t('inv.name'),t('f.platform'),t('th.buy')+' $',t('th.sell')+' $',t('th.fee')+' $',t('an.profit')+' $']];
+  plFilt.forEach(p=>{
+    const fee=(p.sell||0)*(FEES[p.src]||0);
+    const profit=p.afterFee!=null?p.afterFee:((p.sell||0)*(1-(FEES[p.src]||0))-(p.buy||0));
+    rows.push([p.date||'',p.title||'',p.srcName||p.src,(p.buy||0).toFixed(2),(p.sell||0).toFixed(2),fee.toFixed(2),profit.toFixed(2)]);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='pl_tracker_'+todayLocal()+'.csv';
+  a.click();
+  toast(t('deal.csvDone'));
+}
+
+async function exportFullExcel(){
+  toast(t('loading'));
+  if(typeof XLSX==='undefined'){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload=res; s.onerror=rej;
+      document.head.appendChild(s);
+    });
+  }
+  const X = LANG==='ru' ? {
+    date:'Дата',name:'Название',platform:'Платформа',buy:'Купил $',sell:'Продал $',fee:'Комиссия $',
+    fee10:'Комиссия 10% $',profit:'Прибыль $',total:'ВСЕГО:',category:'Категория',deals:'Сделок',
+    rev:'Выручка $',margin:'Маржа %',noCat:'Без категории',metric:'Показатель',value:'Значение',
+    totalDeals:'Всего сделок',totalRev:'Общая выручка $',totalCost:'Общие затраты $',
+    totalProfit:'Общая прибыль $',totalFees:'Общие комиссии $',rate:'Курс USD→UAH',
+    edProfit:'Прибыль ELDORADO $',allProfit:'ВСЕГО прибыль (P&L + ELD) $',allProfitUah:'ВСЕГО прибыль ₴',
+    curMonth:'Текущий месяц',monthDeals:'Сделок за месяц',monthProfit:'Прибыль за месяц $',
+    exportDate:'Дата экспорта',sheetPL:'P&L Все записи',sheetCats:'ELDORADO категории',sheetStats:'Статистика'
+  } : LANG==='en' ? {
+    date:'Date',name:'Name',platform:'Platform',buy:'Bought $',sell:'Sold $',fee:'Fee $',
+    fee10:'Fee 10% $',profit:'Profit $',total:'TOTAL:',category:'Category',deals:'Deals',
+    rev:'Revenue $',margin:'Margin %',noCat:'No category',metric:'Metric',value:'Value',
+    totalDeals:'Total deals',totalRev:'Total revenue $',totalCost:'Total cost $',
+    totalProfit:'Total profit $',totalFees:'Total fees $',rate:'USD→UAH rate',
+    edProfit:'ELDORADO profit $',allProfit:'TOTAL profit (P&L + ELD) $',allProfitUah:'TOTAL profit ₴',
+    curMonth:'Current month',monthDeals:'Deals this month',monthProfit:'Profit this month $',
+    exportDate:'Export date',sheetPL:'P&L All records',sheetCats:'ELDORADO categories',sheetStats:'Statistics'
+  } : {
+    date:'Дата',name:'Назва',platform:'Платформа',buy:'Купив $',sell:'Продав $',fee:'Комісія $',
+    fee10:'Комісія 10% $',profit:'Прибуток $',total:'РАЗОМ:',category:'Категорія',deals:'Угод',
+    rev:'Виторг $',margin:'Маржа %',noCat:'Без категорії',metric:'Показник',value:'Значення',
+    totalDeals:'Всього угод',totalRev:'Загальна виручка $',totalCost:'Загальні витрати $',
+    totalProfit:'Загальний прибуток $',totalFees:'Загальні комісії $',rate:'Курс USD→UAH',
+    edProfit:'Прибуток ELDORADO $',allProfit:'РАЗОМ прибуток (P&L + ELD) $',allProfitUah:'РАЗОМ прибуток ₴',
+    curMonth:'Поточний місяць',monthDeals:'Угод цього місяця',monthProfit:'Прибуток цього місяця $',
+    exportDate:'Дата експорту',sheetPL:'P&L Всі записи',sheetCats:'ELDORADO категорії',sheetStats:'Статистика'
+  };
+  const wb=XLSX.utils.book_new();
+
+  const plRows=[[X.date,X.name,X.platform,X.buy,X.sell,X.fee,X.profit]];
+  purchases.forEach(p=>{
+    const fee=(p.sell||0)*(FEES[p.src]||0);
+    const profit=p.afterFee!=null?p.afterFee:((p.sell||0)*(1-(FEES[p.src]||0))-(p.buy||0));
+    plRows.push([p.date||'',p.title||'',p.srcName||p.src,
+      parseFloat((p.buy||0).toFixed(2)),parseFloat((p.sell||0).toFixed(2)),
+      parseFloat(fee.toFixed(2)),parseFloat(profit.toFixed(2))]);
+  });
+  const totSell=purchases.reduce((s,p)=>s+(p.sell||0),0);
+  const totBuy=purchases.reduce((s,p)=>s+(p.buy||0),0);
+  const totProfit=purchases.reduce((s,p)=>s+(p.afterFee||0),0);
+  const totFee=purchases.reduce((s,p)=>s+(p.sell||0)*(FEES[p.src]||0),0);
+  plRows.push([]);
+  plRows.push(['','',X.total,parseFloat(totBuy.toFixed(2)),parseFloat(totSell.toFixed(2)),parseFloat(totFee.toFixed(2)),parseFloat(totProfit.toFixed(2))]);
+  const wsP=XLSX.utils.aoa_to_sheet(plRows);
+  wsP['!cols']=[{wch:12},{wch:40},{wch:12},{wch:10},{wch:10},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,wsP,'📋 '+X.sheetPL);
+
+  const edRows=[[X.date,X.name,X.category,X.sell,X.buy,X.fee10,X.profit,'Order ID']];
+  edSales.forEach(s=>{
+    edRows.push([s.date||'', s.title||'', s.category||'', parseFloat((s.price||0).toFixed(2)),
+      parseFloat((s.buy||0).toFixed(2)), parseFloat((s.fee||0).toFixed(2)),
+      parseFloat((s.profit||0).toFixed(2)), s.orderId||'']);
+  });
+  const edSell=edSales.reduce((a,s)=>a+(s.price||0),0);
+  const edBuy =edSales.reduce((a,s)=>a+(s.buy||0),0);
+  const edFee =edSales.reduce((a,s)=>a+(s.fee||0),0);
+  const edProf=edSales.reduce((a,s)=>a+(s.profit||0),0);
+  edRows.push([]);
+  edRows.push(['','',X.total,parseFloat(edSell.toFixed(2)),parseFloat(edBuy.toFixed(2)),parseFloat(edFee.toFixed(2)),parseFloat(edProf.toFixed(2)),'']);
+  const wsEd=XLSX.utils.aoa_to_sheet(edRows);
+  wsEd['!cols']=[{wch:12},{wch:40},{wch:16},{wch:10},{wch:10},{wch:14},{wch:10},{wch:38}];
+  XLSX.utils.book_append_sheet(wb,wsEd,'🟡 ELDORADO');
+
+  const catMap = {};
+  edSales.forEach(s=>{
+    const k = (s.category||'').trim() || X.noCat;
+    if(!catMap[k]) catMap[k] = {count:0, rev:0, buy:0, profit:0};
+    catMap[k].count++;
+    catMap[k].rev    += s.price||0;
+    catMap[k].buy    += s.buy||0;
+    catMap[k].profit += s.profit||0;
+  });
+  const catRows=[[X.category,X.deals,X.rev,X.buy,X.profit,X.margin]];
+  Object.entries(catMap).sort((a,b)=>b[1].profit-a[1].profit).forEach(([k,v])=>{
+    catRows.push([k, v.count, parseFloat(v.rev.toFixed(2)), parseFloat(v.buy.toFixed(2)),
+      parseFloat(v.profit.toFixed(2)), v.buy>0?parseFloat((v.profit/v.buy*100).toFixed(1)):'—']);
+  });
+  const wsCat=XLSX.utils.aoa_to_sheet(catRows);
+  wsCat['!cols']=[{wch:24},{wch:8},{wch:12},{wch:10},{wch:12},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,wsCat,'🏷 '+X.sheetCats);
+
+  const now=new Date();
+  const thisMonth=localDate(now).slice(0,7);
+  const monthRecs=purchases.filter(p=>(p.date||'').startsWith(thisMonth));
+  const monthProfit=monthRecs.reduce((s,p)=>s+(p.afterFee||0),0);
+  const statsRows=[
+    [X.metric,X.value],
+    [X.totalDeals,purchases.length],
+    [X.totalRev,parseFloat(totSell.toFixed(2))],
+    [X.totalCost,parseFloat(totBuy.toFixed(2))],
+    [X.totalProfit,parseFloat(totProfit.toFixed(2))],
+    [X.totalFees,parseFloat(totFee.toFixed(2))],
+    [X.margin,totBuy>0?parseFloat((totProfit/totBuy*100).toFixed(1)):0],
+    [''],
+    [X.rate,_rate||'—'],
+    [X.edProfit,parseFloat((edProf||0).toFixed(2))],
+    [X.allProfit,parseFloat(((totProfit||0)+(edProf||0)).toFixed(2))],
+    [X.allProfitUah,_rate?parseFloat((((totProfit||0)+(edProf||0))*_rate).toFixed(2)):'—'],
+    [''],
+    [X.curMonth+' ('+thisMonth+')',''],
+    [X.monthDeals,monthRecs.length],
+    [X.monthProfit,parseFloat(monthProfit.toFixed(2))],
+    [''],
+    [X.exportDate,now.toLocaleString(dateLocale())],
+  ];
+  const wsSt=XLSX.utils.aoa_to_sheet(statsRows);
+  wsSt['!cols']=[{wch:30},{wch:18}];
+  XLSX.utils.book_append_sheet(wb,wsSt,'📊 '+X.sheetStats);
+
+  XLSX.writeFile(wb,'game_tracker_'+localDate(now)+'.xlsx');
+  toast(t('deal.excelDone')+': P&L · ELDORADO · '+X.sheetCats+' · '+X.sheetStats);
+}
+
+
+// ═══════════════════════════════════════════════
+// 🛒 ЗАКУПІВЛЯ (постачальники)
+// ═══════════════════════════════════════════════
+
+// ===== ELDORADO (зберігається на сервері + кеш у localStorage) =====
+let edSales = [];
+let edLoaded = false;
+let _edSaving = 0;
+let _edTouched = 0;
+let edFilt = [];
+let edPg = 1;
+let _edDirty = false;
+
+function toggleEdRange(){
+  const v = g('edDateFilter')?.value || '';
+  const el = g('edCustomRange');
+  if(el) el.style.display = v==='custom' ? 'flex' : 'none';
+}
+
+function suggestEdBuy(){
+  const box = g('edBuy');
+  if(!box || box.value) return;          // не перетираємо вже введене
+  const t = (g('edTitle')?.value||'').trim().toLowerCase();
+  if(t.length < 4) return;
+  const hit = purchases.find(p=>{
+    const pt = (p.title||'').trim().toLowerCase();
+    if(!pt || pt.length < 4) return false;
+    return pt === t || pt.includes(t) || t.includes(pt);
+  });
+  if(hit && (hit.buy||0) > 0){
+    box.value = (hit.buy||0).toFixed(2);
+    toast('💰 Підставлено закупівлю $'+(hit.buy||0).toFixed(2)+' з P&L');
+  }
+}
+
+async function saveED(){
+  _edSaving++; _edTouched = Date.now();
+  try{
+    const r = await fetch('/api/eldorado/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({sales:edSales, force: edSales.length === 0})});
+    const res = await r.json().catch(()=>({}));
+    if(!r.ok || res.ok === false) throw new Error(res.error || ('HTTP '+r.status));
+    _edDirty = false;
+  }catch(e){
+    // офлайн — дані лишаються в localStorage і повторюємо запис
+    _edDirty = true;
+    toast('⚠ ELDORADO не збережено на сервері: '+e, false);
+    setTimeout(()=>{ if(_edDirty) saveED(); }, 10000);
+  } finally {
+    try{ localStorage.setItem('eldorado_sales', JSON.stringify(edSales)); }catch(e2){}
+    _edSaving--;
+  }
+}
+
+
+function importEdCsv(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const text = e.target.result;
+    const lines = text.trim().split('\n');
+    if(lines.length < 2){ alert('Порожній файл'); return; }
+    // Визначаємо роздільник (tab або кома)
+    const sep = lines[0].includes('\t') ? '\t' : ',';
+    const headers = lines[0].split(sep).map(h=>h.trim().replace(/"/g,''));
+    const idx = {
+      id: headers.findIndex(h=>h.toLowerCase().includes('order id')),
+      date: headers.findIndex(h=>h.toLowerCase().includes('order date')),
+      title: headers.findIndex(h=>h.toLowerCase().includes('title')),
+      price: headers.findIndex(h=>h.toLowerCase().includes('total order amount')),
+      state: headers.findIndex(h=>h.toLowerCase().includes('order state')),
+      cat: headers.findIndex(h=>['category','type','game'].includes(h.toLowerCase().trim())),
+    };
+    let added = 0, skipped = 0;
+    const existingIds = new Set(edSales.map(s=>s.orderId));
+    for(let i=1;i<lines.length;i++){
+      const cols = lines[i].split(sep).map(c=>c.trim().replace(/"/g,''));
+      if(cols.length < 3) continue;
+      const state = idx.state>=0 ? cols[idx.state] : '';
+      if(state && !['delivered','completed'].includes(state.toLowerCase())){ skipped++; continue; }
+      const orderId = idx.id>=0 ? cols[idx.id] : '';
+      if(orderId && existingIds.has(orderId)){ skipped++; continue; }
+      const dateRaw = idx.date>=0 ? cols[idx.date] : '';
+      const date = dateRaw ? dateRaw.slice(0,10) : todayLocal();
+      const title = idx.title>=0 ? cols[idx.title] : 'Невідомо';
+      const price = parseFloat(idx.price>=0 ? cols[idx.price] : 0) || 0;
+      const category = idx.cat>=0 ? (cols[idx.cat]||'').trim() : '';
+      const fee = parseFloat((price * ED_FEE).toFixed(2));
+      const profit = parseFloat((price - fee).toFixed(2));
+      edSales.unshift({ id: Date.now()+i, date, title, price, fee, profit, orderId, category });
+      if(orderId) existingIds.add(orderId);
+      added++;
+    }
+    await saveED();
+    input.value = '';
+    renderEldorado();
+    alert('Імпортовано: ' + added + ' записів' + (skipped ? ', пропущено: ' + skipped : ''));
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function loadEldorado(force=false){
+  const d = g('edDate');
+  if(d && !d.value) d.value = todayLocal();
+  if(edLoaded && !force){ renderEldorado(); return; }
+  edLoaded = true;
+  let local = [];
+  try{ local = JSON.parse(localStorage.getItem('eldorado_sales')||'[]') || []; }catch(e){ local = []; }
+  try{
+    const r = await fetch('/api/eldorado').then(x=>x.json());
+    const srv = Array.isArray(r.sales) ? r.sales : [];
+    if(!srv.length){
+      // порожньо на сервері — значить порожньо. Кеш браузера не переносимо.
+      edSales = [];
+      try{ localStorage.removeItem('eldorado_sales'); }catch(e){}
+    } else {
+      // сервер — джерело істини, localStorage лишаємо як кеш
+      edSales = srv;
+      try{ localStorage.setItem('eldorado_sales', JSON.stringify(edSales)); }catch(e){}
+    }
+  }catch(e){
+    edSales = local;   // офлайн — беремо кеш браузера
+  }
+  renderEldorado();
+}
+
+async function addEdorado(){
+  const date = g('edDate')?.value || todayLocal();
+  const title = g('edTitle')?.value.trim() || '';
+  const price = parseFloat(g('edPrice')?.value) || 0;
+  let buy = parseFloat(g('edBuy')?.value) || 0;
+  const orderId = g('edOrderId')?.value.trim() || '';
+  const category = g('edCat')?.value.trim() || '';
+  if(!title || !price){ alert('Введи назву і ціну продажу'); return; }
+  // Захист від дублів
+  if(orderId){
+    const dup = edSales.find(s=>String(s.orderId||'').toLowerCase()===orderId.toLowerCase());
+    if(dup){
+      alert('⚠ Запис з Order ID «'+orderId+'» вже є:\n'+dup.title+'\nДата: '+(dup.date||'—'));
+      return;
+    }
+  }
+  if(!buy){
+    // автопідстановка з P&L, якщо користувач не ввів закупівлю
+    const t = title.toLowerCase();
+    const hit = purchases.find(p=>{
+      const pt=(p.title||'').trim().toLowerCase();
+      return pt.length>=4 && (pt===t || pt.includes(t) || t.includes(pt));
+    });
+    if(hit && (hit.buy||0)>0) buy = hit.buy;
+  }
+  const same = edSales.find(s=>s.title===title && s.date===date && Math.abs((s.price||0)-price)<0.01);
+  if(same && !confirm('Схожий запис уже є:\n'+title+'\n'+date+' · $'+price.toFixed(2)+'\n\nДодати ще раз?')) return;
+  const fee = parseFloat((price * ED_FEE).toFixed(2));
+  const profit = parseFloat((price - fee - buy).toFixed(2));
+  edSales.unshift({ id: Date.now(), date, title, price, buy, fee, profit, orderId, category });
+  await saveED();
+  g('edTitle').value = '';
+  g('edPrice').value = '';
+  g('edBuy').value = '';
+  g('edOrderId').value = '';
+  g('edCat').value = '';
+  edPg = 1;
+  renderEldorado();
+  toast('✅ Продаж додано!');
+  // v4.6: без Telegram-сповіщення — ручне внесення
+}
+
+function editEdSale(id){
+  const s = edSales.find(x => x.id === id);
+  if(!s) return;
+  document.getElementById('edModal')?.remove();
+  const d = document.createElement('div');
+  d.id = 'edModal';
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;'
+    + 'justify-content:center;z-index:9999;padding:16px';
+  const fld = (k, label, val, type) =>
+    `<label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--mu)">${label}`
+    + `<input id="edM_${k}" type="${type || 'text'}" ${type === 'number' ? 'step="0.01"' : ''}`
+    + ` value="${esc(String(val == null ? '' : val))}"></label>`;
+  d.innerHTML = `<div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;`
+    + `padding:18px;max-width:580px;width:100%;max-height:90vh;overflow:auto">`
+    + `<div style="font-weight:800;font-size:15px;margin-bottom:12px">✏ ${t('ed.editTitle')}</div>`
+    + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">`
+    + fld('date', t('th.date'), s.date || '', 'date')
+    + fld('oid', 'Order ID', s.orderId || '')
+    + `<div style="grid-column:1/-1">` + fld('title', t('inv.name'), s.title || '') + `</div>`
+    + fld('cat', t('ed.category'), s.category || '')
+    + fld('price', t('th.sell')+' $', s.price || 0, 'number')
+    + fld('buy', t('th.buy')+' $', s.buy || 0, 'number')
+    + fld('fee', t('th.fee')+' $ (10%)', s.fee || 0, 'number')
+    + `</div>`
+    + `<div style="font-size:11px;color:var(--mu);margin-top:8px">${t('ed.profitHint')}</div>`
+    + `<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">`
+    + `<button class="btn" onclick="document.getElementById('edModal').remove()">${t('cancel')}</button>`
+    + `<button class="btn gr" onclick="saveEdEdit(${s.id})">💾 ${t('save')}</button>`
+    + `</div></div>`;
+  document.body.appendChild(d);
+}
+
+async function saveEdEdit(id){
+  const s = edSales.find(x => x.id === id);
+  if(!s) return;
+  const v = k => (document.getElementById('edM_' + k) || {}).value || '';
+  const num = (x, dflt) => { const n = parseFloat(String(x).replace(',', '.')); return isNaN(n) ? dflt : n; };
+  if(v('date')) s.date = v('date');
+  s.title = String(v('title')).trim() || s.title;
+  s.category = String(v('cat')).trim();
+  s.orderId = String(v('oid')).trim();
+  s.price = Math.max(0, num(v('price'), 0));
+  s.buy = Math.max(0, num(v('buy'), 0));
+  const fch = String(v('fee')).trim();
+  s.fee = fch === '' ? parseFloat((s.price * 0.1).toFixed(2)) : Math.max(0, num(fch, 0));
+  s.profit = parseFloat((s.price - s.fee - s.buy).toFixed(2));
+  document.getElementById('edModal')?.remove();
+  await saveED();
+  renderEldorado();
+  toast(t('deal.updated'));
+}
+async function delEdSale(id){
+  if(!confirm(t('ed.deleteConfirm'))) return;
+  edSales = edSales.filter(s=>s.id!==id);
+  await saveED();
+  renderEldorado();
+}
+
+function renderEldorado(){
+  const el = g('edList');
+  const sum = g('edSummary');
+  if(!el) return;
+  const q  = (g('edQ')?.value||'').toLowerCase();
+  const df = g('edDateFilter')?.value||'';
+  const now = new Date();
+  const todayStr = localDate(now);
+  const wkStart = new Date(now); wkStart.setDate(now.getDate()-now.getDay());
+  const moStart = todayStr.slice(0,7);
+
+  edFilt = edSales.filter(s=>{
+    const title = (s.title||'').toLowerCase();
+    const oid   = String(s.orderId||'').toLowerCase();
+    if(q && !title.includes(q) && !oid.includes(q)) return false;
+    if(df){
+      const d = s.date||'';
+      if(df==='today' && d!==todayStr) return false;
+      if(df==='week'  && d<localDate(wkStart)) return false;
+      if(df==='month' && !d.startsWith(moStart)) return false;
+      if(df==='custom'){
+        const from = g('edFrom')?.value||'';
+        const to   = g('edTo')?.value||'';
+        if(from && d<from) return false;
+        if(to && d>to) return false;
+      }
+    }
+    return true;
+  });
+
+  const pp = 50;
+  const tot = Math.ceil(edFilt.length/pp);
+  if(edPg > tot) edPg = Math.max(1,tot);
+  const page = edFilt.slice((edPg-1)*pp, edPg*pp);
+  const pag = g('edPag');
+
+  if(!edFilt.length){
+    el.innerHTML = '<div class="none">'+(edSales.length?'Нічого не знайдено':'Ще немає записів')+'</div>';
+    if(sum) sum.innerHTML = '';
+    if(pag) pag.style.display='none';
+    return;
+  }
+
+  const isMobile = window.innerWidth <= 600;
+  if(isMobile){
+    el.innerHTML = page.map(s=>{
+      const prof = s.profit||0;
+      return `<div style="background:var(--card2);border:1px solid var(--brd);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+          <div style="font-weight:700;font-size:14px;flex:1">${esc((s.title||'—').substring(0,60))}</div>
+          <div class="${prof>=0?'profit-pos':'profit-neg'}" style="font-family:var(--font);font-size:14px;font-weight:700;white-space:nowrap">${prof>=0?'+':''}$${prof.toFixed(2)}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center;font-size:11px;color:var(--mu)">
+            <span>${esc(s.date||'—')}</span>
+            ${s.category?`<span style="background:rgba(6,182,212,.12);color:var(--a3);border:1px solid rgba(6,182,212,.3);padding:1px 6px;border-radius:3px">${esc(s.category)}</span>`:''}
+            <span>↑$${(s.price||0).toFixed(2)}</span>
+            <span>↓${s.buy?'$'+(s.buy||0).toFixed(2):'—'}</span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button onclick="editEdSale(${s.id})" style="background:transparent;border:1px solid var(--brd);color:var(--a1);padding:5px 9px;border-radius:4px;font-size:12px;cursor:pointer">✏</button>
+            <button onclick="delEdSale(${s.id})" style="background:transparent;border:1px solid var(--brd);color:var(--rd);padding:5px 9px;border-radius:4px;font-size:12px;cursor:pointer">🗑</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    el.innerHTML = '<div class="bub-wrap">' + page.map(s => {
+      const pr = Number(s.profit||0);
+      return `<div class="bub">
+        <div class="bub-head">
+          <span class="bub-date">${esc(s.date||'')}</span>
+          ${s.category?`<span class="bub-chip">${esc(s.category)}</span>`:''}
+          <span class="bub-title">${esc(s.title)}</span>
+          <div class="bub-acts">
+            <button class="bub-btn" onclick="editEdSale(${s.id})" title="Редагувати">✏</button>
+            <button class="bub-btn del" onclick="delEdSale(${s.id})" title="Видалити">🗑</button>
+          </div>
+        </div>
+        <div class="bub-stats">
+          <span class="bs">Продав <b>$${Number(s.price||0).toFixed(2)}</b></span>
+          <span class="bs">Купив <b>$${Number(s.buy||0).toFixed(2)}</b></span>
+          <span class="bs">Комісія <b class="neg">-$${Number(s.fee||0).toFixed(2)}</b></span>
+          <span class="bs ${pr>=0?'pos':'negp'}">${t('k.profit')} <b>${pr>=0?'+':''}$${pr.toFixed(2)}</b></span>
+        </div>
+        ${s.orderId?`<div class="bub-id">🆔 ${esc(s.orderId)}</div>`:''}
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  // Підсумки по поточному фільтру
+  const total       = edFilt.reduce((a,s)=>a+(s.price||0),0);
+  const totalProfit = edFilt.reduce((a,s)=>a+(s.profit||0),0);
+  const totalFee    = edFilt.reduce((a,s)=>a+(s.fee||0),0);
+  const totalBuy    = edFilt.reduce((a,s)=>a+(s.buy||0),0);
+  const plProfit    = purchases.reduce((a,p)=>a+(p.afterFee||0),0);
+  const combined    = plProfit + totalProfit;
+  if(sum){
+    const uah = _rate ? ' <span style="color:var(--mu)">(₴'+(totalProfit*_rate).toFixed(2)+')</span>' : '';
+    sum.innerHTML = `<span style="color:var(--mu)">${LANG==='uk'?'Продажів':(LANG==='ru'?'Продаж:':'Sales')}: <b style="color:var(--tx)">${edFilt.length}</b>${edFilt.length!==edSales.length?' із '+edSales.length:''}</span>`+
+      `<span style="color:var(--mu)">Виторг: <b style="color:var(--tx)">$${total.toFixed(2)}</b></span>`+
+      `<span style="color:var(--mu)">Купив: <b style="color:var(--mu)">$${totalBuy.toFixed(2)}</b></span>`+
+      `<span style="color:var(--mu)">${LANG==='uk'?'Комісія':(LANG==='ru'?'Комиссия':'Fee')}: <b style="color:var(--rd)">-$${totalFee.toFixed(2)}</b></span>`+
+      `<span style="color:var(--mu)">Прибуток: <b style="color:var(--gr)">${totalProfit>=0?'+':''}$${totalProfit.toFixed(2)}</b>${uah}</span>`+
+      `<span style="border-left:1px solid var(--brd);padding-left:14px;color:var(--mu)">Разом з P&L: <b style="color:${combined>=0?'var(--gr)':'var(--rd)'}">${combined>=0?'+':''}$${combined.toFixed(2)}</b>${_rate?' <span style="color:var(--mu)">(₴'+(combined*_rate).toFixed(2)+')</span>':''}</span>`;
+  }
+
+  // Розбивка по категоріях
+  renderEdBreakdown();
+
+  // Пагінація
+  if(!pag) return;
+  if(tot<=1){ pag.style.display='none'; return; }
+  let h='';
+  if(edPg>1) h+=`<button class="pb" onclick="edGo(${edPg-1})">←</button>`;
+  const s=Math.max(1,edPg-2), en=Math.min(tot,edPg+2);
+  for(let i=s;i<=en;i++) h+=`<button class="pb${i===edPg?' on':''}" onclick="edGo(${i})">${i}</button>`;
+  if(edPg<tot) h+=`<button class="pb" onclick="edGo(${tot})">→</button>`;
+  h+=`<span style="font-size:10px;color:var(--mu)">${edFilt.length} записів</span>`;
+  pag.innerHTML=h; pag.style.display='flex';
+}
+function renderEdBreakdown(){
+  const el = g('edBreakdown');
+  if(!el) return;
+  const cats = [...new Set(edSales.map(s=>(s.category||'').trim()).filter(Boolean))].sort();
+  const dl = g('edCatList');
+  if(dl) dl.innerHTML = cats.map(c=>`<option value="${esc(c)}">`).join('');
+  if(!edFilt.length){ el.innerHTML='<div class="none">Немає даних</div>'; return; }
+  const map = {};
+  edFilt.forEach(s=>{
+    const k = (s.category||'').trim() || 'Без категорії';
+    if(!map[k]) map[k]={count:0, rev:0, buy:0, profit:0};
+    map[k].count++;
+    map[k].rev    += s.price||0;
+    map[k].buy    += s.buy||0;
+    map[k].profit += s.profit||0;
+  });
+  const rows = Object.entries(map).sort((a,b)=>b[1].profit-a[1].profit);
+  const max = Math.max(...rows.map(r=>Math.abs(r[1].profit)), 1);
+  el.innerHTML = '<table class="sup-table"><thead><tr><th>КАТЕГОРІЯ</th><th style="text-align:right">УГОД</th><th style="text-align:right">ВИТОРГ</th><th style="text-align:right">ПРИБУТОК</th><th style="text-align:right">МАРЖА</th><th style="width:140px"></th></tr></thead><tbody>'+
+    rows.map(([k,s])=>{
+      const margin = s.buy>0 ? (s.profit/s.buy*100) : 0;
+      const pct = Math.round(Math.abs(s.profit)/max*100);
+      const color = s.profit>=0?'var(--gr)':'var(--rd)';
+      return `<tr>
+        <td style="font-weight:600">${esc(k)}</td>
+        <td style="text-align:right;color:var(--mu)">${s.count}</td>
+        <td style="text-align:right;font-family:var(--font);font-size:11px">$${s.rev.toFixed(2)}</td>
+        <td style="text-align:right;font-family:var(--font);font-weight:700;color:${color}">${s.profit>=0?'+':''}$${s.profit.toFixed(2)}</td>
+        <td style="text-align:right;font-size:11px;color:var(--mu)">${s.buy>0?margin.toFixed(0)+'%':'—'}</td>
+        <td><div style="background:var(--bg2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color};border-radius:4px"></div></div></td>
+      </tr>`;
+    }).join('')+'</tbody></table>';
+}
+
+function edGo(n){ edPg=n; renderEldorado(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function exportEdCsv(){
+  const rows=[['Дата','Назва','Продав $','Купив $','Комісія $',(LANG==='uk'?'Прибуток $':(LANG==='ru'?'Прибыль $':'Profit $')),'Order ID']];
+  edFilt.forEach(s=>{
+    rows.push([s.date||'', s.title||'', (s.price||0).toFixed(2), (s.buy||0).toFixed(2),
+      (s.fee||0).toFixed(2), (s.profit||0).toFixed(2), s.orderId||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='eldorado_'+todayLocal()+'.csv';
+  a.click();
+  toast('✅ CSV ELDORADO завантажено!');
+}
+
+// ═══════════════════════════════════════════════
+// 🛒 ЗАКУПІВЛЯ — посторінково із сервера
+//    (раніше вкладка тягла ~970 КБ JSON; тепер 50 товарів на запит + gzip)
+// ═══════════════════════════════════════════════
+let supPage = {items: [], total: 0, page: 1, per: 50, counts: {}, sale: 0, gone: 0};
+let _supReq = 0, _supTimer = null;
+
+function supQuery(page){
+  const p = new URLSearchParams();
+  p.set('page', page||1);
+  p.set('per', 50);
+  const q=(g('supQ')?.value||'').trim();  if(q) p.set('q', q);
+  const src=g('supSrc')?.value||'';       if(src) p.set('src', src);
+  const sort=g('supSort')?.value||'';     if(sort) p.set('sort', sort);
+  if(g('supAvail')?.checked) p.set('avail','1');
+  if(g('supGone')?.checked) p.set('gone','1');
+  if(g('supCheaper')?.checked) p.set('cheaper','1');
+  return p.toString();
+}
+
+async function loadBuyList(force){
+  const el = g('buyList'); if(!el) return;
+  if(!force && el.dataset.loaded === '1') return;
+  el.innerHTML = '<div class="none">'+t('rep.calculating')+'</div>';
+  try{
+    const d = await fetch('/api/buy-list?limit=15').then(r => r.json());
+    if(!d.ok){ el.innerHTML = '<div class="al err">⚠ ' + esc(d.error || t('an.noData')) + '</div>'; return; }
+    const items = d.items || [];
+    if(!items.length){
+      const emptyTxt = LANG==='ru' ? ('Нет прибыльных вариантов за последние '+(d.days||90)+' дней')
+        : LANG==='en' ? ('No profitable options in the last '+(d.days||90)+' days')
+        : ('Немає прибуткових варіантів за останні '+(d.days||90)+' днів');
+      el.innerHTML = '<div class="none">'+emptyTxt+'</div>';
+      return;
+    }
+    el.dataset.loaded = '1';
+    el.innerHTML = '<div class="bub-wrap">' + items.map(x => {
+      const ttl = x.url
+        ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener" style="color:var(--tx)">' + esc(x.title) + '</a>'
+        : esc(x.title);
+      return '<div class="bub">'
+        + '<div class="bub-head">'
+        + '<span class="bub-chip">' + esc(x.game) + '</span>'
+        + '<span class="bub-title">' + ttl + '</span>'
+        + '<span class="bub-date" style="color:var(--gr)">ROI ' + Math.round((x.roi || 0) * 100) + '%</span>'
+        + '</div>'
+        + '<div class="bub-stats">'
+        + '<span class="bs">'+t('plan.supplier')+' <b>$' + Number(x.price || 0).toFixed(2) + '</b></span>'
+        + '<span class="bs">'+t('plan.yourSale')+' <b>$' + Number(x.expected || 0).toFixed(2) + '</b></span>'
+        + '<span class="bs pos">'+t('plan.margin')+' <b>+$' + Number(x.margin || 0).toFixed(2) + '</b></span>'
+        + '<span class="bs">'+t('plan.demand')+' <b>' + (x.demand || 0) + '</b> '+plural(x.demand||0,'sales')+'</span>'
+        + (x.source ? '<span class="bs">' + esc(x.source) + '</span>' : '')
+        + '</div></div>';
+    }).join('') + '</div>';
+  }catch(e){ el.innerHTML = '<div class="al err">⚠ ' + esc(String(e)) + '</div>'; }
+}
+
+async function loadSupply(page=1, force=false){
+  loadBuyList();
+  loadSupStatus();
+  if(supLoaded && !force && page===1 && supPage.items.length) return;
+  const tag = ++_supReq;
+  g('supAl').className='al info';
+  g('supAl').textContent='⏳ Завантаження...';
+  try{
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),20000);
+    const r = await fetch('/api/suppliers?'+supQuery(page),{signal:ctrl.signal});
+    clearTimeout(t);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    if(tag !== _supReq) return;              // відповідь на старіший запит — ігнор
+    supPage = {items: d.items||[], total: d.total||0, page: d.page||page,
+               per: d.per||50, counts: d.counts||{}, sale: d.sale||0,
+               gone: d.gone||0, cheaper: d.cheaper||0};
+    supLoaded = supPage.items.length > 0;
+    window._supItems = supPage.items;
+    renderSupStats();
+    renderSupPage();
+    renderSupCards(window._supSuppliers || []);
+  }catch(ex){
+    if(tag !== _supReq) return;
+    supLoaded=false;
+    g('supAl').className='al err';
+    g('supAl').textContent='❌ '+ex.message+' (натисни ↺)';
+    if(g('supList')) g('supList').innerHTML='';
+  }
+}
+
+function renderSupStats(){
+  const c = supPage.counts||{};
+  g('supTotal').textContent = supPage.total;
+  if(g('supCnt')) g('supCnt').textContent = supPage.total;
+  g('supAl').className='al ok';
+  g('supAl').textContent = '✅ '+(supPage.total)+' '+plural(supPage.total,'products')
+    + (supPage.sale ? ' · 🔥 '+(LANG==='ru'?'Скидки: ':LANG==='en'?'Sale: ':'Акція: ')+supPage.sale : '')
+    + (supPage.gone ? (LANG==='ru'?' · 🗑 исчезло: ':LANG==='en'?' · 🗑 gone: ':' · 🗑 зникло: ')+supPage.gone : '')
+    + (supPage.cheaper ? ' · 💸 '+(LANG==='ru'?'дешевле в других: ':LANG==='en'?'cheaper elsewhere: ':'дешевше в інших: ')+supPage.cheaper : '');
+}
+
+function renderSupply(){                 // викликають фільтри/пошук
+  if(_supTimer) clearTimeout(_supTimer);
+  _supTimer = setTimeout(()=>{ _supTimer=null; loadSupply(1, true); }, 250);
+}
+function toggleCustomDateRange(){
+  const df=g('plDateFilter')?.value||'';
+  const el=g('plCustomRange');
+  if(el) el.style.display=df==='custom'?'flex':'none';
+}
+const _dismissedNew = new Set(safeArray(localStorage.getItem('sup_dismissed_new')||'[]'));
+const _dismissedChanged = new Set(safeArray(localStorage.getItem('sup_dismissed_changed')||'[]'));
+function dismissNew(pid){
+  _dismissedNew.add(pid);
+  localStorage.setItem('sup_dismissed_new', JSON.stringify([..._dismissedNew]));
+  renderSupPage();
+}
+function dismissChanged(pid){
+  _dismissedChanged.add(pid);
+  localStorage.setItem('sup_dismissed_changed', JSON.stringify([..._dismissedChanged]));
+  renderSupPage();
+}
+document.addEventListener('click', e=>{
+  const b=e.target.closest('.new-badge');
+  if(b && b.dataset.pid) { e.stopPropagation(); dismissNew(b.dataset.pid); }
+  const c=e.target.closest('.changed-badge');
+  if(c && c.dataset.pid) { e.stopPropagation(); dismissChanged(c.dataset.pid); }
+  // відновлення бекапу через data-атрибут (без inline-JS і екранування в рядок)
+  const r=e.target.closest('button[data-restore]');
+  if(r && r.dataset.restore) restoreBackup(r.dataset.restore);
+  // порівняння цін
+  const cmp=e.target.closest('button[data-cmp]');
+  if(cmp && cmp.dataset.cmp) openCompare(cmp.dataset.cmp);
+  // історія ціни
+  const hst=e.target.closest('button[data-hist]');
+  if(hst && hst.dataset.hist) openHistory(hst.dataset.hist);
+  if(e.target === g('cmpModal')) closeCmp();
+  if(e.target === g('histModal')) closeHist();
+});
+
+function supAgeBadge(p, now, DAY){
+  const updAge=now-(p.updated_at||0);
+  const seenAge=p.seen_at>0 ? now-p.seen_at : Infinity;
+  if(p.gone) return `<span style="background:rgba(239,68,68,.12);color:var(--rd);border:1px solid rgba(239,68,68,.3);padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700">🗑 ${t('sup.gone')}</span>`;
+  if(seenAge<DAY*3 && !_dismissedNew.has(p.id))
+    return `<span class="new-badge" data-pid="${esc(p.id)}" style="background:rgba(16,185,129,.15);color:var(--gr);border:1px solid rgba(16,185,129,.3);padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer" title="Клікни щоб прибрати">🆕 ✕</span>`;
+  if(p.updated_at>0 && updAge<DAY*3 && !_dismissedChanged.has(p.id))
+    return `<span class="changed-badge" data-pid="${esc(p.id)}" style="background:rgba(245,158,11,.12);color:var(--yw);border:1px solid rgba(245,158,11,.3);padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer" title="Клікни щоб прибрати">🔄 ✕</span>`;
+  if(p.updated_at>0 && updAge<DAY*30) return `<span style="color:var(--mu);font-size:9px">${Math.floor(updAge/DAY)} ${LANG==='ru'?'дн. назад':LANG==='en'?'days ago':'дн. тому'}</span>`;
+  return '';
+}
+
+function renderSupPage(){
+  const page = supPage.items || [];
+  if(!page.length){
+    g('supList').innerHTML = '<div class="none">'+(supPage.total?t('sup.none'):t('sup.empty'))+'</div>';
+    g('supPag').style.display='none';
+    return;
+  }
+  const now=Date.now()/1000, DAY=86400;
+  const isMobile = window.innerWidth <= 600;
+  const cheapBadge = c => c
+    ? `<span style="background:rgba(248,113,113,.12);color:var(--rd);border:1px solid rgba(248,113,113,.3);padding:1px 6px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap" title="${esc(c.sourceName)}">💸 −$${Math.abs(c.diff).toFixed(2)}</span>`
+    : '';
+  if(isMobile){
+    g('supList').innerHTML = page.map((p,i)=>{
+      const _disc = Number(p.discount);
+      const disc=p.isOnSale?`<span style="background:rgba(239,68,68,.1);color:var(--rd);border:1px solid rgba(239,68,68,.2);padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700">${Number.isFinite(_disc)&&_disc>0?('-'+_disc+'%'):t('sup.sale')}</span>`:'';
+      return `<div style="background:var(--card2);border:1px solid var(--brd);border-left:3px solid ${p.gone?'var(--rd)':'transparent'};border-radius:12px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
+          <a href="${esc(p.url)}" target="_blank" style="color:var(--tx);text-decoration:none;font-weight:700;font-size:15px;flex:1">${esc((p.title||'').substring(0,70))}</a>
+          <span style="font-size:15px;font-weight:800;color:${p.gone?'var(--mu)':'var(--gr)'};white-space:nowrap">$${(p.price||0).toFixed(2)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px">
+            <span style="display:inline-flex;padding:2px 7px;border-radius:5px;font-weight:700;border:1px solid;background:${p.sourceColor}18;color:${p.sourceColor};border-color:${p.sourceColor}38">${p.sourceEmoji} ${p.sourceName}</span>
+            ${disc}
+            ${cheapBadge(p.cheaper)}
+            <span>${p.gone?'<span style="color:var(--mu)">—</span>':(p.available?'<span style="color:var(--gr)">✓ '+t('sup.availYes')+'</span>':'<span style="color:var(--rd)">✗ '+t('sup.availNo')+'</span>')}</span>
+            ${supAgeBadge(p, now, DAY)}
+          </div>
+          <div style="display:flex;gap:6px">
+            <a href="${esc(p.url)}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a>
+            <button class="btn" style="padding:6px 10px;gap:5px" data-hist="${esc(p.id)}" title="Історія ціни за 30 днів"><svg class="ic"><use href="#ic-chart"/></svg>${t('cb.history')}</button>
+            <button class="btn" style="padding:6px 10px;gap:5px" data-cmp="${esc(p.id)}" title="Порівняти ціну в інших магазинах"><svg class="ic"><use href="#ic-scale"/></svg>${t('cb.compare')}</button>
+            <button class="btn" style="padding:6px 10px;gap:5px;white-space:nowrap" onclick="openLotModal(_supItems[${i}])" title="Калькулятор ціни лота"><svg class="ic"><use href="#ic-calc"/></svg>${t('cb.lot')}</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    g('supList').innerHTML=`<table class="sup-table"><thead><tr><th>${t('ct.name')}</th><th>${t('ct.src')}</th><th>${t('ct.price')}</th><th>${t('ct.disc')}</th><th>${t('ct.avail')}</th><th>${t('ct.date')}</th><th></th></tr></thead><tbody>`+
+    page.map((p,i)=>{
+      const bc=`background:${p.sourceColor}18;color:${p.sourceColor};border-color:${p.sourceColor}38`;
+      const _disc = Number(p.discount);
+      const disc=p.isOnSale?`<span style="background:rgba(239,68,68,.1);color:var(--rd);border:1px solid rgba(239,68,68,.2);padding:1px 5px;border-radius:3px;font-size:11px;font-weight:700">${Number.isFinite(_disc)&&_disc>0?('-'+_disc+'%'):t('sup.sale')}</span>`:'—';
+      const cheap=p.cheaper?`<span style="display:block;margin-top:3px;color:var(--rd);font-size:11px">💸 −$${Math.abs(p.cheaper.diff).toFixed(2)} · ${esc(p.cheaper.sourceName)}</span>`:'';
+      return`<tr${p.gone?' style="opacity:.62"':''}><td style="max-width:300px"><a href="${esc(p.url)}" target="_blank" style="text-decoration:none;font-weight:600">${esc(p.title)}</a></td>
+        <td><span style="display:inline-flex;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;border:1px solid;${bc}">${p.sourceEmoji} ${p.sourceName}</span></td>
+        <td><span style="font-size:14px;font-weight:800;color:${p.gone?'var(--mu)':'var(--gr)'}">$${(p.price||0).toFixed(2)}</span>${p.comparePrice>0?`<span style="font-size:11px;color:var(--mu);text-decoration:line-through;display:block">$${p.comparePrice.toFixed(2)}</span>`:''}${cheap}</td>
+        <td>${disc}</td>
+        <td>${p.gone?'<span style="color:var(--mu)">—</span>':(p.available?'<span style="color:var(--gr)">✓</span>':'<span style="color:var(--rd)">✗</span>')}</td>
+        <td>${supAgeBadge(p, now, DAY)}</td>
+        <td style="white-space:nowrap;text-align:right"><div style="display:inline-flex;gap:5px;align-items:center;justify-content:flex-end"><a href="${esc(p.url)}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a><button class="btn" style="padding:6px 10px;gap:5px" data-hist="${esc(p.id)}" title="Історія ціни за 30 днів"><svg class="ic"><use href="#ic-chart"/></svg>${t('cb.history')}</button><button class="btn" style="padding:6px 10px;gap:5px" data-cmp="${esc(p.id)}" title="Порівняти ціну в інших магазинах"><svg class="ic"><use href="#ic-scale"/></svg>${t('cb.compare')}</button><button class="btn" style="padding:6px 10px;gap:5px;white-space:nowrap" onclick="openLotModal(_supItems[${i}])" title="Калькулятор ціни лота"><svg class="ic"><use href="#ic-calc"/></svg>${t('cb.lot')}</button></div></td></tr>`;
+    }).join('')+'</tbody></table>';
+  }
+  window._supItems=page;
+  const tot=Math.ceil(supPage.total/supPage.per), pag=g('supPag');
+  if(tot<=1){pag.style.display='none';return;}
+  const cur=supPage.page;
+  let h='';
+  if(cur>1)h+=`<button class="pb" onclick="supGo(${cur-1})">←</button>`;
+  const s=Math.max(1,cur-2),en=Math.min(tot,cur+2);
+  for(let i=s;i<=en;i++)h+=`<button class="pb${i===cur?' on':''}" onclick="supGo(${i})">${i}</button>`;
+  if(cur<tot)h+=`<button class="pb" onclick="supGo(${tot})">→</button>`;
+  h+=`<span style="font-size:10px;color:var(--mu)">${supPage.total} · стор. ${cur}/${tot}</span>`;
+  pag.innerHTML=h;pag.style.display='flex';
+}
+function supGo(n){ loadSupply(n, true); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ── стан оновлення бази + ручне оновлення ──
+function renderSupCards(list){
+  const box = g('supCards'); if(!box) return;
+  if(!list || !list.length){
+    const cached = Number((window.supPage && supPage.total) || 0) || (window._supItems ? _supItems.length : 0);
+    if(cached > 0){
+      box.innerHTML = '<div class="none">'+esc(cached+' '+plural(cached,'products'))+' · '+(LANG==='ru'?'из кеша':LANG==='en'?'from cache':'з кешу')+'</div>';
+    } else {
+      box.innerHTML = '<div class="none">'+t('sup.noSuppliers')+'</div>';
+    }
+    return;
+  }
+  box.innerHTML = list.map(s=>
+    '<div style="background:var(--card2);border:1px solid var(--brd);border-left:3px solid '+(s.color||'var(--mu)')+';border-radius:10px;padding:10px 14px;min-width:130px">'
+    + '<div style="font-size:11px;color:var(--mu)">'+(s.emoji||'')+' '+esc(s.name)+'</div>'
+    + '<div style="font-size:18px;font-weight:700;color:'+(s.color||'var(--tx)')+'">'+(s.count||0)+'</div></div>'
+  ).join('');
+  // оновимо селект
+  const sel = g('supSrc');
+  if(sel && sel.options.length <= 1){
+    list.forEach(s=>{
+      const o = document.createElement('option');
+      o.value = s.key; o.textContent = (s.emoji?s.emoji+' ':'') + s.name;
+      sel.appendChild(o);
+    });
+  }
+}
+
+// ═══════════════ ОНБОРДИНГ (3 кроки) ═══════════════
+let _onbStep = 0;
+const ONB = {
+  uk: { t1:'Вітання в AccTrack', t2:'Назва й тема', t3:'Підключення кабінетів',
+        lng:'Оберіть мову інтерфейсу', nm:'Назва застосунку', th:'Тема оформлення',
+        tok:'Вставте свої токени (можна пропустити й працювати вручну)',
+        next:'Далі →', fin:'Готово', skip:'Пропустити' },
+  en: { t1:'Welcome to AccTrack', t2:'Name & theme', t3:'Connect your accounts',
+        lng:'Choose interface language', nm:'App name', th:'Theme',
+        tok:'Paste your tokens (or skip — manual mode works fine)',
+        next:'Next →', fin:'Done', skip:'Skip' },
+  ru: { t1:'Добро пожаловать в AccTrack', t2:'Название и тема', t3:'Подключение кабинетов',
+        lng:'Выберите язык интерфейса', nm:'Название приложения', th:'Тема оформления',
+        tok:'Вставьте свои токены (можно пропустить — ручной режим работает)',
+        next:'Далее →', fin:'Готово', skip:'Пропустить' }
+};
+
+let _onboarded = true;   // читаємо з сервера в loadSettings
+function onbOpen(){
+  if(_onboarded) return;
+  g('onb').style.display = 'flex';
+  onbRender();
+}
+function onbRender(){
+  const L = ONB[LANG] || ONB.en;
+  g('onbStepInfo').textContent = '';
+  g('onbSkip').style.display = 'none';
+  g('onbNext').style.display = 'none';
+  g('onbTitle').textContent = (LANG==='uk' ? 'Оберіть мову інтерфейсу'
+                            : LANG==='ru' ? 'Выберите язык интерфейса'
+                            : 'Choose interface language');
+  g('onbBody').innerHTML =
+      '<div class="onb-lang" style="gap:10px">'
+    + '<button class="' + (LANG==='uk'?'on':'') + '" onclick="onbSetLang(\'uk\')">Українська</button>'
+    + '<button class="' + (LANG==='en'?'on':'') + '" onclick="onbSetLang(\'en\')">English</button>'
+    + '<button class="' + (LANG==='ru'?'on':'') + '" onclick="onbSetLang(\'ru\')">Русский</button>'
+    + '</div>'
+    + '<div style="color:var(--mu);font-size:11.5px;margin-top:14px;text-align:center">'
+    + t('onb.hint')+'</div>';
+}
+function onbSetLang(l){
+  setLang(l);
+  onbDone();
+}
+function onbDone(){
+  _onboarded = true;
+  try{ localStorage.setItem('gt_onboarded','1'); }catch(e){}
+  try{ fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({onboarded: true})}); }catch(e){}
+  const el = g('onb'); if(el) el.style.display = 'none';
+  try{ renderOverview(); }catch(e){}
+}
+function onbSkip(){ onbDone(); }
+function onbNext(){ onbDone(); }
+
+async function loadSupStatus(){
+  try{
+    const d = await fetch('/api/suppliers/status').then(r=>r.json());
+    const el = g('supStatus'); if(!el) return;
+    const mins = Math.max(0, Math.round(Date.now()/1000 - (d.last_ok||0)) / 60);
+    const next = Math.round((d.next_in||0)/60);
+    window._supSuppliers = d.suppliers || [];
+    renderSupCards(window._supSuppliers);
+    const sc = d.scraper||{};
+    const keys = sc.keys || [];
+    const usable = keys.filter(k => !(k.banned > Date.now()/1000) && (k.left == null || k.left > 5)).length;
+    const left = keys.reduce((a, k) => a + (Number(k.left) || 0), 0);
+    const nextTxt = d.busy ? (LANG==='ru'?'сейчас обновляю…':LANG==='en'?'refreshing now…':'зараз оновлюю…')
+      : (next >= 60 ? (LANG==='ru'?'следующее через ':LANG==='en'?'next in ':'наступне через ') + Math.round(next/60) + (LANG==='ru'?' ч':LANG==='en'?' h':' год')
+                    : (LANG==='ru'?'следующее через ':LANG==='en'?'next in ':'наступне через ') + next + (LANG==='ru'?' мин':LANG==='en'?' min':' хв'));
+    const updTxt = d.last_ok ? (Math.round(mins) < 1 ? (LANG==='ru'?'только что':LANG==='en'?'just now':'щойно') : Math.round(mins) + (LANG==='ru'?' мин назад':LANG==='en'?' min ago':' хв тому')) : '—';
+    el.innerHTML = (LANG==='ru'?'обновлено ':LANG==='en'?'updated ':'оновлено ') + updTxt
+      + ' · ' + nextTxt
+      + ' · '+(LANG==='ru'?'сегодня ':LANG==='en'?'today ':'сьогодні ') + (sc.used||0) + '/' + (sc.limit||30)
+      + (keys.length ? ' · '+(LANG==='ru'?'ключи ':LANG==='en'?'keys ':'ключі ') + usable + '/' + keys.length + ' ('+(LANG==='ru'?'остаток ':LANG==='en'?'left ':'залишок ') + left + ')' : '')
+      + (d.news && d.news.checked ? ' · 🆕 ' + (Math.round((Date.now()/1000 - d.news.checked)/60)) + (LANG==='ru'?' мин, новых ':LANG==='en'?' min, new ':' хв, нових ') + (d.news.last_new||0) : '')
+      + (d.busy ? ' · ⏳ '+(LANG==='ru'?'обновление идёт':LANG==='en'?'refresh in progress':'оновлення йде') : '');
+  }catch(e){}
+}
+
+async function checkNews(){
+  toast('⏳ Перевіряю новинки через sitemap...');
+  try{
+    const d = await fetch('/api/suppliers/news',{method:'POST'}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||'помилка'), false); return; }
+    toast(d.baseline ? '🔔 Базовий список магазинів збережено'
+                     : ('🆕 Нових: '+d.new+(d.notified?' — алерт у Telegram':'')));
+    loadSupStatus();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function refreshSuppliers(){
+  if(!confirm('Оновити базу постачальників зараз?\n\nЦе витратить орієнтовно 10–15 кредитів ScraperAPI.')) return;
+  toast('⏳ Оновлення запущено...');
+  try{ await fetch('/api/suppliers/refresh',{method:'POST'}); }catch(e){}
+  for(let i=0;i<100;i++){
+    await new Promise(r=>setTimeout(r,3000));
+    try{
+      const d = await fetch('/api/suppliers/status').then(r=>r.json());
+      if(!d.busy){ toast('✅ Базу оновлено'); break; }
+    }catch(e){}
+  }
+  loadSupStatus(); loadSupply(1,true); loadBuyList();
+}
+
+// ═══════════════════════════════════════════════
+// ⚖ ПОРІВНЯННЯ ЦІН МІЖ МАГАЗИНАМИ
+// ═══════════════════════════════════════════════
+async function openCompare(id){
+  const modal=g('cmpModal'), box=g('cmpBody');
+  if(!modal||!box) return;
+  modal.style.display='flex';
+  box.innerHTML='<div class="none">'+t('loading')+'</div>';
+  try{
+    const d=await fetch('/api/suppliers/compare?id='+encodeURIComponent(id)).then(r=>r.json());
+    if(!d.ok){ box.innerHTML='<div class="none">'+esc(d.error||t('sup.notFound'))+'</div>'; return; }
+    const p=d.product||{}, ms=d.matches||[];
+    const shopH = LANG==='ru'?'МАГАЗИН':LANG==='en'?'SHOP':'МАГАЗИН';
+    const prodH = LANG==='ru'?'ТОВАР':LANG==='en'?'PRODUCT':'ТОВАР';
+    const priceH = LANG==='ru'?'ЦЕНА':LANG==='en'?'PRICE':'ЦІНА';
+    const diffH = LANG==='ru'?'РАЗНИЦА':LANG==='en'?'DIFF':'РІЗНИЦЯ';
+    let html=`<div style="font-size:13px;font-weight:700;line-height:1.35">${esc(p.title||'')}</div>
+      <div style="font-size:11px;color:var(--mu);margin:4px 0 12px">${t('sup.compareBase')}: ${esc(p.sourceName||'')} · $${(p.price||0).toFixed(2)}</div>`;
+    if(!ms.length){
+      html+='<div class="none">'+t('sup.compareNone')+'</div>';
+    } else {
+      html+='<table class="sup-table"><thead><tr><th>'+shopH+'</th><th>'+prodH+'</th><th style="text-align:right">'+priceH+'</th><th style="text-align:right">'+diffH+'</th></tr></thead><tbody>';
+      ms.forEach(m=>{
+        const diff=Number(m.diff||0);
+        const cls=diff<0?'pr-cheaper':diff>0?'pr-expensive':'pr-same';
+        html+=`<tr><td style="white-space:nowrap">${m.sourceEmoji||''} ${esc(m.sourceName||'')}</td>
+          <td style="max-width:260px"><a href="${esc(m.url)}" target="_blank" style="color:var(--tx);text-decoration:none">${esc((m.title||'').substring(0,80))}</a><span style="color:var(--mu);font-size:9px"> · ${m.match}%</span></td>
+          <td style="text-align:right;font-family:var(--font)">$${(m.price||0).toFixed(2)}</td>
+          <td style="text-align:right" class="cmp-pr ${cls}">${diff>0?'+':''}${diff.toFixed(2)}$</td></tr>`;
+      });
+      html+='</tbody></table>';
+      if(d.best){
+        const bestTxt = LANG==='ru'?'✅ Дешевле всего:':LANG==='en'?'✅ Cheapest:':'✅ Найдешевше:';
+        html+=`<div style="margin-top:12px;font-size:12px;color:var(--gr)">${bestTxt} <b>${esc(d.best.sourceName||'')}</b> — $${(d.best.price||0).toFixed(2)}</div>`;
+      }
+    }
+    box.innerHTML=html;
+  }catch(e){ box.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
+}
+function closeCmp(){ const m=g('cmpModal'); if(m) m.style.display='none'; }
+
+// ═══════════════════════════════════════════════
+// 📈 ІСТОРІЯ ЦІНИ
+// ═══════════════════════════════════════════════
+async function openHistory(id){
+  const m=g('histModal'), box=g('histBody');
+  if(!m||!box) return;
+  m.style.display='flex';
+  box.innerHTML='<div class="none">'+t('loading')+'</div>';
+  try{
+    const d=await fetch('/api/suppliers/history?id='+encodeURIComponent(id)).then(r=>r.json());
+    if(!d.ok){ box.innerHTML='<div class="none">'+esc(d.error||t('sup.notFound'))+'</div>'; return; }
+    const h=d.history||[];
+    const nowTxt = LANG==='ru'?'сейчас':LANG==='en'?'now':'зараз';
+    let html=`<div style="font-size:15px;font-weight:700;line-height:1.35;margin-bottom:4px">${esc(d.title||'')}</div>
+      <div style="font-size:13px;color:var(--mu);margin-bottom:14px">${esc(d.sourceName||'')} · ${nowTxt} $${(d.price||0).toFixed(2)}</div>`;
+    if(h.length<2){
+      html+='<div class="none">'+t('sup.historyEmpty')+'</div>';
+    } else {
+      const vals=h.map(x=>Number(x[1]));
+      const mn=Math.min(...vals), mx=Math.max(...vals);
+      const W=540,H=150,pad=10,span=(mx-mn)||1;
+      const pt=(x,i)=>{
+        const px=pad+(W-2*pad)*(i/(h.length-1));
+        const py=H-pad-(H-2*pad)*((Number(x[1])-mn)/span);
+        return [px,py];
+      };
+      const pts=h.map(pt).map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+      const dots=h.map(pt).map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2" fill="var(--a1)"/>`).join('');
+      const first=Number(h[0][1]), last=Number(h[h.length-1][1]);
+      const diff=last-first, pct=first?((last/first-1)*100):0;
+      const color=diff<0?'var(--gr)':diff>0?'var(--rd)':'var(--mu)';
+      html+=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:var(--bg2);border:1px solid var(--brd);border-radius:12px">
+        <polyline points="${pts}" fill="none" stroke="var(--a1)" stroke-width="2.5" stroke-linejoin="round"/>${dots}
+      </svg>
+      <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:13px">
+        <span style="color:var(--mu)">${LANG==='ru'?'мин':LANG==='en'?'min':'мін'} $${mn.toFixed(2)} · ${LANG==='ru'?'макс':LANG==='en'?'max':'макс'} $${mx.toFixed(2)}</span>
+        <span style="color:${color};font-weight:700">${diff>=0?'+':''}${diff.toFixed(2)}$ (${pct>=0?'+':''}${pct.toFixed(1)}%)</span>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--mu)">${LANG==='ru'?'Точек':LANG==='en'?'Points':'Точок'}: ${h.length} · ${LANG==='ru'?'последнее изменение':LANG==='en'?'last change':'остання зміна'} ${new Date(Number(h[h.length-1][0])*1000).toLocaleString(dateLocale())}</div>`;
+    }
+    box.innerHTML=html;
+  }catch(e){ box.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
+}
+function closeHist(){ const m=g('histModal'); if(m) m.style.display='none'; }
+
+// ═══════════════════════════════════════════════
+// 💼 ПЛАТФОРМИ (ZeusX / FunPay)
+// ═══════════════════════════════════════════════
+async function loadOffers(force){
+  const el = g('offersList'); if(!el) return;
+  el.innerHTML = '<div class="none">⏳ Читаю лоти...</div>';
+  try{
+    const d = await fetch('/api/offers' + (force ? '?refresh=1' : '')).then(r => r.json());
+    if(!d.ok){ el.innerHTML = '<div class="al err">⚠ ' + esc(d.error || 'немає даних') + '</div>'; return; }
+    const items = d.items || [];
+    if(!items.length){ el.innerHTML = '<div class="none">Активних лотів не знайдено</div>'; return; }
+    el.innerHTML = '<table class="sup-table"><thead><tr><th>ЛОТ</th><th>ГРА</th><th>ЦІНА</th><th>У ПОСТАЧАЛЬНИКА</th><th>РІЗНИЦЯ</th><th>К-СТЬ</th><th></th></tr></thead><tbody>'
+      + items.map(o => {
+          const sup = o.supplier;
+          const supTxt = sup
+            ? '<b>$' + Number(sup.min).toFixed(2) + '</b><div style="font-size:11px;color:var(--mu)">медіана $' + Number(sup.median).toFixed(2) + '</div>'
+            : '<span style="color:var(--mu)">—</span>';
+          let diff = '<span style="color:var(--mu)">—</span>';
+          if(sup && o.diff_usd != null){
+            const over = o.diff_usd > 0;
+            diff = '<b style="color:' + (over ? 'var(--yw)' : 'var(--gr)') + '">' + (over ? '+' : '') + '$' + Number(o.diff_usd).toFixed(2) + '</b>'
+                 + '<div style="font-size:11px;color:var(--mu)">' + (over ? 'дорожче за постачальника' : 'дешевше за постачальника') + '</div>';
+          }
+          return '<tr>'
+            + '<td style="max-width:380px">' + (o.url
+                ? '<a href="' + esc(o.url) + '" target="_blank" rel="noopener" style="font-weight:600">' + esc((o.title || '').slice(0, 90)) + '</a>'
+                : '<b>' + esc((o.title || '').slice(0, 90)) + '</b>') + '</td>'
+            + '<td>' + esc(o.game || '—') + '</td>'
+            + '<td style="color:var(--gr);font-weight:700">$' + Number(o.price || 0).toFixed(2) + '</td>'
+            + '<td>' + supTxt + '</td>'
+            + '<td>' + diff + '</td>'
+            + '<td>' + (o.qty ?? '—') + '</td>'
+            + '<td>' + (o.url ? '<a class="ilnk" href="' + esc(o.url) + '" target="_blank" rel="noopener">↗</a>' : '') + '</td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table>';
+  }catch(e){ el.innerHTML = '<div class="al err">⚠ ' + esc(String(e)) + '</div>'; }
+}
+
+async function loadCookieStatus(){
+  try{
+    const d = await fetch('/api/secrets/status').then(r => r.json());
+    const el = g('ckStatus'); if(!el) return d;
+    const yes = LANG==='ru' ? '✅ есть' : LANG==='en' ? '✅ set' : '✅ є';
+    const no  = LANG==='ru' ? '<span style="color:var(--rd)">❌ нет</span>' : LANG==='en' ? '<span style="color:var(--rd)">❌ missing</span>' : '<span style="color:var(--rd)">❌ немає</span>';
+    el.innerHTML = ' · FunPay: ' + (d.funpay_cookie ? yes : no)
+      + ' · ZeusX: ' + (d.zeusx_cookie ? yes : no);
+    return d;
+  }catch(e){ return null; }
+}
+
+async function cookieFromBrowser(){
+  try{
+    const before = await loadCookieStatus();
+    if(before && before.funpay_cookie && before.zeusx_cookie){
+      toast(LANG==='ru' ? 'Cookie уже сохранены — сначала отключите их' : LANG==='en' ? 'Cookies are already saved — disconnect them first' : 'Cookie вже збережені — спочатку відключіть їх');
+      return;
+    }
+    await fetch('/api/secrets/request',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({what:'both'})});
+    toast(LANG==='ru' ? '⏳ Прошу агента скопировать cookie из браузера…' : LANG==='en' ? '⏳ Asking the agent to copy cookies from the browser…' : '⏳ Прошу агента скопіювати cookie з браузера…');
+    for(let i=0;i<10;i++){
+      await new Promise(r=>setTimeout(r,1500));
+      const st = await fetch('/api/secrets/status').then(r=>r.json());
+      if(st.funpay_cookie && st.zeusx_cookie){
+        toast(LANG==='ru' ? '✅ Cookie скопированы из браузера' : LANG==='en' ? '✅ Cookies copied from browser' : '✅ Cookie скопійовано з браузера');
+        loadCookieStatus(); loadPlatforms(true); return;
+      }
+    }
+    toast(LANG==='ru' ? '⚠ Не удалось: откройте funpay.com и zeusx.com в окне агента' : LANG==='en' ? '⚠ Failed: open funpay.com and zeusx.com in the agent window' : '⚠ Не вдалось: відкрийте funpay.com і zeusx.com у вікні агента', false);
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function clearCookies(){
+  const ok = LANG==='ru' ? 'Отключить сохранённые cookie FunPay и ZeusX?' : LANG==='en' ? 'Disconnect saved FunPay and ZeusX cookies?' : 'Відключити збережені cookie FunPay і ZeusX?';
+  if(!confirm(ok)) return;
+  try{
+    const d = await fetch('/api/secrets/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({clear:true})}).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    g('ckFunpay').value = ''; g('ckZeusx').value = '';
+    toast(LANG==='ru' ? '✅ Cookie отключены' : LANG==='en' ? '✅ Cookies disconnected' : '✅ Cookie відключено');
+    loadCookieStatus(); loadPlatforms(true);
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function saveCookies(){
+  const fp = (g('ckFunpay') && g('ckFunpay').value || '').trim();
+  const zx = (g('ckZeusx') && g('ckZeusx').value || '').trim();
+  if(!fp && !zx){ toast(t('set.cookieNeed'), false); return; }
+  const body = {}; if(fp) body.funpay_cookie = fp; if(zx) body.zeusx_cookie = zx;
+  try{
+    const d = await fetch('/api/secrets/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)}).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    g('ckFunpay').value = ''; g('ckZeusx').value = '';
+    toast(LANG==='ru' ? ('✅ Cookie сохранены: '+(d.saved||[]).join(', ')) : LANG==='en' ? ('✅ Cookies saved: '+(d.saved||[]).join(', ')) : ('✅ Cookie збережено: '+(d.saved||[]).join(', ')));
+    loadCookieStatus();
+    loadPlatforms(true);
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function loadPlatforms(force){
+  loadCookieStatus();
+  const el=g('platList'); if(!el) return;
+  el.innerHTML='<div class="none">⏳ Читаю кабінети...</div>';
+  try{
+    const d=await fetch(force?'/api/platforms/refresh':'/api/platforms',
+      force?{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}:{})
+      .then(r=>r.json());
+    const z=d.zeusx||{}, f=d.funpay||{};
+    const errBox=(msg)=>'<div class="al '+(String(msg||'').indexOf('не підключено')>=0?'info':'err')+'" style="margin:0">'+esc(msg||'')+'</div>';
+    const card=(title,color,rows,badge)=>`<div style="flex:1;min-width:280px;background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:800;color:${color}">${title}</div>
+        ${badge||''}
+      </div>
+      ${rows}
+    </div>`;
+    const TR = {uk:{acc:'Акаунт',bal:'Баланс',hold:'В обробці / на холді',wd:'Виведено всього',tier:'Тіри',orders:'Замовлень',msgs:'нові повідомлення',ordsl:'Замовлень (останні)',nosrc:'немає даних'},
+                en:{acc:'Account',bal:'Balance',hold:'Processing / on hold',wd:'Withdrawn total',tier:'Tiers',orders:'Orders',msgs:'new messages',ordsl:'Orders (latest)',nosrc:'no data'},
+                ru:{acc:'Аккаунт',bal:'Баланс',hold:'В обработке / холд',wd:'Выведено всего',tier:'Тиры',orders:'Заказов',msgs:'новые сообщения',ordsl:'Заказов (последние)',nosrc:'нет данных'}}[LANG] || {};
+    const row=(l,v)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid rgba(40,48,63,.5);font-size:14px">
+      <span style="color:var(--mu)">${l}</span><b style="text-align:right">${v}</b></div>`;
+    const zrows = z.ok
+      ? row(TR.acc,esc(z.name||'—'))+row('Email',esc(z.email||'—'))+
+        row(TR.bal,'$'+(z.balance!=null?Number(z.balance).toFixed(2):'—'))+
+        row(TR.hold,'$'+Number(z.on_going||0).toFixed(2)+' / $'+Number(z.on_hold||0).toFixed(2))+
+        row(TR.wd,'$'+Number(z.withdraw||0).toFixed(2))+
+        row(TR.tier,esc((z.seller_tier||'—')+' / '+(z.buyer_tier||'—')))+
+        row(TR.orders,`${z.orders_all||0} · ✅ ${z.orders_good||0} · ⏳ ${z.orders_pending||0} · ↩ ${z.orders_refunded||0}`)+
+        row(TR.msgs,(d.mail_msgs||{}).ZeusX||0)
+      : `${errBox(z.error||'немає даних')}
+         <div style="font-size:12px;color:var(--mu);margin-top:8px">Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.</div>`;
+    const fl = (f.list || []).slice(0, 4);
+    const frows = f.ok
+      ? row(TR.ordsl,f.orders_count||0)+
+        row(TR.msgs,(d.mail_msgs||{}).FunPay||0)+
+        (fl.length ? fl.map(o=>`<div style="padding:7px 0;border-bottom:1px solid rgba(40,48,63,.5);font-size:13px">
+            <b>${esc((o.title||'').slice(0,62))}</b>
+            <div style="color:var(--mu);font-size:12px">${esc(o.status||'')} · $${Number(o.price||0).toFixed(2)} · ${esc(o.date||'')}</div>
+          </div>`).join('')
+        : '<div style="font-size:12px;color:var(--mu);padding-top:6px">Замовлень у списку немає</div>')
+      : `${errBox(f.error||'немає даних')}
+         <div style="font-size:12px;color:var(--mu);margin-top:8px">Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.</div>`;
+    const e = d.eldorado||{};
+    const erows = e.ok
+      ? row('Продажів усього',e.count||0)+
+        row('Виторг','$'+Number(e.revenue||0).toFixed(2))+
+        row('Прибуток','$'+Number(e.profit||0).toFixed(2))+
+        row('Цей місяць',`${e.month_count||0} · $`+Number(e.month_profit||0).toFixed(2))+
+        row('Джерело',esc(e.source||'—'))
+      : errBox(e.error||'немає даних');
+    el.innerHTML='<div style="display:flex;gap:14px;flex-wrap:wrap">'
+      + card('⚡ ZeusX','var(--a1)',zrows,z.ok?'<span style="color:var(--gr);font-size:12px">✓ онлайн</span>':'')
+      + card('🔵 FunPay','var(--a3)',frows,f.ok?'<span style="color:var(--gr);font-size:12px">✓ онлайн</span>':'')
+      + card('🟡 Eldorado','var(--yw)',erows,e.ok?'<span style="color:var(--gr);font-size:12px">✓ облік</span>':'')
+      + '</div>'
+      + ((d.zeusx_imported||d.funpay_imported)?`<div class="al ok" style="margin-top:14px">📥 У чергу додано нових продажів: ZeusX ${d.zeusx_imported||0} · FunPay ${d.funpay_imported||0} — відкрийте вкладку «ЗАМОВЛЕННЯ».</div>`:'')
+      + `<div style="font-size:12px;color:var(--mu);margin-top:10px">Eldorado не має публічного API — дані беруться з пошти та вашого ручного обліку.</div>`;
+  calcMarkets();
+  loadOffers();
+  }catch(e){ el.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
+}
+
+let mailItems=[];
+// 🏮 Taobao
+let tbItems = [], tbGame = '', tbSeg = '', tbSort = 'price', tbRegion = '';
+
+async function tbCart(href, val){
+  try{
+    const d = await fetch('/api/taobao/mark', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({href: href, cart: val})}).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || 'помилка'), false); return; }
+    loadTaobao();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function tbCartClear(){
+  if(!confirm(t('tb.clearCartConfirm'))) return;
+  await fetch('/api/taobao/cart-clear', {method:'POST'}).then(r => r.json());
+  loadTaobao();
+}
+
+async function tbAddManual(){
+  const href = prompt(t('tb.manualLink')+':', '');
+  if(!href) return;
+  const title = prompt(t('tb.manualTitle')+':', '') || (LANG==='ru'?'Ручной лот':LANG==='en'?'Manual lot':'Ручний лот');
+  const price = prompt(t('tb.manualPrice')+':', '');
+  if(price === null) return;
+  const cny = parseFloat(String(price).replace(',', '.')) || 0;
+  if(cny <= 0){ toast(t('tb.pricePositive'), false); return; }
+  const card = confirm(t('tb.cardQuestion'));
+  const opts = prompt(t('tb.optionsQuestion'), '0');
+  try{
+    const d = await fetch('/api/taobao/manual', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({href: href, title: title, price_cny: cny,
+                            card_pay: card, options: parseInt(opts, 10) || 0})}).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || 'помилка'), false); return; }
+    toast(t('tb.added'));
+    loadTaobao();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function tbMark(href, val){
+  try{
+    const d = await fetch('/api/taobao/mark', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({href: href, card_pay: val})}).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || 'помилка'), false); return; }
+    toast(val ? t('tb.markedCard') : t('tb.cardRemoved'));
+    loadTaobao();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function tbMarkOpts(href, cur){
+  const v = prompt(t('tb.optionsQuestion'), cur || '');
+  if(v === null) return;
+  const n = Math.max(0, parseInt(v, 10) || 0);
+  try{
+    const d = await fetch('/api/taobao/mark', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({href: href, options: n})}).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || 'помилка'), false); return; }
+    toast(t('tb.options')+': '+n);
+    loadTaobao();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function tbEnrich(){
+  if(!confirm(t('tb.checkConfirm'))) return;
+  try{
+    const d = await fetch('/api/taobao/enrich-request', {method:'POST'}).then(r => r.json());
+    toast(d.ok ? '💳 Перевірка запущена — стежте за смугою прогресу' : '⚠ ' + (d.error||'помилка'), !!d.ok);
+    loadTaobao();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function tbSaveMin(){
+  const v = parseFloat(g('tbMinCny') && g('tbMinCny').value);
+  if(isNaN(v)) return;
+  try{
+    await fetch('/api/settings/save', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({taobao_min_cny: v})});
+    toast('✅ Мінімальна ціна ¥' + v + ' — нові лоти нижче не зберігаються');
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function tbRequest(){
+  if(!confirm(t('tb.collectConfirm'))) return;
+  try{
+    let d = await fetch('/api/taobao/request',{method:'POST'}).then(r=>r.json());
+    if(!d.ok && d.error === 'зарано'){
+      if(!confirm(t('tb.collectCooldown').replace('%s', Math.round((d.next_in||0)/60)))) return;
+      d = await fetch('/api/taobao/request',{method:'POST',headers:{'Content-Type':'application/json'},
+                                            body:JSON.stringify({force:true})}).then(r=>r.json());
+    }
+    if(d.ok) toast('⏳ ' + (d.message || 'запит надіслано'));
+    else toast('⚠ ' + (d.message || d.error || 'помилка'), false);
+    loadTaobao();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function loadTaobao(statusOnly){
+  const el = g('tbList'); if(!el) return;
+  if(!statusOnly) el.innerHTML = '<div class="none">'+t('loading')+'</div>';
+  try{
+    const d = await fetch('/api/taobao').then(r => r.json());
+    tbItems = d.items || [];
+    const ci = g('tbCartInfo');
+    if(ci){
+      const c = d.cart || {};
+      if(c.count){
+        ci.innerHTML = '🛒 <b>'+t('tb.cart')+': ' + c.count + ' ' + plural(c.count,'lots') + '</b> · ¥' + Number(c.cny || 0).toFixed(2)
+          + ' · $' + Number(c.usd || 0).toFixed(2)
+          + ' · <span style="color:var(--yw)">' + t('tb.cardWithMiddleman') + ' $' + Number(c.landed || 0).toFixed(2) + '</span>'
+          + ' <button class="btn" style="font-size:10px;padding:2px 8px" onclick="tbCartClear()">'+t('tb.clear')+'</button>';
+      } else {
+        ci.innerHTML = '<span style="color:var(--mu)">🛒 '+t('tb.cartEmpty')+'</span>';
+      }
+    }
+    const ei = g('tbEnrichInfo');
+    if(ei){
+      const el2 = d.enrich_last || {};
+      if(el2.ts){
+        const mins = Math.max(0, Math.round((Date.now()/1000 - el2.ts) / 60));
+        let tx = (LANG==='ru'?'💳 Проверка оплаты: ':(LANG==='en'?'💳 Payment check: ':'💳 Перевірка оплати: '))
+              + (el2.checked || 0) + ' ' + (LANG==='ru'?'лотов сохранено из ':LANG==='en'?'lots saved from ':'лотів збережено з ') + (el2.requested || 0)
+              + ' ' + (LANG==='ru'?'проверенных':LANG==='en'?'checked':'перевірених') + ' · ' + mins + ' ' + (LANG==='ru'?'мин назад':LANG==='en'?'min ago':'хв тому');
+        if(el2.blocked > 0){
+          tx += ' · <span style="color:var(--yw)">' + el2.blocked + (LANG==='ru'?' страниц требовали входа в Taobao':LANG==='en'?' pages required Taobao sign-in':' сторінок вимагали входу в Taobao') + '</span>';
+        }
+        ei.innerHTML = tx;
+      } else {
+        ei.innerHTML = '💳 '+t('tb.notChecked');
+      }
+    }
+    if(g('tbMinCny') && d.min_cny != null && document.activeElement !== g('tbMinCny')){
+      g('tbMinCny').value = d.min_cny;
+    }
+    const st = g('tbStatus');
+    const agoTxt = d.agent_ago == null ? ''
+      : (d.agent_ago < 120 ? ' · ' + d.agent_ago + (LANG==='ru'?' с назад':LANG==='en'?' s ago':' с тому') : ' · ' + Math.round(d.agent_ago/60) + (LANG==='ru'?' мин назад':LANG==='en'?' min ago':' хв тому'));
+    const agentTxt = d.agent_online
+      ? '<span style="color:var(--gr)">🤖 '+(LANG==='ru'?'онлайн':LANG==='en'?'online':'онлайн') + agoTxt + '</span>'
+      : '<span style="color:var(--rd)">🤖 '+(LANG==='ru'?'офлайн':LANG==='en'?'offline':'офлайн') + agoTxt + '</span>';
+    if(st) st.innerHTML = (tbItems.length
+      ? ((LANG==='ru'?'лотов: ':LANG==='en'?'lots: ':'лотів: ') + tbItems.length + ' · '+(LANG==='ru'?'обновлено ':LANG==='en'?'updated ':'оновлено ') + (d.ts ? Math.round((Date.now()/1000 - d.ts)/60) + (LANG==='ru'?' мин назад':LANG==='en'?' min ago':' хв тому') : '—') + ' · '+(LANG==='ru'?'курс':LANG==='en'?'rate':'курс')+' ¥' + d.usd_cny + '/$')
+      : (LANG==='ru'?'данных ещё нет — нажмите «Собрать сейчас»':LANG==='en'?'no data yet — press “Collect now”':'даних ще немає — натисніть «Зібрати зараз»'))
+      + ' · ' + agentTxt
+      + (d.next_in ? ' · '+(LANG==='ru'?'следующий сбор через ':LANG==='en'?'next collection in ':'наступний збір через ') + Math.round(d.next_in/60) + (LANG==='ru'?' мин':LANG==='en'?' min':' хв') : '')
+      + ' · '+(LANG==='ru'?'посредник':LANG==='en'?'middleman':'посередник')+' +' + Math.round((d.landed_pct||0)*100) + '%';
+
+    // Смуга прогресу збору
+    const pg = d.progress || {};
+    const box = g('tbProgress');
+    if(box){
+      const active = pg.total > 0 && !pg.finished;
+      box.style.display = active ? 'block' : 'none';
+      if(active){
+        const pct = Math.min(100, Math.round((pg.done || 0) / pg.total * 100));
+        const pctEl = g('tbProgPct'), bar = g('tbProgBar'), txt = g('tbProgText');
+        if(pctEl) pctEl.textContent = pct + '%';
+        if(bar) bar.style.width = pct + '%';
+        if(txt) txt.textContent = '📥 збір: ' + (pg.done||0) + '/' + pg.total
+          + (pg.current ? ' · ' + pg.current : '')
+          + (pg.found ? ' · у базі ' + pg.found : '');
+      }
+    }
+
+    // Поки йде збір — оновлюємо ЛИШЕ статус (без перемальовування списку)
+    const pending = (d.request && d.request > (d.last_run || 0)) || (pg.total > 0 && !pg.finished);
+    if(pending){
+      window._tbWasPending = true;
+      clearTimeout(window._tbPoll);
+      window._tbPoll = setTimeout(() => { loadTaobao(true); }, 5000);
+    }else if(window._tbWasPending){
+      window._tbWasPending = false;
+      setTimeout(() => loadTaobao(), 300);   // збір завершився — оновлюємо список один раз
+    }
+    if(statusOnly) return;
+    const sel = g('tbGame');
+    if(sel){
+      const games = [...new Set(tbItems.map(x => x.game).filter(Boolean))].sort();
+      const cur = sel.value;
+      sel.innerHTML = '<option value="" data-i18n="ta.allGames">Всі ігри</option>' + games.map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('');
+      sel.value = cur || '';
+    }
+    const sum = g('tbSummary');
+    if(sum){
+      sum.innerHTML = (d.summary || []).slice(0, 6).map(r => {
+        const x = (r.tb_min > 0 && r.sup_min > 0) ? (r.sup_min / r.tb_min) : 0;
+        const col = x >= 3 ? 'var(--gr)' : x >= 1.5 ? 'var(--yw)' : 'var(--mu)';
+        return '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:9px 12px;min-width:190px">'
+          + '<div style="font-size:12px;font-weight:700;margin-bottom:2px">' + esc(r.game) + '</div>'
+          + '<div style="font-size:12px;color:var(--mu)">Taobao $' + Number(r.tb_min).toFixed(2) + ' · ' + t('tb.fromSupplier') + ' $' + Number(r.sup_min).toFixed(2) + '</div>'
+          + '<div style="font-size:15px;font-weight:800;color:' + col + '">×' + (x ? x.toFixed(1) : '—') + '</div></div>';
+      }).join('');
+    }
+    const runs = (d.runs || []).slice(0, 5);
+    if(g('tbRuns')) g('tbRuns').textContent = runs.length
+      ? t('tb.lastRuns') + ': ' + runs.map(r => (r.game || r.query) + ' (' + r.found + ')').join(' · ') : '';
+    renderTaobao();
+  }catch(e){ el.innerHTML = '<div class="al err">⚠ ' + esc(String(e)) + '</div>'; }
+}
+
+function tbSegBadge(s){
+  const m = {starter: [t('s.starter'), 'var(--a3)'], developed: [t('s.developed'), 'var(--a1)'],
+             endgame: [t('s.endgame'), 'var(--yw)'], other: ['—', 'var(--mu)']};
+  const v = m[s] || m.other;
+  return '<span style="font-size:11px;font-weight:700;color:' + v[1] + '">' + v[0] + '</span>';
+}
+
+function renderTaobao(){
+  const el = g('tbList'); if(!el) return;
+  let list = tbItems.slice();
+  if(tbGame) list = list.filter(x => x.game === tbGame);
+  if(tbSeg) list = list.filter(x => x.segment === tbSeg);
+  if(tbRegion) list = list.filter(x => x.region === tbRegion);
+  const q = ((g('tbQ') && g('tbQ').value) || '').toLowerCase().trim();
+  if(q) list = list.filter(x => ((x.title_en || '') + ' ' + (x.title_cn || '')).toLowerCase().includes(q));
+  if(tbSort === 'card') list = list.filter(x => x.card_pay);
+  if(tbSort === 'variant') list = list.filter(x => (x.options || 0) > 1);
+  list.sort((a, b) => {
+    if(tbSort === 'variant') return (b.options || 0) - (a.options || 0);
+    if(tbSort === 'card') return (b.options || 0) - (a.options || 0);
+    if(tbSort === 'exp') return (b.price_cny || 0) - (a.price_cny || 0);
+    return (a.price_cny || 0) - (b.price_cny || 0);
+  });
+  if(!list.length){ el.innerHTML = '<div class="none">'+t('sup.none')+'</div>'; return; }
+  el.innerHTML = '<table class="sup-table"><thead><tr><th>'+t('tbth.lot')+'</th><th>'+t('tbth.price')+'</th><th>≈USD</th><th>'+t('tbth.withAgent')+'</th><th>'+t('tbth.atSup')+'</th><th>'+t('tbth.diff')+'</th><th>'+t('tb.type')+'</th><th></th></tr></thead><tbody>'
+    + list.slice(0, 300).map(x => {
+        const sup = x.sup
+          ? '<b>$' + Number(x.sup.min).toFixed(2) + '</b><div style="font-size:11px;color:var(--mu)">'+(LANG==='ru'?'медиана':LANG==='en'?'median':'медіана')+' $' + Number(x.sup.median).toFixed(2) + ' · ' + x.sup.n + ' ' + (LANG==='ru'?'лотов':LANG==='en'?'lots':'лотів')+'</div>'
+          : '<span style="color:var(--mu)">—</span>';
+        let diff = '<span style="color:var(--mu)">—</span>';
+        if(x.sup && x.diff_usd != null){
+          const good = x.diff_usd > 0;
+          diff = '<b style="color:' + (good ? 'var(--gr)' : 'var(--rd)') + '">' + (good ? '×' + (x.diff_x || 0).toFixed(1) : (LANG==='ru'?'дороже':LANG==='en'?'more expensive':'дорожче')) + '</b>'
+               + '<div style="font-size:11px;color:' + (good ? 'var(--gr)' : 'var(--rd)') + '">' + (good ? '+' : '') + '$' + Number(x.diff_usd).toFixed(2) + '</div>';
+        }
+        return '<tr>'
+        + '<td style="max-width:380px"><b>' + esc(x.title_en || x.title_cn || '') + '</b>'
+        + '<div style="font-size:11px;color:var(--mu)">' + esc(x.title_cn || '') + '</div>'
+        + '<div style="font-size:11px;color:var(--mu)">' + esc(x.game || '') + (x.sold ? ' · '+(LANG==='ru'?'продано':LANG==='en'?'sold':'продано')+' ' + esc(x.sold) : '')
+        + (x.card_pay ? ' <span title="Оплата карткою" style="color:var(--gr)">💳</span>' : '')
+        + ' <button class="btn" style="padding:1px 6px;font-size:10px" title="Позначити/зняти оплату карткою" onclick="tbMark(\'' + esc(x.href) + '\',' + (x.card_pay ? 'false' : 'true') + ')">💳</button>'
+        + ' <button class="btn" style="padding:1px 6px;font-size:10px" title="Скільки варіантів у лоті" onclick="tbMarkOpts(\'' + esc(x.href) + '\',' + (x.options || 0) + ')">🎛</button>'
+        + ' <button class="btn" style="padding:1px 6px;font-size:10px;' + (x.cart ? 'background:var(--a1);color:#000' : '') + '" title="У кошик покупок" onclick="tbCart(\'' + esc(x.href) + '\',' + (x.cart ? 'false' : 'true') + ')">🛒</button>'
+        + ((x.options || 0) > 1 ? ' <span title="Варіантів у лоті" style="color:var(--a3)">🎛 ' + x.options + '</span>' : '')
+        + '</div></td>'
+        + '<td style="color:var(--gr);font-weight:700">¥' + Number(x.price_cny || 0).toFixed(2) + '</td>'
+        + '<td>$' + Number(x.price_usd || 0).toFixed(2) + '</td>'
+        + '<td style="color:var(--yw)">$' + Number(x.landed_usd || 0).toFixed(2) + '</td>'
+        + '<td>' + sup + '</td>'
+        + '<td>' + diff + '</td>'
+        + '<td>' + tbSegBadge(x.segment) + '</td>'
+        + '<td><a class="ilnk" href="' + esc(x.href) + '" target="_blank" rel="noopener">↗</a></td></tr>';
+      }).join('')
+    + '</tbody></table>';
+}
+
+// 📦 Склад
+let invItems = [];
+
+async function loadInventory(){
+  const el = g('invList'); if(!el) return;
+  el.innerHTML = '<div class="none">'+t('loading')+'</div>';
+  try{
+    const d = await fetch('/api/inventory').then(r => r.json());
+    invItems = d.items || [];
+    const card = (k, v, c) => '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px 14px;min-width:130px">'
+      + '<div style="font-size:11px;color:var(--mu)">' + k + '</div>'
+      + '<div style="font-size:18px;font-weight:800;color:' + (c || 'var(--tx)') + '">' + v + '</div></div>';
+    const _L = {uk:{a:'На складі',b:'Заморожено',c:'Продано',d:'Витрачено всього'},
+                en:{a:'In stock',b:'Frozen',c:'Sold',d:'Total spent'},
+                ru:{a:'На складе',b:'Заморожено',c:'Продано',d:'Потрачено всего'}}[LANG] || {a:'In stock',b:'Frozen',c:'Sold',d:'Total spent'};
+    if(g('invSummary')) g('invSummary').innerHTML =
+      card(_L.a, d.in_stock || 0) +
+      card(_L.b, '$' + Number(d.frozen || 0).toFixed(2), 'var(--yw)') +
+      card(_L.c, d.sold || 0, 'var(--gr)') +
+      card(_L.d, '$' + Number(d.cost_total || 0).toFixed(2));
+    if(g('invOld')){
+      if((d.old_count || 0) > 0){
+        const _oldTxt = LANG==='ru'?'(куплены 30+ дней назад)':LANG==='en'?'(bought 30+ days ago)':'(куплені 30+ днів тому)';
+        g('invOld').innerHTML = '🧊 <b>'+t('inv.dead')+':</b> ' + d.old_count + ' $' + Number(d.old_value || 0).toFixed(2)
+          + ' ' + _oldTxt + ' · ' + t('inv.oldest') + ' ' + (d.oldest_days || 0) + ' ' + (LANG==='ru'?'дней':LANG==='en'?'days':'днів');
+      } else {
+        g('invOld').innerHTML = '<span style="color:var(--mu)">🧊 '+t('inv.noDead')+'</span>'
+          + ((d.oldest_days || 0) ? ' · '+t('inv.oldest')+' ' + d.oldest_days + ' ' + (LANG==='ru'?'дней':LANG==='en'?'days':'днів') : '');
+      }
+    }
+    renderInventory();
+  }catch(e){ el.innerHTML = '<div class="al err">⚠ ' + esc(String(e)) + '</div>'; }
+}
+
+function renderInventory(){
+  const el = g('invList'); if(!el) return;
+  const f = (g('invFilter') && g('invFilter').value) || '';
+  let list = invItems.slice();
+  if(f) list = list.filter(x => x.status === f);
+  if(!list.length){ el.innerHTML = '<div class="none">'+t('inv.empty')+'</div>'; return; }
+  const badge = s => s === 'sold' ? '<span style="color:var(--gr);font-weight:700">'+t('inv.soldShort')+'</span>'
+    : s === 'written_off' ? '<span style="color:var(--rd)">'+t('inv.offShort')+'</span>'
+    : '<span style="color:var(--yw);font-weight:700">'+t('inv.inStockShort')+'</span>';
+  el.innerHTML = '<div class="bub-wrap">' + list.slice().reverse().map(x => {
+    const acts = (x.status !== 'sold' ? '<button class="bub-btn" onclick="invStatus(\'' + esc(x.id) + '\',\'sold\')" title="Продано">✅</button>' : '')
+      + (x.status !== 'in_stock' ? '<button class="bub-btn" onclick="invStatus(\'' + esc(x.id) + '\',\'in_stock\')" title="Повернути на склад">↩</button>' : '')
+      + '<button class="bub-btn" onclick="invStatus(\'' + esc(x.id) + '\',\'written_off\')" title="Списати">🚫</button>'
+      + '<button class="bub-btn del" onclick="invDelete(\'' + esc(x.id) + '\')" title="Видалити">🗑</button>';
+    return '<div class="bub">'
+      + '<div class="bub-head">'
+      + '<span class="bub-date">' + esc(x.date || '') + '</span>'
+      + (x.game ? '<span class="bub-chip">' + esc(x.game) + '</span>' : '')
+      + '<span class="bub-title">' + esc(x.title || '') + '</span>'
+      + '<div class="bub-acts">' + acts + '</div>'
+      + '</div>'
+      + '<div class="bub-stats">'
+      + '<span class="bs">'+t('inv.costShort')+' <b style="color:var(--gr)">$' + Number(x.cost || 0).toFixed(2) + '</b></span>'
+      + '<span class="bs">'+t('inv.status')+' ' + badge(x.status) + '</span>'
+      + (x.source ? '<span class="bs">'+t('inv.sourceShort')+' <b>' + esc(x.source) + '</b></span>' : '')
+      + (x.has_account ? '<span class="bs">🔑 <b>' + esc(x.account_hint || 'дані') + '</b>'
+          + '<button class="bub-btn" style="margin-left:8px" onclick="openInvSecret(\'' + esc(x.id) + '\')">'+t('show')+'</button></span>' : '')
+      + '</div></div>';
+  }).join('') + '</div>';
+}
+
+function lotsCsv(source){
+  const m = (g('lotMarkup') && g('lotMarkup').value) || '30';
+  window.location = '/api/lots/export?source=' + encodeURIComponent(source)
+    + '&markup=' + encodeURIComponent(m) + '&limit=100';
+  toast('⬇ CSV лотів (' + source + ', націнка ' + m + '%)');
+}
+
+async function invAdd(){
+  const title = (g('invTitle').value || '').trim();
+  const cost = Number(g('invCost').value) || 0;
+  if(!title){ toast(t('inv.enterName'), false); return; }
+  try{
+    const d = await fetch('/api/inventory/add', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({title, game: g('invGame').value, cost,
+        source: g('invSource').value,
+        account: (g('invAccount') && g('invAccount').value) || ''})}).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    toast(t('inv.added'));
+    g('invTitle').value = ''; g('invCost').value = '0';
+    if(g('invGame')) g('invGame').value = '';
+    if(g('invSource')) g('invSource').value = '';
+    if(g('invAccount')) g('invAccount').value = '';
+    loadInventory();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function invStatus(id, status){
+  try{
+    const d = await fetch('/api/inventory/status', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id, status})}).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    toast(status === 'sold' ? t('inv.soldToast') : (status === 'written_off' ? t('inv.offToast') : t('inv.returnToast')));
+    loadInventory();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+let _invSecret = '';
+
+async function openInvSecret(id){
+  try{
+    const d = await fetch('/api/inventory/secret?id=' + encodeURIComponent(id)).then(r => r.json());
+    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    _invSecret = d.account || t('inv.noAccount');
+    g('invModalTitle').textContent = (d.game || '') + ' · ' + (d.title || '');
+    g('invModalText').textContent = _invSecret;
+    g('invModal').style.display = 'flex';
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+function closeInvSecret(){ g('invModal').style.display = 'none'; _invSecret = ''; }
+function copyInvSecret(){
+  navigator.clipboard.writeText(_invSecret)
+    .then(() => toast(t('lot.copied')))
+    .catch(() => toast('⚠ Буфер обміну недоступний', false));
+}
+
+async function invDelete(id){
+  if(!confirm(t('inv.deleteConfirm'))) return;
+  try{
+    const d = await fetch('/api/inventory/delete', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id})}).then(r => r.json());
+    toast(d.ok ? t('inv.deleted') : '⚠ ' + (d.error || ''), !!d.ok);
+    loadInventory();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function loadReport(){
+  const box = g('repBox'); if(!box) return;
+  const m = (g('repMonth') && g('repMonth').value) || '';
+  box.innerHTML = '<div class="none">'+t('rep.calculating')+'</div>';
+  try{
+    const d = await fetch('/api/report' + (m ? '?month=' + m : '')).then(r => r.json());
+    if(!d.ok){ box.innerHTML = '<div class="al err">⚠ ' + esc(d.error || '') + '</div>'; return; }
+    if(g('repMonth') && !g('repMonth').value) g('repMonth').value = d.month;
+    if(g('repCsv')) g('repCsv').href = '/api/report/export?lang=' + encodeURIComponent(LANG) + (d.month ? '&month=' + d.month : '');
+    const card = (k, v, c) => '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px 14px;min-width:140px">'
+      + '<div style="font-size:11px;color:var(--mu)">' + k + '</div>'
+      + '<div style="font-size:18px;font-weight:800;color:' + (c || 'var(--tx)') + '">' + v + '</div></div>';
+    const s = d.sales || {};
+    const sp = Number(s.profit || 0);
+    box.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+      + card(t('rep.count'), s.count || 0)
+      + card(t('rep.revenue'), '$' + Number(s.revenue || 0).toFixed(2))
+      + card(t('rep.fees'), '−$' + Number(s.fees || 0).toFixed(2), 'var(--rd)')
+      + card(t('rep.cogs'), '$' + Number(s.cogs || 0).toFixed(2), 'var(--mu)')
+      + card(t('rep.profit'), (sp>=0?'+':'') + '$' + sp.toFixed(2), sp >= 0 ? 'var(--gr)' : 'var(--rd)')
+      + card(t('rep.purchases'), '$' + Number((d.purchases || {}).cost || 0).toFixed(2), 'var(--yw)')
+      + card(t('rep.cash'), (s2 => (s2 >= 0 ? '' : '−') + '$' + Math.abs(s2).toFixed(2))(Number(d.cash || 0)),
+             Number(d.cash || 0) >= 0 ? 'var(--gr)' : 'var(--rd)')
+      + card(t('rep.stock'), '$' + Number((d.stock || {}).in_stock_value || 0).toFixed(2), 'var(--mu)')
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--mu);margin-top:10px">'
+      + t('rep.formula')
+      + '</div>';
+  }catch(e){ box.innerHTML = '<div class="al err">⚠ ' + esc(String(e)) + '</div>'; }
+}
+
+async function loadAnalytics(){
+  try{
+    const d = await fetch('/api/analytics').then(r => r.json());
+    const gs = d.games || [], m = d.months || [];
+    const total = gs.reduce((a, x) => ({n: a.n + x.n, sell: a.sell + x.sell, profit: a.profit + x.profit}), {n: 0, sell: 0, profit: 0});
+    if(g('anSummary')) g('anSummary').innerHTML = [
+      [t('rep.count'), total.n], [t('an.revenue'), '$' + total.sell.toFixed(2)], [t('an.profit'), '$' + total.profit.toFixed(2)],
+      [LANG==='ru'?'Мёртвых лотов':LANG==='en'?'Dead lots':'Мертвих лотів', d.dead_total || 0]
+    ].map(([k, v]) => '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px 14px;min-width:130px">'
+        + '<div style="font-size:11px;color:var(--mu)">' + k + '</div><div style="font-size:18px;font-weight:800">' + v + '</div></div>').join('');
+    const rows = (arr, keyName) => '<table class="sup-table"><thead><tr><th>' + keyName + '</th><th>'+t('an.dealsCol')+'</th><th>'+t('an.revenueCol')+'</th><th>'+t('an.profitCol')+'</th></tr></thead><tbody>'
+      + arr.map(x => '<tr><td><b>' + esc(x.game || x.month) + '</b></td><td>' + x.n + '</td>'
+          + '<td>$' + Number(x.sell).toFixed(2) + '</td><td style="color:' + (x.profit >= 0 ? 'var(--gr)' : 'var(--rd)') + ';font-weight:700">$' + Number(x.profit).toFixed(2) + '</td></tr>').join('')
+      + '</tbody></table>';
+    if(g('anGames')) g('anGames').innerHTML = rows(gs.slice(0, 12), t('an.game'));
+    if(g('anMonths')) g('anMonths').innerHTML = rows(m.slice(-12).reverse(), LANG==='ru'?'МЕСЯЦ':LANG==='en'?'MONTH':'МІСЯЦЬ');
+    if(g('anDead') && (d.dead || []).length){
+      g('anDead').innerHTML = '<div style="font-size:12px;color:var(--mu);margin-bottom:6px">🐢 '+(LANG==='ru'?'НЕ ПРОДАВАЛИСЬ 14+ ДНЕЙ':LANG==='en'?'NOT SOLD FOR 14+ DAYS':'НЕ ПРОДАВАЛИСЬ 14+ ДНІВ')+' (' + d.dead_total + ')</div>'
+        + '<div style="font-size:12px;color:var(--mu)">' + d.dead.slice(0, 8).map(x => esc(x.title) + ' · $' + x.price + ' · ' + esc(x.sourceName) + ' · ' + x.age + (LANG==='ru'?' дн.':LANG==='en'?' days':' дн.')).join('<br>') + '</div>';
+    }
+    const st = await fetch('/api/settings').then(r => r.json());
+    if(g('stSupHours')) g('stSupHours').value = st.sup_hours || 6;
+    if(g('stNewsHours')) g('stNewsHours').value = st.news_hours || 1;
+    if(g('stScraperLimit')) g('stScraperLimit').value = st.scraper_limit || 30;
+    if(g('stDigestHour') && st.digest_hour != null) g('stDigestHour').value = st.digest_hour;
+    if(g('stDealX') && st.deal_x != null) g('stDealX').value = st.deal_x;
+    if(g('repMonth') && !g('repMonth').value){
+      const d0 = new Date(); g('repMonth').value = d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0');
+    }
+    loadReport();
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function saveSchedule(){
+  const body = {
+    sup_hours: Number(g('stSupHours').value) || 6,
+    news_hours: Number(g('stNewsHours').value) || 1,
+    scraper_limit: Number(g('stScraperLimit').value) || 30,
+    digest_hour: Number(g('stDigestHour').value) || 0,
+    deal_x: Number(g('stDealX').value) || 5
+  };
+  try{
+    const d = await fetch('/api/settings/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}).then(r => r.json());
+    toast(d.ok ? '✅ Збережено' : ('⚠ ' + (d.error || '')), !!d.ok);
+  }catch(e){ toast('⚠ ' + e, false); }
+}
+
+function calcMarkets(){
+  const el = g('mpTable'); if(!el) return;
+  const price = Number(g('mpPrice') && g('mpPrice').value) || 0;
+  const cost  = Number(g('mpCost')  && g('mpCost').value)  || 0;
+  const list = (FEE_CFG.marketplaces || []).map(m => {
+    const total = (m.fee||0) + (m.payout||0);
+    const net = price * (1 - total);
+    const profit = net - cost;
+    const margin = price > 0 ? (profit / price) * 100 : 0;
+    return Object.assign({}, m, {net, profit, margin});
+  }).sort((a,b) => b.net - a.net);
+  const best = list.length && list[0].net > 0 ? list[0].id : null;
+  el.innerHTML = '<table class="sup-table"><thead><tr><th>МАЙДАНЧИК</th><th>КОМІСІЯ</th><th>НА РУКИ</th><th>ПРИБУТОК</th><th>МАРЖА</th></tr></thead><tbody>'
+    + list.map(m => '<tr' + (m.id===best?' style="background:rgba(34,197,94,.07)"':'') + '>'
+        + '<td><b>' + m.emoji + ' ' + esc(m.name) + '</b>' + (m.note? '<div style="font-size:11px;color:var(--mu)">' + esc(m.note) + '</div>' : '') + '</td>'
+        + '<td>' + ((m.fee||0)*100).toFixed(1) + '%' + (m.payout? ' + ' + (m.payout*100).toFixed(1) + '%' : '') + '</td>'
+        + '<td style="color:var(--gr);font-weight:700">$' + m.net.toFixed(2) + '</td>'
+        + '<td style="color:' + (m.profit>=0?'var(--gr)':'var(--rd)') + ';font-weight:700">' + (m.profit>=0?'+':'') + '$' + m.profit.toFixed(2) + '</td>'
+        + '<td>' + m.margin.toFixed(1) + '%</td></tr>').join('')
+    + '</tbody></table>';
+}
+
+async function loadMailQueue(force){
+  mailCookieHint();
+  const el=g('mailList'); if(!el) return;
+  try{
+    const d=await fetch('/api/mail/queue' + (force?'?t='+Date.now():'')).then(r=>r.json());
+    if(!d.ok) throw new Error('HTTP');
+    mailItems=d.items||[];
+    renderMailQueue();
+    const badge=g('mailBadge'), n=d.new||0;
+    if(badge) badge.innerHTML = n ? ` <span style="background:var(--a2);color:#1a0a05;border-radius:20px;padding:0 7px;font-size:11px;font-weight:800">${n}</span>` : '';
+    if(g('mailStat')) g('mailStat').textContent = mailItems.length ? `${mailItems.length} ${plural(mailItems.length,'emails')} · ${LANG==='ru'?'новых':LANG==='en'?'new':'нових'} ${n}` : '';
+  }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
+}
+
+async function mailCookieHint(){
+  const box = g('mailHint'); if(!box) return;
+  try{
+    const st = await fetch('/api/secrets/status').then(r => r.json());
+    box.innerHTML = st.funpay_cookie ? '' :
+      '<div class="al warn" style="margin-bottom:12px">⚠ <b>FunPay:</b> ' + (LANG==='uk'?'cookie не задано — замовлення з FunPay сюди не надходять.':(LANG==='ru'?'cookie не задан — заказы с FunPay сюда не поступают.':'cookie is not set — FunPay orders do not arrive here.')) + ' <button class="btn" style="font-size:11px;padding:3px 9px" '
+      + 'onclick="sw(\'platforms\',document.querySelector(\'.tab[onclick*=\"platforms\"]\'))">' + (LANG==='uk'?'Вставити cookie':(LANG==='ru'?'Вставить cookie':'Paste cookie')) + '</button></div>';
+  }catch(e){}
+}
+
+function renderMailQueue(){
+  const el=g('mailList'); if(!el) return;
+  if(!mailItems.length){
+    el.innerHTML='<div class="none">'+t('mail.empty')+'</div>';
+    return;
+  }
+  const order=mailItems.slice().reverse();
+  el.innerHTML = order.map(m=>{
+    const isOrder=m.kind==='order';
+    const clr={'ZeusX':'var(--a1)','FunPay':'var(--a3)','Eldorado':'var(--yw)'}[m.platform]||'var(--mu)';
+    const bits=[];
+    if(m.orderId) bits.push('🆔 '+esc(m.orderId));
+    if(m.price!=null) bits.push('💵 $'+Number(m.price).toFixed(2));
+    if(m.game) bits.push('🎮 '+esc(m.game));
+    if(m.category) bits.push('📁 '+esc(m.category));
+    const when=m.ts ? new Date(m.ts*1000).toLocaleString(dateLocale()) : '';
+    const status = m.status==='added'
+      ? `<span style="color:var(--gr);font-size:12px;font-weight:700">✓ ${LANG==='ru'?'добавлено в':LANG==='en'?'added to':'додано в'} ${esc(m.added_to||'')}</span>`
+      : m.status==='ignored'
+        ? '<span style="color:var(--mu);font-size:12px">✕ '+(LANG==='ru'?'проигнорировано':LANG==='en'?'ignored':'проігноровано')+'</span>' : '';
+    const canAdd = m.status !== 'added';
+    const plat = m.platform || '';
+    const canEd = canAdd && plat === 'Eldorado';
+    const canPl = canAdd && plat !== 'Eldorado';
+    return `<div style="background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:7px">
+            <span style="font-size:12px;font-weight:700;color:${clr};background:${clr}18;border:1px solid ${clr}38;padding:2px 8px;border-radius:6px">${esc(m.platform||'')}</span>
+            <span style="font-size:13px;font-weight:700">${isOrder?(LANG==='ru'?'💰 заказ':LANG==='en'?'💰 order':'💰 замовлення'):(LANG==='ru'?'💬 сообщение':LANG==='en'?'💬 message':'💬 повідомлення')}</span>
+            <span style="font-size:12px;color:var(--mu)">${when}</span>
+          </div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:5px">${esc(m.subject||(LANG==='ru'?'(без темы)':LANG==='en'?'(no subject)':'(без теми)'))}</div>
+          ${bits.length?`<div style="font-size:13px;margin-bottom:6px">${bits.join(' · ')}</div>`:''}
+          <div style="font-size:12px;color:var(--mu);white-space:pre-wrap;max-height:76px;overflow:hidden">${esc((m.body||'').substring(0,240))}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${status}
+          ${canEd?`<button class="btn gr" onclick="mailAct('${esc(m.id)}','add_ed')">➕ ELDORADO</button>`:''}
+          ${canPl?`<button class="btn" onclick="mailAct('${esc(m.id)}','add_pl')">➕ P&amp;L</button>`:''}
+          ${m.status==='new'?`<button class="btn" onclick="mailAct('${esc(m.id)}','ignore')">✕</button>`:''}
+          <button class="btn rd" onclick="mailAct('${esc(m.id)}','remove')">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function clearMailQueue(){
+  if(!confirm(t('mail.clearConfirm'))) return;
+  try{
+    const d = await fetch('/api/mail/clear',{method:'POST'}).then(r=>r.json());
+    toast(d.ok ? (t('mail.cleared')+' '+(d.removed||0)) : ('⚠ '+(d.error||'')), !!d.ok);
+    loadMailQueue();
+  }catch(e){ toast(String(e), false); }
+}
+
+async function mailAct(id, action){
+  try{
+    let buy = 0, match = null, amount = null, game = '';
+    if(action==='add_pl' || action==='add_ed'){
+      const item = (mailItems || []).find(x => x.id === id) || {};
+      if(item.price == null || Number(item.price) <= 0){
+        const pv = prompt(t('mail.amountPrompt'), '');
+        if(pv === null) return;
+        amount = Math.max(0, parseFloat(String(pv).replace(',', '.')) || 0);
+        if(amount <= 0){ toast(t('mail.amountPositive'), false); return; }
+      }
+      try{
+        const q = encodeURIComponent(((item.subject || '') + ' ' + (item.game || '')).trim());
+        if(q){
+          const mm = await fetch('/api/inventory/match?title=' + q).then(r => r.json());
+          match = (mm.matches || [])[0] || null;
+        }
+      }catch(e){}
+      game = (item.game || '').trim();
+      if(!game || game === 'Other'){
+        const gv = prompt(t('mail.gamePrompt'), '');
+        if(gv === null) return;
+        game = gv.trim();
+      }
+      const msg = match
+        ? t('mail.inStock').replace('%s', match.title).replace('%s', Number(match.cost).toFixed(2))
+        : t('mail.costPrompt');
+      const v = prompt(msg, match ? String(match.cost) : '0');
+      if(v === null) return;
+      buy = Math.max(0, parseFloat(String(v).replace(',', '.')) || 0);
+    }
+    const d=await fetch('/api/mail/action',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id, action, buy, price: amount, game: (game||'')})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||'помилка'), false); return; }
+    if(action==='add_ed' || action==='add_pl'){
+      toast(t('mail.added')+' '+(action==='add_ed'?'ELDORADO':'P&L') + (match ? ' '+t('mail.fromStock') : ''));
+      if(match){
+        try{
+          await fetch('/api/inventory/status', {method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({id: match.id, status: 'sold', sale_id: id})});
+        }catch(e){}
+      }
+      try{
+        if(action==='add_ed'){
+          const r=await fetch('/api/eldorado').then(x=>x.json());
+          edSales = Array.isArray(r.sales)?r.sales:[]; edLoaded=true;
+          try{ localStorage.setItem('eldorado_sales', JSON.stringify(edSales)); }catch(e){}
+          renderEldorado();
+        } else {
+          const r=await fetch('/api/pl').then(x=>x.json());
+          purchases = Array.isArray(r.purchases)?r.purchases:[];
+          renderPurchases(); renderRevenueChart();
+        }
+      }catch(e){}
+    } else if(action==='ignore'){ toast(t('mail.ignored')); }
+    else { toast(t('mail.removed')); }
+    loadMailQueue(true);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeCmp(); closeHist(); } });
+
+// ═══════════════════════════════════════════════
+// 💰 КАЛЬКУЛЯТОР ЦІНИ (тільки розрахунок, без API)
+// ═══════════════════════════════════════════════
+// PLATFORM_FEES (майданчик + вивід) визначено у блоці STATE з конфігу Python
+let _lotPlatform = 'zeusx';
+let _lotSupplierUrl = '';
+
+function openLotModal(p){
+  const item = p || {};
+  _lotSupplierUrl = item.url || '';
+  _lotPlatform = 'zeusx';
+  g('lmBtnZX').classList.add('on'); g('lmBtnFP').classList.remove('on');
+  g('lmTitle').value = item.title || '';
+  g('lmGame').value = item.sourceName || '';
+  g('lmBuyPrice').value = parseFloat(item.price || 0).toFixed(2);
+  g('lmMarkup').value = '30';
+  g('lmDesc').value = item.title || '';
+  calcLotPrice();
+  g('lmResult').textContent = '';
+  g('lotModal').style.display = 'flex';
+}
+
+function closeLotModal(){ g('lotModal').style.display='none'; }
+
+function setLotPlatform(p){
+  _lotPlatform = p;
+  g('lmBtnZX').classList.toggle('on', p==='zeusx');
+  g('lmBtnFP').classList.toggle('on', p==='funpay');
+  calcLotPrice();
+}
+
+function calcLotPrice(){
+  const buy = parseFloat(g('lmBuyPrice').value)||0;
+  const markup = parseFloat(g('lmMarkup').value)||0;
+  const sell = buy*(1+markup/100);
+  g('lmSellPrice').value = sell.toFixed(2);
+  if(buy>0){
+    const fee = PLATFORM_FEES[_lotPlatform]||0;
+    const afterFee = sell*(1-fee);
+    const profit = afterFee-buy;
+    g('lmSummary').style.display='block';
+    g('lmProfit').textContent=(profit>=0?'+':'')+profit.toFixed(2)+'$';
+    g('lmProfit').style.color=profit>=0?'var(--gr)':'var(--rd)';
+    g('lmAfterFee').textContent=afterFee.toFixed(2)+'$';
+  } else {
+    g('lmSummary').style.display='none';
+  }
+}
+
+function copyLotLink(){
+  const title=g('lmTitle').value.trim();
+  const sell=parseFloat(g('lmSellPrice').value)||0;
+  const game=g('lmGame').value.trim();
+  const desc=g('lmDesc').value.trim();
+  if(!title){ g('lmResult').innerHTML='<span style="color:var(--rd)">⚠️ '+t('lot.enterName')+'</span>'; return; }
+  const priceWord = LANG==='ru'?'Цена':LANG==='en'?'Price':'Ціна';
+  const srcWord = LANG==='ru'?'Источник':LANG==='en'?'Source':'Джерело';
+  const text=title+(game?' ['+game+']':'')+'\n'+priceWord+': $'+sell.toFixed(2)
+    +(desc?'\n\n'+desc:'')+(_lotSupplierUrl?'\n\n'+srcWord+': '+_lotSupplierUrl:'');
+  navigator.clipboard.writeText(text)
+    .then(()=>{ toast(t('lot.copied')); g('lmResult').textContent=''; })
+    .catch(()=>{ g('lmResult').innerHTML='<span style="color:var(--rd)">❌ '+t('lot.clipboard')+'</span>'; });
+}
+
+g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeLotModal(); });
+
+;(async()=>{
+  // Завантажуємо P&L з сервера (синхронізується між пристроями)
+  let serverOk = false, plBroken = false;
+  try{
+    const r = await fetch('/api/pl');
+    const plResp = await r.json();
+    if(!r.ok || plResp.ok === false){
+      // файл пошкоджено / не читається — НЕ перезаписуємо його і не сіємо демо
+      plBroken = true;
+      purchases = [];
+      toast('⚠ P&L не прочитано: '+(plResp.error||('HTTP '+r.status)), false);
+    } else {
+      purchases = Array.isArray(plResp.purchases) ? plResp.purchases : [];
+      serverOk = true;
+    }
+  }catch(e){
+    // сервер недоступний — працюємо з локальною копією, нічого не перезаписуємо
+    purchases = safeParse(localStorage.getItem(PKEY)||'[]', []);
+    toast('⚠ Сервер недоступний — показано локальну копію', false);
+  }
+  // Міграція: сервер порожній, але в браузері є записи → переносимо їх.
+  // Демо-дані (IMPORTED_DATA) більше не підставляються ніколи.
+  // Сервер — єдине джерело істини. Дані з браузера на сервер НЕ переносимо,
+  // інакше старі тестові записи з localStorage повертаються в чистий застосунок.
+  try{ localStorage.removeItem(PKEY); }catch(e){}
+  loadTheme();
+  applyFs();
+  applyLang();
+  renderOverview();
+  // перший запуск: вікно мови показуємо лише якщо на сервері ще не обрано
+  loadSettings().then(()=>{ if(!_onboarded) setTimeout(onbOpen, 250); });
+  try{
+    new MutationObserver(translateAll).observe(document.body, {childList:true, subtree:true});
+    translateAll();
+  }catch(e){}
+  renderPurchases();
+  setTimeout(renderRevenueChart, 300);
+  loadEldorado();   // серверні продажі ELDORADO + міграція з localStorage
+  loadSettings();   // курс, Telegram, хмара + зведена статистика
+  loadMailQueue();  // бейдж нових замовлень у вкладці
+  loadSupStatus();
+  setInterval(loadSupStatus, 60000);
+
+  // PWA: реєструємо service worker (без кешу — тільки для встановлення застосунку)
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  }
+
+  // Перемальовуємо таблиці при зміні ширини (мобільні картки ↔ таблиця)
+  let _rsz = null;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(_rsz);
+    _rsz = setTimeout(()=>{ renderPurchases(); renderEldorado(); if(g('supList')) renderSupPage(); }, 250);
+  });
+
+  // Авто-синхронізація P&L з сервера кожні 60 сек (ПК ↔ телефон)
+  setInterval(async ()=>{
+    try{
+      if(_plSaving || _plDirty) return;   // є незбережені зміни → не перетираємо їх
+      const r = await fetch('/api/pl');
+      const d = await r.json();
+      if(!r.ok || d.ok === false || !Array.isArray(d.purchases)) return;
+      const srv = d.purchases;
+      if(JSON.stringify(srv) !== JSON.stringify(purchases)){
+        purchases = srv;
+        renderPurchases();
+        renderRevenueChart();
+        console.log('P&L авто-оновлено:', srv.length, 'записів');
+      }
+    }catch(e){}
+  }, 60000);
+
+  // Авто-синхронізація ELDORADO між пристроями
+  setInterval(async ()=>{
+    try{
+      if(_edSaving || _edDirty || Date.now()-_edTouched < 7000) return;
+      const r = await fetch('/api/eldorado');
+      const d = await r.json();
+      if(!r.ok || d.ok === false || !Array.isArray(d.sales)) return;
+      const srv = d.sales;
+      if(JSON.stringify(srv) !== JSON.stringify(edSales)){
+        edSales = srv;
+        try{ localStorage.setItem('eldorado_sales', JSON.stringify(edSales)); }catch(e){}
+        renderEldorado();
+        console.log('ELDORADO авто-оновлено:', srv.length, 'записів');
+      }
+    }catch(e){}
+  }, 60000);
+})();
+</script>
+<script>
+const TR_EN = {
+  "збереженими": "saved", "хвилини": "minutes", "хвилин": "minutes", "хвилину": "minute",
+
+  "Канал": "Channel", "новий": "new",
+
+  "у": "in", "і": "and", "У": "In", "І": "And", "з": "with",
+
+  // ── канали / пошта ──
+  "Cookie кабінетів": "Account cookies", "є": "set", "немає": "missing",
+  "Берегти cookie": "Save cookies", "Взяти з браузера": "Take from browser",
+  "Зберегти cookie": "Save cookies",
+  "Спостерігаю": "Monitoring", "Спостерігаю…": "Monitoring…",
+  "Баланси": "Balances", "Eldorado — продажі": "Eldorado — sales",
+  "Спостерігаю за кабінетами": "Watching accounts",
+  "Акаунт": "Account", "Email": "Email", "Баланс": "Balance",
+  "В обробці / на холді": "Processing / on hold", "Виведено всього": "Withdrawn total",
+  "Тіри": "Tiers", "Замовлень": "Orders", "Замовлень (останні)": "Orders (latest)",
+  "нові повідомлення": "new messages", "нових повідомлень": "new messages",
+  "Замовлень у списку немає": "No orders in the list",
+  "Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.":
+    "A fresh cookie is required: sign in to zeusx.com and update the token.",
+  "Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.":
+    "FunPay cookie is short-lived — sign in to funpay.com and refresh it.",
+  "Продажів усього": "Total sales", "Виторг": "Revenue", "Прибуток": "Profit",
+  "Цей місяць": "This month", "Джерело": "Source", "пошта + ручний облік": "mail + manual entry",
+  "Немає даних": "No data", "немає даних": "no data",
+  "Eldorado не має публічного API — дані беруться з пошти та вашого ручного обліку.":
+    "Eldorado has no public API — data comes from mail and your manual entry.",
+  "Де вигідніше продавати": "Where it is more profitable to sell",
+  "Ціна продажу, $": "Sale price, $", "Собівартість, $": "Cost, $",
+  "Комісії орієнтовні — уточнюйте тарифи майданчика":
+    "Fees are approximate — confirm the marketplace rates",
+  "МАЙДАНЧИК": "MARKETPLACE", "КОМІСІЯ": "FEE", "НА РУКИ": "NET", "МАРЖА": "MARGIN",
+  "Telegram (прямо)": "Telegram (direct)", "Своя вітрина": "Own storefront",
+  "Мої лоти на ZeusX": "My lots on ZeusX",
+  // ── пошта ──
+  "Очистити всі": "Clear all", "Очистити": "Clear",
+  "Листи від FunPay / ZeusX / Eldorado, які трекер уже розпізнав. Нічого не додається автоматично: перенесіть одним кліком у ELDORADO або P&L, або ігноруйте.":
+    "Emails from FunPay / ZeusX / Eldorado that the tracker recognised. Nothing is added automatically: move it to ELDORADO or P&L with one click, or ignore it.",
+  "FunPay: cookie не задано — замовлення з FunPay сюди не надходять.":
+    "FunPay: cookie is not set — FunPay orders do not arrive here.",
+  "Вставити cookie": "Paste cookie",
+  // ── каталог ──
+  "Новинки": "New", "Оновити зараз": "Refresh now",
+  "База порожня — натисни ↺ або зачекай оновлення":
+    "Database is empty — press ↺ or wait for a refresh",
+  "Нічого не знайдено": "Nothing found", "ВСЬОГО": "TOTAL", "всього": "total",
+  "Ще немає постачальників — додайте у ⚙ → Постачальники":
+    "No suppliers yet — add one in ⚙ → Suppliers",
+  "Пошук...": "Search...", "Без сорт.": "No sorting", "Нові першими": "Newest first",
+  "Оновлені першими": "Recently updated", "Ціна ↑": "Price ↑", "Ціна ↓": "Price ↓",
+  "Sale першими": "On sale first", "є в наявності": "in stock", "зниклі": "gone",
+  "дешевше": "cheaper",
+  // ── склад ──
+  "На складі": "In stock", "Заморожено": "Frozen", "Продано": "Sold",
+  "Витрачено всього": "Total spent", "Всі": "All", "Продані": "Sold", "Списані": "Written off",
+  "Мертвого складу немає": "No dead stock", "Порожньо — додайте першу закупівлю":
+    "Empty — add your first purchase",
+  "Назва": "Name", "Гра": "Game", "Додати": "Add", "＋ Додати": "＋ Add",
+  "Дані акаунта (логін / пароль / пошта)": "Account data (login / password / mail)",
+  // ── налаштування ──
+  "ДАНІ Й ДІАГНОСТИКА": "DATA & DIAGNOSTICS", "натисніть ↻ Оновити": "press ↻ Refresh",
+  "Завантажити демо-дані": "Load demo data", "Стерти дані": "Erase data",
+  "Експорт усіх даних": "Export all data", "Імпорт CSV": "Import CSV",
+  "Мій постачальник (Shopify)": "My supplier (Shopify)", "Назва магазину": "Shop name",
+  "Працює для Shopify-магазинів (/products.json).":
+    "Works for Shopify stores (/products.json).",
+  "ПОТРІБНА АВТОМАТИЗАЦІЯ?": "NEED AUTOMATION?",
+  "Хочете таку саму автоматизацію: збір Taobao, FunPay/ZeusX, проходження капчі, авто-імпорт замовлень — напишіть у Telegram.":
+    "Want the same automation: Taobao collection, FunPay/ZeusX, captcha handling, order auto-import — message me on Telegram.",
+  "ТЕМА ІНТЕРФЕЙСУ": "INTERFACE THEME", "Світла": "Light",
+  "Розмір шрифту — кнопки A- / A+ у шапці сторінки (запам'ятовується).":
+    "Font size — A- / A+ buttons in the page header (remembered).",
+  "БЕКАП P&L": "P&L BACKUP", "Зробити зараз": "Run now", "БЕЗПЕКА": "SECURITY",
+  "Ledger — лаконічна, без градієнтів": "Ledger — minimal, no gradients",
+  "Slate — попередня тема": "Slate — previous theme",
+  "Nord — холодний синьо-сірий": "Nord — cool blue-grey",
+  "Carbon — теплий графіт": "Carbon — warm graphite",
+  // ── аналітика ──
+  "ЗВЕДЕНО — ВСІ ЦИФРИ В ОДНОМУ МІСЦІ": "SUMMARY — ALL NUMBERS IN ONE PLACE",
+  "ПРИБУТОК": "PROFIT", "ВИРУЧКА": "REVENUE", "ВКЛАДЕНО": "INVESTED",
+  "УГОД": "DEALS", "КОМІСІЇ": "FEES", "ВИТОРГ ПО ДНЯХ (30 днів)": "REVENUE BY DAY (30 days)",
+  "Виторг $": "Revenue $", "Прибуток $": "Profit $", "АНАЛІТИКА": "ANALYTICS",
+  "ПО ІГРАХ": "BY GAME", "ПО МІСЯЦЯХ": "BY MONTH", "Розклад і ліміти": "Schedule & limits",
+  "Оновлення баз. год": "Base refresh, h", "Новинки, год": "News, h",
+  "Кредити/день": "Credits/day", "Дайджест год": "Digest, h", "Алерт Taobao, ×": "Taobao alert, ×",
+  "Зберегти": "Save", "Місячний звіт": "Monthly report", "Показати": "Show",
+  "Вибрати місяць": "Pick a month",
+  // ── Taobao ──
+  "TAOBAO — ціни з Китаю": "TAOBAO — prices from China",
+  "Пошук по назві...": "Search by name...", "мін. ціна ¥": "min price ¥",
+  "Всі ігри": "All games", "Всі типи": "All types", "Всі регіони": "All regions",
+  "Дешевші спершу": "Cheapest first", "Кошик порожній — натисніть 🛒 біля лота, щоб додати":
+    "Cart is empty — press 🛒 next to a lot to add it",
+  "Нічого не знайдено": "Nothing found",
+
+  // ── додатково (з автоматичного скану) ──
+  "Без назви": "Untitled", "Без назви ": "Untitled ", "Весь час": "All time",
+  "Дата": "Date", "Прибуток": "Profit", "Записів не знайдено": "No records found",
+  "Очистити": "Clear", "Вставити": "Paste", "Поки порожньо": "Empty for now",
+  "Листи від": "Emails from", "Нічого не додається автоматично": "nothing is added automatically",
+  "Оновити": "Refresh", "Без ": "Without ", "Взяти з браузера": "Take from browser",
+  "Виторг": "Revenue", "Дані читаються з ваших кабінетів за збереженими cookie":
+    "Data is read from your accounts using saved cookies",
+  "Де вигідніше продавати": "Where it is more profitable to sell",
+  "База порожня": "Database is empty", "Постачальники": "Suppliers",
+  "Ще немає постачальників": "No suppliers yet",
+  "Немає прибуткових варіантів за останні": "No profitable options in the last",
+  "днів": "days", "Агент працює у фоні": "Agent runs in background",
+  "Більше варіантів": "More options", "Всі регіони": "All regions", "Всі типи": "All types",
+  "Всі ігри": "All games", "Дешевші спершу": "Cheapest first",
+  "Мертвого складу немає": "No dead stock", "Порожньо": "Empty",
+  "додайте першу закупівлю": "add your first purchase",
+  "АНАЛІТИКА": "ANALYTICS", "Алерт": "Alert", "ВИРУЧКА": "REVENUE",
+  "ВИТОРГ ПО ДНЯХ": "REVENUE BY DAY", "ВКЛАДЕНО": "INVESTED",
+  "ВСІ ЦИФРИ В ОДНОМУ МІСЦІ": "ALL NUMBERS IN ONE PLACE",
+  "Імпорт": "Import", "Авто-бекап раз на день у папку": "Auto-backup once a day to folder",
+  "БЕКАП": "BACKUP", "Бот відповідає на команди": "Bot answers commands",
+  "Бот пише лише про те": "Bot writes only about", "Вигідні лоти": "Profitable lots",
+  "Ціль": "Goal", "ціль": "goal", "Місяць": "Month", "Тиждень": "Week",
+  "Сьогодні": "Today", "Вчора": "Yesterday", "За місяць": "This month",
+  "Платформа": "Platform", "Платформа ": "Platform ", "Записів": "Records",
+  "Редагувати": "Edit", "Видалити": "Delete", "Зберегти ": "Save ",
+  "Скасувати": "Cancel", "Готово": "Done", "Назад": "Back", "Далі": "Next",
+  "Купив": "Bought", "Продав": "Sold", "Комісія": "Fee", "Кількість": "Qty",
+  "Назва гри": "Game name", "Дата ": "Date ", "Замовлення": "Orders",
+  "Повідомлення": "Messages", "Нове": "New", "Нові": "New",
+  "Налаштування": "Settings", "Мова": "Language", "Тема": "Theme",
+  "Профіль": "Profile", "Вихід": "Log out", "Увійти": "Sign in",
+
+
+  "Продаж": "Sale", "Продаж ": "Sale ", "Свій період": "Custom range",
+  "Цей тиждень": "This week", "всі дані": "all data", "Цей місяць": "This month",
+  "Сюди потрапляють нові замовлення й повідомлення": "New orders and messages land here",
+  "проігноруйте": "ignore", "Підключення": "Connections", "вставте": "insert",
+  "з кабінетів": "from accounts", "Ще": "Yet", "Дорожчі спершу": "Most expensive first",
+  "Ендгейм": "Endgame", "Збира": "Gath", "Зібрати зараз": "Collect now",
+  "Капчу проходите ви": "You pass the captcha", "Лоти": "Lots",
+  "Виберіть місяць": "Pick a month", "Виручка": "Revenue",
+  "ДЕТАЛЬНА ТАБЛИЦЯ": "DETAIL TABLE", "Дайджест": "Digest", "Кредитів": "Credits",
+  "Маржа": "Margin", "Відновити": "Restore", "Згенерувати": "Generate",
+  "Зберігаються останні": "Keep latest", "Доступ контролю": "Access control",
+  "оновлюю": "refreshing", "наступне через": "next in", "сьогодні": "today",
+  "нових": "new", "товарів": "products", "год": "h", "хв": "min",
+  "Всього": "Total", "Разом": "Total", "Сума": "Amount",
+  "Закрити": "Close", "Відкрити": "Open", "Копіювати": "Copy", "Скопійовано": "Copied",
+  "Завантаження": "Loading", "Завантажити": "Download", "Завантажено": "Downloaded",
+  "Помилка": "Error", "Успішно": "Success", "Невірний": "Wrong",
+  "Спробуйте ще раз": "Try again", "Немає": "No", "Так": "Yes", "Ні": "No",
+  "Оберіть": "Choose", "Вибрати": "Choose", "Введіть": "Enter",
+  "Мінімум": "Minimum", "Максимум": "Maximum", "Середнє": "Average",
+  "Період": "Period", "Діапазон": "Range", "Застосувати": "Apply",
+
+
+  "Нічого не додається автоматично": "Nothing is added automatically",
+  "перенесіть одним кліком у": "move it with one click to",
+  "сюди не надходять": "do not arrive here",
+  "не задано": "not set", "не підключено": "not connected",
+  "Зберігається лише на сервері": "Stored on the server only",
+  "Оновлюється не частіше ніж раз на": "Refreshed at most once every",
+  "облік": "entry", "Збирається колектором на вашому ПК": "Collected by the agent on your PC",
+  "Мітки": "Marks", "Натисніть": "Press", "Оплата": "Payment",
+  "Перевірити оплату": "Check payment", "Розвинені": "Developed",
+  "Найкраща": "Best", "Оновлення бази": "Base refresh", "РАЗОМ": "TOTAL",
+  "Різних ігор": "Different games", "СТАТИСТИКА": "STATISTICS",
+  "ТОП ІГРИ ПО ПРИБУТКУ": "TOP GAMES BY PROFIT",
+  "Доступ контролює": "Access is controlled by",
+  "Зміна пароля діє одразу": "Password change applies immediately",
+  "Змінити пароль": "Change password", "КУРС": "RATE", "Копіювання у": "Copying to",
+  "Пароль": "Password", "Пароля": "Password", "Логін": "Login",
+  "Безпека": "Security", "Ключ": "Key", "Ключі": "Keys",
+  "Сервер": "Server", "Клієнт": "Client", "Помилки": "Errors", "Логи": "Logs",
+  "Версія": "Version", "Розмір": "Size", "Файли": "Files", "Записів у базі": "Records in DB",
+  "Токени": "Tokens", "Канали": "Channels", "Склад": "Stock", "Замовлення з пошти": "Orders from mail",
+
+  "Нічого не додається автоматично": "Nothing is added automatically",
+  "замовлення з": "orders from", "не надходять": "do not arrive",
+  "які трекер знайшов у пошті": "that the tracker found in mail",
+  "які трекер уже розпізнав": "that the tracker already recognised",
+  "прибуток за місяць": "profit this month", "продажів": "sales",
+  "скопіюйте значення": "copy the value", "сторінка замовлень": "orders page",
+  "Стартові": "Starter", "Тільки з оплатою карткою": "Card payment only",
+  "Ціни в юанях": "Prices in CNY", "автозапуск при вході в": "autostart on sign-in to",
+  "біля лота": "next to a lot", "вони вже відфільтровані": "they are already filtered out",
+  "Угод": "Deals", "ЦЕЙ МІСЯЦЬ ПРОТИ МИНУЛОГО": "THIS MONTH VS LAST", "було": "was",
+  "день": "day", "прибуток": "profit", "продажі": "sales",
+  "Копія бекапів у": "Backup copy to", "НОВИЙ ПАРОЛЬ": "NEW PASSWORD", "ПАПКА": "FOLDER",
+  "ПОВТОРИ": "REPEAT", "ПОТОЧНИЙ ПАРОЛЬ": "CURRENT PASSWORD",
+  "Відновити ": "Restore ", "Місячний": "Monthly", "Загальний": "Overall",
+
+  "Нічого не додається": "Nothing is added", "або": "or", "хвилини": "minutes",
+  "даних ще": "no data yet", "картка": "card", "ключі": "keys",
+  "колектор чекає": "agent waits", "лотів": "lots", "найнадійніше": "most reliable",
+  "трекер закупівель": "purchasing tracker", "пише лише про те": "writes only about",
+  "Падіння цін": "Price drops", "Перевірити зараз": "Check now",
+  "Порожнє поле": "Empty field", "Потрібен": "Required", "Пошта": "Mail",
+  "Замовлення": "Orders", "Повідомлення": "Messages", "Ціна": "Price",
+  "Кількість": "Quantity", "Дата": "Date", "Час": "Time", "Статус": "Status",
+
+  "автоматично": "automatically", "натисніть": "press", "не перевіряли": "not checked yet",
+  "не продавець": "not a seller", "не підходять під таку оплату": "do not support this payment",
+  "нижче": "below", "орієнтовний долар": "approximate USD",
+  "Бот пише лише про те": "Bot writes only about", "Продажі": "Sales",
+  "Ресток": "Restock", "Ручне внесення продажу в таблицю не спові":
+    "Manual sale entry does not notify",
+  "Створи бота у": "Create a bot in", "ТОКЕН БОТА": "BOT TOKEN",
+  "ціна": "price", "гри": "games", "гра": "game", "дата": "date",
+
+  "офлайн": "offline", "платформа": "platform", "поповнення балансу": "balance top-up",
+  "посередник": "middleman", "потрібен вхід у": "sign-in required in",
+  "скільки варіантів акаунтів": "how many account variants",
+  "Бот пише лише про те, що": "Bot writes only about what",
+  "Ручне внесення продажу в таблицю не сповіщає": "Manual sale entry does not notify",
+  "Тест": "Test", "Трекер читає пошту": "Tracker reads mail", "Тунель": "Tunnel",
+  "Увімкнено": "Enabled", "Вимкнено": "Disabled", "Перевірити": "Check",
+  "Налаштування": "Settings", "Зберегти": "Save", "Скасувати": "Cancel",
+
+  "телефон": "phone", "тому ручна мітка": "so the manual mark", "у вікні браузера": "in the browser window",
+  "часто блокує автоматичне читання сторінок": "often blocks automatic page reading",
+  "через": "because of", "якщо його": "if it", "Бот пише лише про те": "Bot writes only about",
+  "Ручне внесення продажу в таблицю не сповіщає": "Manual sale entry does not notify",
+  "Ручне внесення продажу в таблицю не спові": "Manual sale entry does not notify",
+  "Форма зміни пароля не діє": "The password change form is inactive",
+  "Що надсилати в": "What to send to", "авто": "auto", "агента": "agent",
+  "Застосувати": "Apply", "Скинути": "Reset", "Оновити зараз": "Refresh now",
+
+  "якщо там оплата карткою": "if card payment is available there",
+  "і сам відкриває вікно браузера": "and opens the browser window itself",
+  "адресу не знайдено": "address not found", "акаунти": "accounts", "баланс": "balance",
+  "браузер попросить його після перезавантаження":
+    "the browser will ask for it after a reload",
+  "Бот пише лише про те, що": "Bot writes only about what",
+  "Ручне внесення продажу": "Manual sale entry",
+  "в таблицю не сповіщає": "into the table does not notify",
+
+  "і сам відкриває вікно браузера": "and opens the browser window itself",
+  "будь-яка папка": "any folder", "в таблицю не сповіщає": "into the table does not notify",
+  "вимкнено": "disabled", "встав токен і свій": "insert the token and your",
+  "для прямого доступу": "for direct access", "Бот пише лише про те": "Bot writes only about",
+  "сам відкриває вікно": "opens the window itself", "вікно браузера": "browser window",
+
+  "браузера": "browser", "Бот пише лише про те": "Bot writes only about",
+  "в таблицю не сповіщає": "into the table does not notify",
+  "дізнатись у": "find it in", "з НБУ": "from NBU", "зазвичай забезпечує проксі":
+    "usually provides a proxy", "дізнатись": "find out",
+
+  "показує не кабінет": "does not show the account", "прострочений": "expired",
+  "зараз": "now", "оновлення йде": "refresh in progress", "замовлення": "order",
+  "запам'ятовується": "remembered", "й за місяць": "and for the month",
+  "Бот пише лише про те, що": "Bot writes only about what",
+  "в таблицю не сповіщає": "into the table does not notify",
+
+  "Бот пише лише про те, що": "Bot writes only about what",
+  "в таблицю не сповіщає": "into the table does not notify",
+  "й повідомлення": "and messages", "кнопки": "buttons",
+  "кожен тип окремо": "each type separately", "за ": "for ",
+
+  // ── ⚙ Налаштування: повні речення (перебивають переклад слів) ──
+  "Розмір шрифту — кнопки": "Font size —",
+  "у шапці сторінки (запам'ятовується).": "buttons in the page header (remembered).",
+  "Авто-бекап раз на день у папку": "Auto-backup once a day into",
+  "поруч з трекером. Зберігаються останні 30 файлів (P&L, ELDORADO, ціль).":
+    "next to the tracker. The latest 30 files are kept (P&L, ELDORADO, goal).",
+  "Бот пише": "The bot writes",
+  "лише про те, що прийшло з пошти": "only about what came from mail",
+  "(нові замовлення й повідомлення FunPay / ZeusX / Eldorado) та про досягнення цілі.":
+    "(new orders and messages from FunPay / ZeusX / Eldorado) and about reaching the goal.",
+  "Ручне внесення продажу в таблицю": "A manual sale entry into the table",
+  "сповіщає. Створи бота у": "does not notify. Create a bot in",
+  "встав токен і свій chat_id (дізнатись у": "insert the token and your chat_id (find it in",
+  "якщо його немає. Капчу проходите ви — колектор чекає.":
+    "if you do not have one. You pass the captcha — the agent waits.",
+  "💬 Повідомлення покупців": "💬 Buyer messages",
+  "⚠️ Watchdog сайту": "⚠️ Site watchdog",
+  "⚠️ Watchdog агента Taobao": "⚠️ Taobao agent watchdog",
+  "📊 Дайджест (20:00)": "📊 Digest (20:00)",
+  "💾 Зберегти сповіщення": "💾 Save notifications",
+  "Бот відповідає на команди": "Bot answers commands",
+  "(тільки ваш чат):": "(your chat only):",
+  "продажі сьогодні й за місяць": "sales today and for the month",
+  "баланс ZeusX / FunPay / Eldorado": "ZeusX / FunPay / Eldorado balance",
+  "— останні замовлення": "— latest orders",
+  "— топ вигідних лотів": "— top profitable lots",
+  "📧 Пошта": "📧 Mail",
+  "⚠ не налаштовано": "⚠ not configured",
+  "✅ налаштовано": "✅ configured",
+  "· увімкнено": "· enabled", "· вимкнено": "· disabled",
+  "Трекер читає пошту (IMAP) і надсилає в Telegram нові":
+    "The tracker reads mail (IMAP) and sends new",
+  "FunPay / ZeusX / Eldorado. Потрібен": "FunPay / ZeusX / Eldorado to Telegram. Required:",
+  "(не звичайний пароль):": "(not a regular password):",
+  "та": "and", "повідомлення": "messages", "замовлення": "orders",
+  "увімкнений IMAP у Gmail.": "IMAP enabled in Gmail.",
+  "⚠ Gmail не налаштовано — сповіщень з пошти не буде":
+    "⚠ Gmail not configured — no mail notifications",
+  "немає App Password": "no App Password",
+  "перевірено": "checked",
+  "Зміна пароля діє одразу (браузер попросить його після перезавантаження). HTTPS — для прямого доступу; на хостингу зазвичай уже є проксі з HTTPS.":
+    "Password change applies immediately (the browser will ask for it after a reload). HTTPS is for direct access; on hosting a proxy with HTTPS is usually already in place.",
+  "HTTPS вимкнено · на хостингу HTTPS зазвичай забезпечує проксі":
+    "HTTPS disabled · on hosting a proxy usually provides HTTPS",
+  "⚠ увімкнено, але cert/key не знайдено — виправ і перезапусти":
+    "⚠ enabled but cert/key not found — fix it and restart",
+  "🌐 Тунель: адресу не знайдено (немає логу cloudflared)":
+    "🌐 Tunnel: address not found (no cloudflared log)",
+  "боти": "bots", "Сповіщення": "Notifications",
+
+  "не": "", " Не": "", "бо": "because", "це": "this",
+
+  "Місяці": "Months", "CSV (фільтр)": "CSV (filter)", "фільтр": "filter",
+  "Price купівлі": "Purchase price", "Price продажу": "Sale price",
+  "Order ID (необов'язково)": "Order ID (optional)",
+  "Категорія (необов'язково)": "Category (optional)",
+  "необов'язково": "optional",
+  "логін: user@mail.com": "login: user@mail.com", "пароль: 12345": "password: 12345",
+  "пошта: user@mail.com": "mail: user@mail.com", "логін": "login", "пароль": "password",
+  "пошта": "mail", "КУРС": "RATE", "Оновити з НБУ": "Refresh from NBU",
+  "КУРС USD → UAH": "CURRENCY · USD → UAH", "КУРС (₴ за $1)": "RATE (₴ per $1)",
+  "Зберегти": "Save", "Оновити": "Refresh", "Місяць": "Month",
+  // ── інше ──
+  "Імпорт CSV": "Import CSV", "Інвентар": "Inventory", "Аналітика": "Analytics",
+  "Весь час": "All time", "Записи": "Records", "Пошук...": "Search...",
+  "P&L + ELDORADO + ціль + налаштування · без паролів і токенів · sha256-перевірка":
+    "P&L + ELDORADO + goal + settings · no passwords or tokens · sha256 check",
+  "Джерело": "Source", "Більший шрифт": "Larger font",
+};
+
+const TR_RU = {
+  "збереженими": "сохранёнными", "збережений": "сохранённый", "збережено": "сохранено",
+  "хвилини": "минуты", "хвилин": "минут", "хвилину": "минуту", "хв": "мин",
+
+  "Взяти з браузера": "Взять из браузера", "Берегти cookie": "Сохранить cookie",
+
+  "Канал": "Канал", "новий": "новый", "Каналы": "Каналы",
+
+  "APP PASSWORD": "ПАРОЛЬ ПРИЛОЖЕНИЯ", "App Password": "App Password",
+
+  "продажі сьогодні й за місяць": "продажи сегодня и за месяц",
+  "баланс ZeusX / FunPay / Eldorado": "баланс ZeusX / FunPay / Eldorado",
+  "останні замовлення": "последние заказы", "топ вигідних лотів": "топ выгодных лотов",
+  "налаштовано": "настроено", "сповіщень з пошти не буде": "уведомлений из почты не будет",
+  "не сповіщає": "не уведомляет", "сповіщення": "уведомления",
+  "Замовлення сюди": "Заказы сюда", "поки порожньо": "пока пусто",
+
+  "лише про те, що прийшло з пошти": "только о том, что пришло из почты",
+  "(нові замовлення й повідомлення FunPay / ZeusX / Eldorado) та про досягнення цілі.":
+    "(новые заказы и сообщения FunPay / ZeusX / Eldorado) и о достижении цели.",
+  "Ручне внесення продажу в таблицю": "Ручное внесение продажи в таблицу",
+  "Створи бота у": "Создай бота в", "встав токен і свій chat_id (дізнатись у": "вставь токен и свой chat_id (узнать в",
+  "Трекер читає пошту (IMAP) і надсилає в Telegram нові": "Трекер читает почту (IMAP) и отправляет в Telegram новые",
+  "FunPay / ZeusX / Eldorado. Потрібен": "FunPay / ZeusX / Eldorado. Нужен",
+  "(не звичайний пароль):": "(не обычный пароль):",
+  "увімкнений IMAP у Gmail.": "включённый IMAP в Gmail.",
+  "Авто-бекап раз на день у папку": "Авто-бэкап раз в день в папку",
+  "поруч з трекером. Зберігаються останні 30 файлів (P&L, ELDORADO, ціль).":
+    "рядом с трекером. Хранятся последние 30 файлов (P&L, ELDORADO, цель).",
+  "Завантаження...": "Загрузка...", "без паролів і токенів": "без паролей и токенов",
+  "P&L + ELDORADO + ціль + налаштування · без паролів і токенів · sha256-перевірка":
+    "P&L + ELDORADO + цель + настройки · без паролей и токенов · sha256-проверка",
+  "Зберегти сповіщення": "Сохранить уведомления", "Тест": "Тест",
+  "Увімкнено": "Включено", "Вимкнено": "Отключено",
+  "Пошта": "Почта", "Перевірити": "Проверить",
+
+  "Пароль вимкнено": "Пароль отключён", "Доступ контролює Cloudflare Access": "Доступ контролирует Cloudflare Access",
+  "Форма зміни пароля не діє.": "Форма смены пароля не действует.",
+  "заголовок Access обов’язковий": "заголовок Access обязателен",
+  "Зміна пароля діє одразу (браузер попросить його після перезавантаження). HTTPS — для прямого доступу; на хостингу зазвичай уже є проксі з HTTPS.":
+    "Смена пароля действует сразу (браузер попросит его после перезагрузки). HTTPS — для прямого доступа; на хостинге обычно уже есть прокси с HTTPS.",
+  "ПОТОЧНИЙ ПАРОЛЬ": "ТЕКУЩИЙ ПАРОЛЬ", "НОВИЙ ПАРОЛЬ": "НОВЫЙ ПАРОЛЬ", "ПОВТОРИ": "ПОВТОРИТЕ",
+  "мін. 6 символів": "мин. 6 символов", "Змінити пароль": "Сменить пароль",
+  "Згенерувати self-signed": "Сгенерировать self-signed",
+  "HTTPS вимкнено · на хостингу HTTPS зазвичай забезпечує проксі":
+    "HTTPS отключён · на хостинге HTTPS обычно обеспечивает прокси",
+  "увімкнено, але cert/key не знайдено — виправ і перезапусти":
+    "включён, но cert/key не найден — исправь и перезапусти",
+  "Тунель: адресу не знайдено (немає логу cloudflared)":
+    "Туннель: адрес не найден (нет лога cloudflared)",
+  "Пароль вимкнено (GT_AUTH=off)": "Пароль отключён (GT_AUTH=off)",
+
+  "Taobao часто блокує автоматичне читання сторінок": "Taobao часто блокирует автоматическое чтение страниц",
+  "якщо там оплата карткою": "если там оплата картой",
+  "і сам відкриває вікно браузера": "и сам открывает окно браузера",
+  "Зберегти сповіщення": "Сохранить уведомления",
+  "замовлення та повідомлення": "заказы и сообщения",
+  "у шапці сторінки (запам'ятовується).": "в шапке страницы (запоминается).",
+  "і 🎛": "и 🎛", "Бот": "Бот",
+
+  "Нічого не додається": "Ничего не добавляется", "оплата карткою": "оплата картой",
+  "орієнтовний долар": "ориентировочный доллар", "читання сторінок лотів": "чтение страниц лотов",
+  "Сохранить сповіщення": "Сохранить уведомления", "зазвичай забезпечує проксі": "обычно обеспечивает прокси",
+  "замовлення та повідомлення": "заказы и сообщения", "Бот пише": "Бот пишет",
+  "скільки варіантів акаунтів": "сколько вариантов аккаунтов", "тому ручна мітка": "поэтому ручная метка",
+  "не підходять під таку оплату": "не поддерживают такую оплату",
+
+  "Потрібен": "Нужен", "Розмір шрифту": "Размер шрифта", "кнопки": "кнопки",
+  "у шапці сторінки": "в шапке страницы", "Сохранить сповіщення": "Сохранить уведомления",
+
+  "Нічого не додається автоматично": "Ничего не добавляется автоматически",
+  "сторінка замовлень": "страница заказов", "ключі": "ключи",
+  "колектор чекає": "коллектор ждёт", "найнадійніше": "надёжнее всего",
+  "натисніть": "нажмите", "Падіння цін": "Падение цен",
+  "Перевірити зараз": "Проверить сейчас", "Повідомлення покупців": "Сообщения покупателей",
+  "Порожнє поле": "Пустое поле", "Завантаження": "Загрузка",
+
+  "Нічого не додається автоматично": "Ничего не добавляется автоматически",
+  "які трекер уже розпізнав": "которые трекер уже распознал",
+  "кабінетів": "кабинетов", "облік": "учёт", "прибуток за місяць": "прибыль за месяц",
+  "скопіюйте значення": "скопируйте значение",
+  "Тільки з оплатою карткою": "Только с оплатой картой",
+  "автозапуск при вході в": "автозапуск при входе в",
+  "біля лота": "у лота", "вони вже відфільтровані": "они уже отфильтрованы",
+  "трекер закупівель": "трекер закупок",
+  "Зміна пароля діє одразу": "Смена пароля действует сразу",
+  "Змінити пароль": "Сменить пароль", "Копія бекапів у": "Копия бэкапов в",
+  "Нові акаунти": "Новые аккаунты",
+
+  "Свій період": "Свой период", "Сьогодні": "Сегодня", "всі дані": "все данные",
+  "Листи від": "Письма от", "Нічого не додається автоматично": "Ничего не добавляется автоматически",
+  "або проігноруйте": "или игнорируйте", "перенесіть одним кліком у": "перенесите одним кликом в",
+  "Дані читаються з ваших кабінетів": "Данные читаются из ваших кабинетов",
+  "Зберігається лише на сервері": "Хранится только на сервере",
+  "Оновлюється не частіше ніж раз на": "Обновляется не чаще раза в",
+  "Ще немає продажів": "Пока нет продаж", "Агент працює у фоні": "Агент работает в фоне",
+  "Більше варіантів": "Больше вариантов", "Дорожчі спершу": "Дороже сначала",
+  "Збирається колектором на вашому ПК": "Собирается коллектором на вашем ПК",
+  "Виберіть місяць": "Выберите месяц", "Кредитів": "Кредитов",
+  "ТОП ІГРИ ПО ПРИБУТКУ": "ТОП ИГРЫ ПО ПРИБЫЛИ", "продажі": "продажи",
+  "Імпорт": "Импорт", "Бот відповідає на команди": "Бот отвечает на команды",
+  "Вигідні лоти": "Выгодные лоты", "Зберігаються останні": "Хранятся последние",
+  "Пароль входу": "Пароль входа", "Без пароля": "Без пароля",
+  "Потрібна автоматизація": "Нужна автоматизация", "Зберегти": "Сохранить",
+
+  "Записів не знайдено": "Записей не найдено", "Підключення": "Подключение",
+  "не підключено": "не подключено", "немає": "нет", "Натисніть": "Нажмите",
+  "потрібен вхід у": "нужен вход в", "у вікні браузера": "в окне браузера",
+  "Немає даних": "Нет данных", "Різних ігор": "Разных игр",
+  "ЦЕЙ МІСЯЦЬ ПРОТИ МИНУЛОГО": "ЭТОТ МЕСЯЦ ПРОТИВ ПРОШЛОГО",
+  "Відновити": "Восстановить", "Доступ контролює": "Доступ контролирует",
+  "Копіювання у": "Копирование в", "Форма зміни пароля не діє": "Форма смены пароля не действует",
+  "Замовлення з пошти": "Заказы из почты", "Дані й діагностика": "Данные и диагностика",
+  "Спостерігаю": "Наблюдаю", "Виторг": "Выручка", "Продажі": "Продажи",
+  "Трекер читає пошту": "Трекер читает почту", "Пошта": "Почта", "Готово": "Готово",
+  "Застосувати": "Применить", "Скинути": "Сбросить", "Назад": "Назад", "Далі": "Далее",
+  "Налаштування": "Настройки", "Мова": "Язык", "Тема": "Тема", "Вийти": "Выйти",
+
+  // ── навігація / заголовки ──
+  "Огляд": "Обзор", "Угоди": "Сделки", "Замовлення": "Заказы", "Канали": "Каналы",
+  "Каталог": "Каталог", "План": "План", "Інвентар": "Инвентарь", "Аналітика": "Аналитика",
+  "ЗАМОВЛЕННЯ З ПОШТИ": "ЗАКАЗЫ ИЗ ПОЧТЫ", "Канали ": "Каналы ",
+  "Все канали — останні продажі": "Все каналы — последние продажи",
+  "Все канали": "Все каналы", "Баланси": "Балансы", "Оновити": "Обновить",
+  "Оновити зараз": "Обновить сейчас", "Оновити з кабінетів": "Обновить из кабинетов",
+  // ── пошта ──
+  "Очистити всі": "Очистить все", "Очистити": "Очистить",
+  "Листи від FunPay / ZeusX / Eldorado, які трекер уже розпізнав. Нічого не додається автоматично: перенесіть одним кліком у ELDORADO або P&L, або ігноруйте.":
+    "Письма от FunPay / ZeusX / Eldorado, которые трекер уже распознал. Ничего не добавляется автоматически: перенесите одним кликом в ELDORADO или P&L, либо игнорируйте.",
+  "FunPay: cookie не задано — замовлення з FunPay сюди не надходять.":
+    "FunPay: cookie не задан — заказы с FunPay сюда не поступают.",
+  "Вставити cookie": "Вставить cookie", "Вставити": "Вставить",
+  "Поки порожньо. Сюди потрапляють нові замовлення й повідомлення, які трекер знайшов у пошті.":
+    "Пока пусто. Сюда попадают новые заказы и сообщения, которые трекер нашёл в почте.",
+  // ── канали ──
+  "Акаунт": "Аккаунт", "Баланс": "Баланс", "В обробці / на холді": "В обработке / холд",
+  "Виведено всього": "Выведено всего", "Тіри": "Тиры", "Замовлень": "Заказов",
+  "Замовлень (останні)": "Заказов (последние)", "нові повідомлення": "новые сообщения",
+  "Продажів усього": "Продаж всего", "Виторг": "Выручка", "Прибуток": "Прибыль",
+  "Цей місяць": "Этот месяц", "Джерело": "Источник", "пошта + ручний облік": "почта + ручной учёт",
+  "Замовлень у списку немає": "Заказов в списке нет",
+  "Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.":
+    "Нужен свежий cookie: войдите на zeusx.com и обновите токен.",
+  "Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.":
+    "Cookie FunPay живёт недолго — войдите на funpay.com и обновите.",
+  "Eldorado не має публічного API — дані беруться з пошти та вашого ручного обліку.":
+    "У Eldorado нет публичного API — данные берутся из почты и вашего ручного учёта.",
+  "Де вигідніше продавати": "Где выгоднее продавать",
+  "Ціна продажу, $": "Цена продажи, $", "Собівартість, $": "Себестоимость, $",
+  "Комісії орієнтовні — уточнюйте тарифи майданчика":
+    "Комиссии ориентировочные — уточняйте тарифы площадки",
+  "МАЙДАНЧИК": "ПЛОЩАДКА", "КОМІСІЯ": "КОМИССИЯ", "НА РУКИ": "НА РУКИ",
+  "МАРЖА": "МАРЖА", "Telegram (прямо)": "Telegram (напрямую)",
+  "Своя вітрина": "Своя витрина",
+  "Мої лоти на ZeusX": "Мои лоты на ZeusX",
+  "Дані читаються з ваших кабінетів за збереженими cookie (ZeusX — API, FunPay — сторінка замовлень). Оновлюється не частіше ніж раз на 2 хвилини.":
+    "Данные читаются из ваших кабинетов по сохранённым cookie (ZeusX — API, FunPay — страница заказов). Обновляется не чаще раза в 2 минуты.",
+  // ── каталог ──
+  "ТОВАРИ": "ТОВАРЫ", "Пошук...": "Поиск...", "Без сорт.": "Без сорт.",
+  "Нові першими": "Новые первыми", "Оновлені першими": "Обновлённые",
+  "Ціна ↑": "Цена ↑", "Ціна ↓": "Цена ↓", "Sale першими": "Sale первыми",
+  "є в наявності": "в наличии", "зниклі": "исчезли", "дешевше": "дешевле",
+  "Новинки": "Новинки", "Ще немає постачальників — додайте у ⚙ → Постачальники":
+    "Пока нет поставщиков — добавьте в ⚙ → Поставщики",
+  "База порожня — натисни ↺ або зачекай оновлення":
+    "База пуста — нажми ↺ или подожди обновления",
+  "Нічого не знайдено": "Ничего не найдено", "ВСЬОГО": "ВСЕГО", "всього": "всего",
+  "оновлено": "обновлено", "наступне через": "следующее через",
+  "сьогодні": "сегодня", "товарів": "товаров", "нових": "новых", "год": "ч", "хв": "мин",
+  // ── склад ──
+  "На складі": "На складе", "Заморожено": "Заморожено", "Продано": "Продано",
+  "Витрачено всього": "Потрачено всего", "Всі": "Все", "Продані": "Проданные",
+  "Списані": "Списанные", "Мертвого складу немає": "Мёртвого склада нет",
+  "Порожньо — додайте першу закупівлю": "Пусто — добавьте первую закупку",
+  "Назва": "Название", "Гра": "Игра", "Додати": "Добавить",
+  "Дані акаунта (логін / пароль / пошта)": "Данные аккаунта (логин / пароль / почта)",
+  "Тут куплені акаунти: скільки коштували, у кого, і чи продані. Дає реальну маржу й показує, скільки грошей «заморожено».":
+    "Здесь купленные аккаунты: сколько стоили, у кого и проданы ли. Даёт реальную маржу и показывает, сколько денег «заморожено».",
+  // ── плани / таобао ──
+  "ЧТО КУПИТЬ СЕГОДНЯ": "ЧТО КУПИТЬ СЕГОДНЯ",
+  "Немає прибуткових варіантів за останні": "Нет прибыльных вариантов за последние",
+  "днів": "дней", "Пошук по назві...": "Поиск по названию...",
+  "мін. ціна ¥": "мин. цена ¥", "Всі ігри": "Все игры", "Всі типи": "Все типы",
+  "Всі регіони": "Все регионы", "Дешевші спершу": "Дешевле сначала",
+  "Кошик порожній — натисніть 🛒 біля лота, щоб додати":
+    "Корзина пуста — нажмите 🛒 у лота, чтобы добавить",
+  "Ще не перевіряли": "Ещё не проверяли", "Мітки": "Метки", "Оплата": "Оплата",
+  "даних ще немає": "данных ещё нет", "офлайн": "офлайн", "посередник": "посредник",
+  "Перевірити оплату": "Проверить оплату", "Зібрати зараз": "Собрать сейчас",
+  "Лот": "Лот", "Стартові": "Стартовые", "Розвинені": "Развитые",
+  "Ціни в юанях": "Цены в юанях",
+  // ── ⚙ ──
+  "ДАНІ Й ДІАГНОСТИКА": "ДАННЫЕ И ДИАГНОСТИКА", "натисніть ↻ Оновити": "нажмите ↻ Обновить",
+  "Завантажити демо-дані": "Загрузить демо-данные", "Стерти дані": "Стереть данные",
+  "Експорт усіх даних": "Экспорт всех данных", "Імпорт CSV": "Импорт CSV",
+  "Мій постачальник (Shopify)": "Мой поставщик (Shopify)",
+  "Назва магазину": "Название магазина",
+  "Працює для Shopify-магазинів (/products.json).": "Работает для Shopify-магазинов (/products.json).",
+  "ПОТРІБНА АВТОМАТИЗАЦІЯ?": "НУЖНА АВТОМАТИЗАЦИЯ?",
+  "Хочете таку саму автоматизацію: збір Taobao, FunPay/ZeusX, проходження капчі, авто-імпорт замовлень — напишіть у Telegram.":
+    "Хотите такую же автоматизацию: сбор Taobao, FunPay/ZeusX, прохождение капчи, авто-импорт заказов — напишите в Telegram.",
+  "ТЕМА ІНТЕРФЕЙСУ": "ТЕМА ИНТЕРФЕЙСА", "Світла": "Светлая", "Ledger": "Ledger",
+  "Розмір шрифту — кнопки A- / A+ у шапці сторінки (запам'ятовується).":
+    "Размер шрифта — кнопки A- / A+ в шапке страницы (запоминается).",
+  "БЕКАП P&L": "БЭКАП P&L", "Зробити зараз": "Сделать сейчас",
+  "БЕЗПЕКА": "БЕЗОПАСНОСТЬ", "Пароль": "Пароль",
+  "ПОТРІБНА АВТОМАТИЗАЦІЯ": "НУЖНА АВТОМАТИЗАЦИЯ",
+  // ── аналітика ──
+  "ЗВЕДЕНО — ВСІ ЦИФРИ В ОДНОМУ МІСЦІ": "СВЕДЕНО — ВСЕ ЦИФРЫ В ОДНОМ МЕСТЕ",
+  "ПРИБУТОК": "ПРИБЫЛЬ", "ВИРУЧКА": "ВЫРУЧКА", "ВКЛАДЕНО": "ВЛОЖЕНО",
+  "УГОД": "СДЕЛОК", "КОМІСІЇ": "КОМИССИИ", "ВИТОРГ ПО ДНЯХ (30 днів)": "ВЫРУЧКА ПО ДНЯМ (30 дней)",
+  "Виторг $": "Выручка $", "Прибуток $": "Прибыль $", "АНАЛІТИКА": "АНАЛИТИКА",
+  "ПО ІГРАХ": "ПО ИГРАМ", "ПО МІСЯЦЯХ": "ПО МЕСЯЦАМ",
+  "Розклад і ліміти": "Расписание и лимиты", "Оновлення баз. год": "Обновление базы, ч",
+  "Новинки, год": "Новинки, ч", "Кредити/день": "Кредиты/день", "Дайджест год": "Дайджест, ч",
+  "Алерт Taobao, ×": "Алерт Taobao, ×", "Зберегти": "Сохранить",
+  "Місячний звіт": "Месячный отчёт", "Показати": "Показать", "Вибрати місяць": "Выбрать месяц",
+};
+
+const EN2RU = {
+  "GMAIL → TELEGRAM": "GMAIL → TELEGRAM",
+
+  "Refresh": "Обновить", "Save": "Сохранить", "from": "из", "the": "the",
+
+  "Clear": "Очистить", "Cookies": "Cookie", "Nothing": "Ничего",
+  "already": "уже", "This": "Этот", "this": "этот", "your": "ваш", "the": "the",
+  "Save": "Сохранить", "Total": "Всего", "Search...": "Поиск...",
+
+  "Clear all": "Очистить всё", "Refresh": "Обновить", "Refresh now": "Обновить сейчас",
+  "Save cookies": "Сохранить cookie", "Take from browser": "Взять из браузера",
+  "Account cookies": "Cookie кабинетов", "Refresh from accounts": "Обновить из кабинетов",
+  "My lots on ZeusX": "Мои лоты на ZeusX", "Yet missing sales": "Пока нет продаж",
+  "Eldorado — sales": "Eldorado — продажи", "All channels — recent sales": "Все каналы — последние продажи",
+  "New": "Новые", "TOTAL": "ВСЕГО", "All": "Все", "Refresh rate": "Обновить курс",
+  "Save": "Сохранить", "CURRENCY": "ВАЛЮТА", "RATE": "КУРС",
+  "Collected by the agent on your PC. Agent runs in background (autostart on sign-in to Windows) i opens the window itself browser, if you do not have one. You pass the captcha — the agent waits. Prices in CNY below — approximate USD.":
+    "Собирается агентом на вашем ПК. Агент работает в фоне (автозапуск при входе в Windows) и сам открывает окно браузера, если его нет. Капчу проходите вы — агент ждёт. Цены в юанях, ниже — примерный доллар.",
+  "Marks: press": "Метки: нажмите", "next to a lot, if card payment is available there,": "у лота, если там оплата картой,",
+  " — how many account variants. Taobao often blocks automatic page reading lots («访问异常»), so the manual mark — most reliable.":
+    " — сколько вариантов аккаунтов. Taobao часто блокирует автоматическое чтение страниц («访问异常»), поэтому ручная метка — надёжнее.",
+  "Payment: card / Apple Pay because of Alipay International (platform, not a seller). Lots «代充 / 充值 / 话费» (balance top-up, phone, keys) do not support this payment — they are already filtered out.":
+    "Оплата: карта / Apple Pay через Alipay International (площадка, не продавец). Лоты «代充 / 充值 / 话费» (пополнение баланса, телефон, ключи) не поддерживают эту оплату — они уже отфильтрованы.",
+  "PASSWORD (OPTIONAL)": "ПАРОЛЬ (ОПЦИОНАЛЬНО)", "Enable password": "Включить пароль",
+  "Disable password": "Отключить пароль", "New password (min 8)": "Новый пароль (мин. 8)",
+  "DATA & DIAGNOSTICS": "ДАННЫЕ И ДИАГНОСТИКА", "Load demo data": "Загрузить демо-данные",
+  "Erase data": "Стереть данные", "Export all data": "Экспорт всех данных",
+  "Import CSV": "Импорт CSV", "My supplier (Shopify)": "Мой поставщик (Shopify)",
+  "Shop name": "Название магазина", "Add": "Добавить", "NEED AUTOMATION?": "НУЖНА АВТОМАТИЗАЦИЯ?",
+  "INTERFACE THEME": "ТЕМА ИНТЕРФЕЙСА", "P&L BACKUP": "БЭКАП P&L", "Run now": "Сделать сейчас",
+  "SECURITY": "БЕЗОПАСНОСТЬ", "TELEGRAM NOTIFICATIONS": "TELEGRAM-УВЕДОМЛЕНИЯ",
+  "GMAIL → TELEGRAM": "GMAIL → TELEGRAM", "CLOUD BACKUP": "ОБЛАЧНЫЙ БЭКАП",
+  "Mail": "Почта", "Orders": "Заказы", "Deals": "Сделки", "Channels": "Каналы",
+  "Catalog": "Каталог", "Plan": "План", "Taobao": "Taobao", "Inventory": "Инвентарь",
+  "Analytics": "Аналитика", "Overview": "Обзор",
+};
+
+const TR_PATTERNS = [
+  [/^оновлено (.*)$/, "updated $1"],
+  [/^оновлено — /, "updated — "],
+  [/^наступне через (\d+) год$/, "next in $1 h"],
+  [/^наступне через (\d+) хв$/, "next in $1 min"],
+  [/^зараз оновлюю…$/, "refreshing now…"],
+  [/^оновлення йде$/, "refresh in progress"],
+  [/^сьогодні (\d+)\/(\d+)$/, "today $1/$2"],
+  [/^ключі (\d+)\/(\d+) \(залишок (\d+)\)$/, "keys $1/$2 (left $3)"],
+  [/^(\d+) хв, нових (\d+)$/, "$1 min, new $2"],
+  [/^(\d+) товарів$/, "$1 products"],
+  [/^(\d+) товарів · /, "$1 products · "],
+  [/· товарів$/, "· products"],
+  [/^Продажів усього$/, "Total sales"],
+  [/^(\d+) · стор\. (\d+)\/(\d+)$/, "$1 · page $2/$3"],
+];
+
+let _trSorted = null;
+function _trBuildSorted(){
+  const keys = Object.keys(TR_EN).filter(k => k && /[А-Яа-яІіЇїЄє]/.test(k));
+  keys.sort((a, b) => b.length - a.length);
+  _trSorted = keys;
+}
+const _CYR = '[А-Яа-яІіЇїЄє]';
+
+function _trRu(txt){
+  let out = txt;
+  const keys = Object.keys(TR_RU).sort((a,b)=>b.length-a.length);
+  for(const k of keys){
+    if(out.indexOf(k) < 0) continue;
+    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(new RegExp('(?<![А-Яа-яІіЇїЄє])' + esc + '(?![А-Яа-яІіЇїЄє])', 'g'), TR_RU[k]);
+  }
+  const ekeys = Object.keys(EN2RU).sort((a,b)=>b.length-a.length);
+  for(const k of ekeys){
+    if(out.indexOf(k) < 0) continue;
+    out = out.split(k).join(EN2RU[k]);
+  }
+  return out;
+}
+
+function _trText(txt){
+  if(LANG === 'uk') return txt;
+  if(LANG === 'ru') return _trRu(txt);
+
+  if(!/[А-Яа-яІіЇїЄє]/.test(txt)) return txt;
+  if(!_trSorted) _trBuildSorted();
+  let out = txt;
+  for(const k of _trSorted){
+    if(out.indexOf(k) < 0) continue;
+    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp('(?<!' + _CYR + ')' + esc + '(?!' + _CYR + ')', 'g');
+    out = out.replace(re, TR_EN[k]);
+  }
+  for(const [re, rep] of TR_PATTERNS){
+    out = out.replace(re, rep);
+  }
+  return out;
+}
+function _trWalk(root){
+  if(!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  const nodes = [];
+  let n;
+  while((n = walker.nextNode())) nodes.push(n);
+  for(const node of nodes){
+    const parent = node.parentElement;
+    if(!parent) continue;
+    const tag = parent.tagName;
+    if(tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') continue;
+    // зберігаємо оригінал ОДИН раз — далі завжди перекладаємо з нього
+    if(typeof node.__o === 'undefined') node.__o = node.nodeValue;
+    if(LANG === 'uk'){ node.nodeValue = node.__o; continue; }
+    const tr = _trText(node.__o);
+    if(node.nodeValue !== tr) node.nodeValue = tr;
+  }
+  root.querySelectorAll && root.querySelectorAll('[placeholder],[title]').forEach(el => {
+    if(el.dataset && el.dataset.i18nPh) return;   // керується applyLang
+    for(const attr of ['placeholder','title']){
+      const okey = '__o_' + attr;
+      const cur = el.getAttribute(attr);
+      if(cur === null) continue;
+      if(typeof el[okey] === 'undefined') el[okey] = cur;
+      const want = (LANG === 'uk') ? el[okey] : _trText(el[okey]);
+      if(el.getAttribute(attr) !== want) el.setAttribute(attr, want);
+    }
+  });
+}
+
+let _trTimer = null;
+function translateAll(){
+  clearTimeout(_trTimer);
+  _trTimer = setTimeout(()=>{ _trWalk(document.body); }, 60);
+}
+
+</script>
+</body>
+</html>"""
+
+
+def render_html(fee_cfg_json):
+    """HTML з підставленими комісіями."""
+    return HTML.replace("__FEE_CONFIG__", fee_cfg_json)
