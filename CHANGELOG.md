@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.2 — bulk commission
+
+### Added
+- **Bulk commission**: apply one percentage to every deal in the current filter.
+- Works for both P&L deals and Eldorado sales.
+- Recalculates fee, after-fee and net profit; other expenses are untouched.
+- Confirmation shows the percentage and the number of deals.
+
 ## v1.1.1 — default fee profiles
 
 ### Added
