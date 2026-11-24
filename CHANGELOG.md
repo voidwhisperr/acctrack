@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.29.0 — demo currency and brand polish
+
+- Taobao demo lots stay in USD and are excluded from the display-currency converter.
+- Demo heading and note translated UA/EN/RU.
+- Dynamic A/L icon and manifest; alert state clears when Orders opens.
+
 ## v1.28.0 — brand icons
 
 - Dynamic app icon: A for AccTrack, L for Ledger.

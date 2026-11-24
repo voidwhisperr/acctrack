@@ -866,10 +866,10 @@ code{
       <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px 12px"><div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="tb.ben2t">Маржа замість вгадування</div><div style="font-size:10.5px;color:var(--mu);line-height:1.45" data-i18n="tb.ben2d">Ціна в юанях, орієнтовний долар, ваша ціна продажу та потенційний прибуток — в одному рядку.</div></div>
       <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px 12px"><div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="tb.ben3t">Один клік до угоди</div><div style="font-size:10.5px;color:var(--mu);line-height:1.45" data-i18n="tb.ben3d">Знайшли вигідний лот — додайте його в P&L, і він одразу стане частиною вашого обліку.</div></div>
     </div>
-    <div style="margin-top:12px;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:12px">
+    <div data-no-currency style="margin-top:12px;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-        <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--mu)">ЯК ЦЕ ВИГЛЯДАЄ В РОБОТІ</div>
-        <div style="font-size:9px;padding:2px 7px;border:1px solid var(--brd);border-radius:999px;color:var(--mu)">ДЕМО-ПРИКЛАД</div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--mu)" data-i18n="taobao.demoTitle">ЯК ЦЕ ВИГЛЯДАЄ В РОБОТІ</div>
+        <div style="font-size:9px;padding:2px 7px;border:1px solid var(--brd);border-radius:999px;color:var(--mu)" data-i18n="taobao.demoBadge">ДЕМО-ПРИКЛАД</div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
         <div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:9px 11px">
@@ -894,7 +894,7 @@ code{
           <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span>Маржа</span><b>+$19.1 · 32%</b></div>
         </div>
       </div>
-      <div style="font-size:10px;color:var(--mu);margin-top:7px">Це демонстраційний приклад. Реальні лоти, ціни й маржа з’являться після запуску агента.</div>
+      <div style="font-size:10px;color:var(--mu);margin-top:7px" data-i18n="taobao.demoNote">Це демонстраційний приклад у USD. Реальні лоти, ціни й маржа з’являться після запуску агента.</div>
     </div>
     <details style="margin-top:12px;font-size:11.5px;color:var(--mu);line-height:1.6">
       <summary style="cursor:pointer;color:var(--tx);font-weight:600" data-i18n="tb.how">Як працює агент і що потрібно</summary>
@@ -2403,6 +2403,7 @@ Object.assign(I18N.uk, {
   'imp.createHold':'створити Hold','imp.import':'Імпортувати','imp.emptyCsv':'CSV порожній','imp.noColumns':'Не знайдено колонок title/price',
   'imp.noRows':'Немає рядків з ціною','imp.foundCost':'знайдено собівартість','imp.imported':'Імпортовано','imp.skipped':'пропущено дублів',
   'imp.price':'Ціна','imp.fee':'Комісія','imp.cost':'Собівартість','imp.stock':'Склад','imp.titleCol':'Дата','imp.name':'Назва',
+  'taobao.demoTitle':'ЯК ЦЕ ВИГЛЯДАЄ В РОБОТІ','taobao.demoBadge':'ДЕМО-ПРИКЛАД','taobao.demoNote':'Це демонстраційний приклад у USD. Реальні лоти, ціни й маржа з’являться після запуску агента.',
   'roi.title':'ROI ПОСТАЧАЛЬНИКІВ','roi.hint':'Прибуток, ROI і sell-through по постачальниках — на основі складу та прив’язаних продажів.',
   'roi.empty':'Немає даних: додай товар на склад із постачальником.','roi.supplier':'Постачальник','roi.items':'Товари','roi.sold':'Продано',
   'roi.stock':'Склад','roi.cost':'Витрати','roi.revenue':'Виручка','roi.profit':'Прибуток','roi.roi':'ROI','roi.st':'ST%','roi.days':'Днів',
@@ -2424,6 +2425,7 @@ Object.assign(I18N.en, {
   'imp.createHold':'create Hold','imp.import':'Import','imp.emptyCsv':'CSV is empty','imp.noColumns':'No title/price columns found',
   'imp.noRows':'No rows with a price','imp.foundCost':'cost matched','imp.imported':'Imported','imp.skipped':'duplicates skipped',
   'imp.price':'Price','imp.fee':'Fee','imp.cost':'Cost','imp.stock':'Stock','imp.titleCol':'Date','imp.name':'Name',
+  'taobao.demoTitle':'WHAT IT LOOKS LIKE IN USE','taobao.demoBadge':'DEMO','taobao.demoNote':'This is a demo example in USD. Real lots, prices and margin appear after the agent starts.',
   'roi.title':'SUPPLIER ROI','roi.hint':'Profit, ROI and sell-through by supplier, based on stock and linked sales.',
   'roi.empty':'No data: add stock with a supplier.','roi.supplier':'Supplier','roi.items':'Items','roi.sold':'Sold',
   'roi.stock':'Stock','roi.cost':'Cost','roi.revenue':'Revenue','roi.profit':'Profit','roi.roi':'ROI','roi.st':'ST%','roi.days':'Days',
@@ -2445,6 +2447,7 @@ Object.assign(I18N.ru, {
   'imp.createHold':'создать Hold','imp.import':'Импортировать','imp.emptyCsv':'CSV пустой','imp.noColumns':'Не найдены колонки title/price',
   'imp.noRows':'Нет строк с ценой','imp.foundCost':'найдена себестоимость','imp.imported':'Импортировано','imp.skipped':'пропущено дублей',
   'imp.price':'Цена','imp.fee':'Комиссия','imp.cost':'Себестоимость','imp.stock':'Склад','imp.titleCol':'Дата','imp.name':'Название',
+  'taobao.demoTitle':'КАК ЭТО ВЫГЛЯДИТ В РАБОТЕ','taobao.demoBadge':'ДЕМО-ПРИМЕР','taobao.demoNote':'Это демонстрационный пример в USD. Реальные лоты, цены и маржа появятся после запуска агента.',
   'roi.title':'ROI ПОСТАВЩИКОВ','roi.hint':'Прибыль, ROI и sell-through по поставщикам — на основе склада и связанных продаж.',
   'roi.empty':'Нет данных: добавь товар на склад с поставщиком.','roi.supplier':'Поставщик','roi.items':'Товары','roi.sold':'Продано',
   'roi.stock':'Склад','roi.cost':'Затраты','roi.revenue':'Выручка','roi.profit':'Прибыль','roi.roi':'ROI','roi.st':'ST%','roi.days':'Дней',
@@ -3183,7 +3186,7 @@ let _moneyTimer=null;
 function _canMoneyNode(node){
   const el=node && node.parentElement;
   if(!el) return false;
-  if(el.closest('script,style,input,textarea,select,option,code,pre')) return false;
+  if(el.closest('script,style,input,textarea,select,option,code,pre,[data-no-currency]')) return false;
   return true;
 }
 function _moneyConvertNode(node){
