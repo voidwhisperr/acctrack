@@ -2230,6 +2230,68 @@ def _https_gen():
         return {"ok": False, "error": msg[:500]}
 
 
+def _dpapi_protect(text):
+    """Windows DPAPI: шифрує пароль під поточного користувача. None поза Windows."""
+    if os.name != "nt" or not text:
+        return None
+    try:
+        import ctypes, base64
+        from ctypes import wintypes
+
+        class DATA_BLOB(ctypes.Structure):
+            _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_char))]
+        data = text.encode("utf-8")
+        buf = ctypes.create_string_buffer(data)
+        inb = DATA_BLOB(len(data), ctypes.cast(buf, ctypes.POINTER(ctypes.c_char)))
+        outb = DATA_BLOB()
+        if not ctypes.windll.crypt32.CryptProtectData(
+                ctypes.byref(inb), None, None, None, None, 1, ctypes.byref(outb)):
+            return None
+        try:
+            raw = ctypes.string_at(outb.pbData, outb.cbData)
+            return base64.b64encode(raw).decode("ascii")
+        finally:
+            ctypes.windll.kernel32.LocalFree(outb.pbData)
+    except Exception:
+        return None
+
+
+def _dpapi_unprotect(b64):
+    if os.name != "nt" or not b64:
+        return None
+    try:
+        import ctypes, base64
+        from ctypes import wintypes
+
+        class DATA_BLOB(ctypes.Structure):
+            _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_char))]
+        raw = base64.b64decode(b64)
+        buf = ctypes.create_string_buffer(raw)
+        inb = DATA_BLOB(len(raw), ctypes.cast(buf, ctypes.POINTER(ctypes.c_char)))
+        outb = DATA_BLOB()
+        if not ctypes.windll.crypt32.CryptUnprotectData(
+                ctypes.byref(inb), None, None, None, None, 1, ctypes.byref(outb)):
+            return None
+        try:
+            return ctypes.string_at(outb.pbData, outb.cbData).decode("utf-8")
+        finally:
+            ctypes.windll.kernel32.LocalFree(outb.pbData)
+    except Exception:
+        return None
+
+
+def _backup_password():
+    env = os.environ.get("GT_BACKUP_PASSWORD") or ""
+    if env:
+        return env
+    sec = _read_json(SECRETS_FILE, {}) or {}
+    if sec.get("backup_password_dpapi"):
+        pw = _dpapi_unprotect(str(sec.get("backup_password_dpapi")))
+        if pw:
+            return pw
+    return str(sec.get("backup_password") or "")
+
+
 def do_backup():
     """Бекап P&L + ELDORADO + цілі у gt_backups/ і, якщо є, у хмару."""
     made = []
@@ -2256,7 +2318,7 @@ def do_backup():
         _verify_status = "ok"
         _restore_status = "skip"
         if _st.get("backup_encrypt"):
-            _pw = os.environ.get("GT_BACKUP_PASSWORD") or str((_read_json(SECRETS_FILE, {}) or {}).get("backup_password") or "")
+            _pw = _backup_password()
             if _pw:
                 try:
                     _raw, _man = _build_backup_zip()
@@ -4368,7 +4430,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.19.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.20.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4659,6 +4721,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "backup_encrypt": bool(st.get("backup_encrypt")),
                 "backup_last_verify": str(st.get("backup_last_verify") or ""),
                 "backup_last_restore_test": str(st.get("backup_last_restore_test") or ""),
+                "backup_password_protected": bool((_read_json(SECRETS_FILE, {}) or {}).get("backup_password_dpapi")),
                 "digest_last": str(st.get("digest_last") or ""),
                 "alerts_only_my_games": bool(st.get("alerts_only_my_games", True)),
                 "notify": {k: bool(st.get("notify_" + k, v))
@@ -4754,7 +4817,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.19.0",
+            self._json({"ok": True, "version": "1.20.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5095,7 +5158,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 names = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith("gt_enc_") and f.endswith(".ledger.enc"))
                 if not names:
                     self._json({"ok": True, "encrypted": False, "note": "немає encrypted-бекапів"}); return
-                pw = os.environ.get("GT_BACKUP_PASSWORD") or str((_read_json(SECRETS_FILE, {}) or {}).get("backup_password") or "")
+                pw = _backup_password()
                 if not pw:
                     self._json({"ok": False, "error": "немає пароля шифрування"}); return
                 with open(os.path.join(BACKUP_DIR, names[-1]), "rb") as f:
@@ -5111,7 +5174,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 names = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith("gt_enc_") and f.endswith(".ledger.enc"))
                 if not names:
                     self._json({"ok": True, "encrypted": False, "note": "немає encrypted-бекапів"}); return
-                pw = os.environ.get("GT_BACKUP_PASSWORD") or str((_read_json(SECRETS_FILE, {}) or {}).get("backup_password") or "")
+                pw = _backup_password()
                 if not pw:
                     self._json({"ok": False, "error": "немає пароля шифрування"}); return
                 with open(os.path.join(BACKUP_DIR, names[-1]), "rb") as f:
@@ -5133,12 +5196,20 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     _atomic_dump(SETTINGS_FILE, st)
                     sec = _read_json(SECRETS_FILE, {}) or {}
                     if enable and pw:
-                        sec["backup_password"] = pw
+                        protected = _dpapi_protect(pw)
+                        if protected:
+                            sec["backup_password_dpapi"] = protected
+                            sec.pop("backup_password", None)
+                        else:
+                            sec["backup_password"] = pw
+                            sec.pop("backup_password_dpapi", None)
                     elif not enable:
                         sec.pop("backup_password", None)
+                        sec.pop("backup_password_dpapi", None)
                     _atomic_dump(SECRETS_FILE, sec)
                 self._json({"ok": True, "enabled": enable,
-                            "has_password": bool(os.environ.get("GT_BACKUP_PASSWORD") or pw)})
+                            "has_password": bool(os.environ.get("GT_BACKUP_PASSWORD") or pw),
+                            "protected": bool(_dpapi_protect(pw)) if (enable and pw) else False})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)[:160]})
             return
@@ -6132,7 +6203,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.19.0")
+    print("  ▲  AccTrack v1.20.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

@@ -3322,7 +3322,7 @@ async function loadSettings(){
     if(g('backupKeep')) g('backupKeep').value = d.backup_keep || 30;
     if(g('backupEncrypt')) g('backupEncrypt').checked = !!d.backup_encrypt;
     if(g('backupInfo')) g('backupInfo').textContent = d.backup_last_ts
-      ? ('Останній бекап: '+new Date(d.backup_last_ts*1000).toLocaleString(dateLocale())+' · '+(d.backup_last_status||'')+(d.backup_last_verify?(' · перевірка: '+d.backup_last_verify):'')+(d.backup_last_restore_test?(' · restore: '+d.backup_last_restore_test):''))
+      ? ('Останній бекап: '+new Date(d.backup_last_ts*1000).toLocaleString(dateLocale())+' · '+(d.backup_last_status||'')+(d.backup_last_verify?(' · перевірка: '+d.backup_last_verify):'')+(d.backup_last_restore_test?(' · restore: '+d.backup_last_restore_test):'')+(d.backup_password_protected?' · 🔐 DPAPI':''))
       : 'Автобекап ще не запускався';
     if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
     ['g2g','gameflip','pa','zeusx','funpay','eldorado','other'].forEach(k=>{

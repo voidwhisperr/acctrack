@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.20.0 — DPAPI backup password
+
+- On Windows, the backup encryption password is protected with user DPAPI instead of plaintext.
+- Existing backups and verification/restore use the protected secret transparently.
+- Settings shows DPAPI protection status.
+
 ## v1.19.0 — restore test
 
 - Encrypted backup is restored into a temp folder and parsed after creation.
