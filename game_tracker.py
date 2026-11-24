@@ -2254,6 +2254,7 @@ def do_backup():
                 except OSError: pass
         _st = _read_json(SETTINGS_FILE, {}) or {}
         _verify_status = "ok"
+        _restore_status = "skip"
         if _st.get("backup_encrypt"):
             _pw = os.environ.get("GT_BACKUP_PASSWORD") or str((_read_json(SECRETS_FILE, {}) or {}).get("backup_password") or "")
             if _pw:
@@ -2269,6 +2270,12 @@ def do_backup():
                         _verify_status = "failed: " + str(_v.get("error") or "")
                     else:
                         _verify_status = "ok"
+                    _rt = _restore_test_backup(_enc, _pw)
+                    if _rt.get("ok"):
+                        _restore_status = "ok: " + str((_rt.get("counts") or {}).get("pl", 0)) + " PL"
+                    else:
+                        _restore_status = "failed: " + str(_rt.get("error") or "")
+                        print(f"  ⚠ Restore test: {_rt.get('error')}", flush=True)
                     made.append(_ename)
                 except Exception as e:
                     print(f"  ⚠ Encrypted backup: {e}", flush=True)
@@ -2288,6 +2295,7 @@ def do_backup():
             st["backup_last_ts"] = int(time.time())
             st["backup_last_status"] = "ok" if cloud.get("copied") else (cloud.get("error") or "local")
             st["backup_last_verify"] = _verify_status
+            st["backup_last_restore_test"] = _restore_status
             _atomic_dump(SETTINGS_FILE, st)
     except Exception:
         pass
@@ -3896,6 +3904,43 @@ def _verify_backup_zip(raw, password=""):
         return {"ok": False, "error": "не zip"}
 
 
+def _restore_test_backup(raw, password=""):
+    """Безпечний restore-test у тимчасовій папці: розпаковує, парсить JSON, прибирає."""
+    import tempfile
+    raw = _decrypt_backup(raw, password)
+    tmp = tempfile.mkdtemp(prefix="acctrack_restore_")
+    try:
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            names = set(z.namelist())
+            manifest = json.loads(z.read("manifest.json").decode("utf-8")) if "manifest.json" in names else {}
+            allowed = {".gt_pl.json", ".gt_eldorado.json", ".gt_goal.json",
+                       ".gt_settings.json", ".gt_taobao.json", ".gt_imported.json",
+                       ".gt_sitemap.json", ".gt_scraper.json", ".gt_mail_queue.json"}
+            counts = {}
+            for name in names:
+                if name not in allowed:
+                    continue
+                path = z.extract(name, tmp)
+                with open(path, encoding="utf-8") as f:
+                    data = json.load(f)
+                if name == ".gt_pl.json":
+                    counts["pl"] = len(data) if isinstance(data, list) else 0
+                elif name == ".gt_eldorado.json":
+                    counts["ed"] = len(data) if isinstance(data, list) else 0
+                elif name == ".gt_goal.json":
+                    counts["goal"] = len(data) if isinstance(data, list) else 0
+            return {"ok": True, "counts": counts, "files": len(names),
+                    "created": manifest.get("created"), "version": manifest.get("version")}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+    finally:
+        try:
+            import shutil as _sh
+            _sh.rmtree(tmp, ignore_errors=True)
+        except Exception:
+            pass
+
+
 def _inspect_backup_zip(raw, password=""):
     """Перевіряє бекап без запису: manifest, файли, кількість записів."""
     raw = _decrypt_backup(raw, password)
@@ -4323,7 +4368,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.18.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.19.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4613,6 +4658,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "backup_last_status": str(st.get("backup_last_status") or ""),
                 "backup_encrypt": bool(st.get("backup_encrypt")),
                 "backup_last_verify": str(st.get("backup_last_verify") or ""),
+                "backup_last_restore_test": str(st.get("backup_last_restore_test") or ""),
                 "digest_last": str(st.get("digest_last") or ""),
                 "alerts_only_my_games": bool(st.get("alerts_only_my_games", True)),
                 "notify": {k: bool(st.get("notify_" + k, v))
@@ -4708,7 +4754,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.18.0",
+            self._json({"ok": True, "version": "1.19.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5043,6 +5089,22 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             name = "ledger_backup_%s.ledger.enc" % datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
             self._send(200, "application/octet-stream", enc,
                        extra={"Content-Disposition": f'attachment; filename="{name}"'})
+            return
+        if self.path == "/api/backup/restore-test":
+            try:
+                names = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith("gt_enc_") and f.endswith(".ledger.enc"))
+                if not names:
+                    self._json({"ok": True, "encrypted": False, "note": "немає encrypted-бекапів"}); return
+                pw = os.environ.get("GT_BACKUP_PASSWORD") or str((_read_json(SECRETS_FILE, {}) or {}).get("backup_password") or "")
+                if not pw:
+                    self._json({"ok": False, "error": "немає пароля шифрування"}); return
+                with open(os.path.join(BACKUP_DIR, names[-1]), "rb") as f:
+                    data = f.read()
+                v = _restore_test_backup(data, pw)
+                v["encrypted"] = True; v["file"] = names[-1]
+                self._json(v)
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:200]})
             return
         if self.path == "/api/backup/verify":
             try:
@@ -6070,7 +6132,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.18.0")
+    print("  ▲  AccTrack v1.19.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

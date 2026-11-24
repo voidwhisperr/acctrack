@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.19.0 — restore test
+
+- Encrypted backup is restored into a temp folder and parsed after creation.
+- Status shows restore-test result and P&L count.
+- Restore-test button in backup settings.
+
 ## v1.18.0 — backup integrity verification
 
 - Encrypted backup is verified (manifest + sha256) immediately after creation.
