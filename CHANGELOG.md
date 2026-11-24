@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.3.2 — Ledger icon and PWA branding
+
+### Changed
+- New **Ledger** icon: white L, green ledger lines and underline.
+- Manifest name: **Ledger — Game Account Tracker**, short name **Ledger**.
+- New cache-busted icon URLs: `ledger-192.png`, `ledger-512.png`, `ledger.svg`, `ledger-touch.png`.
+- Browser title and iOS app title: **Ledger**.
+- PWA notifications use the Ledger icon.
+
+### Note
+- Android/iPhone cache the home-screen icon. Remove the old shortcut and add the site again to see the new icon.
+
 ## v1.3.1 — mobile view
 
 ### Added

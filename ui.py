@@ -11,16 +11,16 @@ HTML = r"""<!DOCTYPE html>
 <html lang="uk">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Game Tracker v4.6</title>
+<title>Ledger</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="GameTracker">
+<meta name="apple-mobile-web-app-title" content="Ledger">
 <meta name="theme-color" content="#0d1017">
-<link rel="manifest" href="/manifest.json">
-<link rel="icon" href="/favicon.ico?v=7" sizes="any">
-<link rel="icon" type="image/svg+xml" href="/icon.svg?v=7">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=7">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=7">
+<link rel="manifest" href="/manifest.json?v=2">
+<link rel="icon" href="/ledger-32.png?v=2" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/ledger.svg?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="/ledger-192.png?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="/ledger-touch.png?v=2">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
