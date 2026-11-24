@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.12.0 — payout reconciliation
+
+- Payout CSV matches open Hold/Available entries by order, then by platform + amount.
+- Matched entries are marked withdrawn instead of creating duplicates.
+- Unmatched payout rows are added as withdrawn.
+
 ## v1.11.0 — payout automation
 
 - Cashflow entries support an available date; Hold auto-promotes to Available when the date arrives.

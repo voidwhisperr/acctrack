@@ -4162,21 +4162,35 @@ async function importCashflowCsv(input){
   if(rows.length<2){ toast('⚠ CSV порожній', false); return; }
   const hdr=rows[0].map(x=>String(x).trim().toLowerCase());
   const col=function(){ for(let i=0;i<arguments.length;i++){ const ix=hdr.findIndex(h=>h===arguments[i]||h.includes(arguments[i])); if(ix>=0) return ix; } return -1; };
-  const ci={date:col('date','created'),platform:col('platform','marketplace','source'),amount:col('amount','total','payout','net'),status:col('status','state'),note:col('note','comment','description'),available:col('available','payout date','release')};
+  const ci={date:col('date','created'),platform:col('platform','marketplace','source'),amount:col('amount','total','payout','net'),status:col('status','state'),note:col('note','comment','description'),available:col('available','payout date','release'),order:col('order','transaction','sale','id')};
   if(ci.amount<0){ toast('⚠ Немає колонки amount', false); return; }
-  let added=0;
+  let added=0, matched=0;
+  let open=[];
+  try{ const cur=await fetch('/api/cashflow').then(r=>r.json()); open=(cur.items||[]).filter(x=>x.status==='hold'||x.status==='available'); }catch(e){}
   for(const r of rows.slice(1)){
     const amount=_num(r[ci.amount]); if(!(amount>0)) continue;
     let plat=ci.platform>=0?String(r[ci.platform]||'').toLowerCase().trim():'other';
     if(plat.includes('g2g'))plat='g2g'; else if(plat.includes('gameflip'))plat='gameflip'; else if(plat.includes('player')||plat==='pa')plat='pa'; else if(plat.includes('zeus'))plat='zeusx'; else if(plat.includes('fun'))plat='funpay'; else if(plat.includes('eldorado'))plat='eldorado';
-    const st=ci.status>=0?String(r[ci.status]||'').toLowerCase():'hold';
-    const body={platform:plat,amount,status:['hold','available','withdrawn'].includes(st)?st:'hold',
+    const st=ci.status>=0?String(r[ci.status]||'').toLowerCase():'withdrawn';
+    const order=ci.order>=0?String(r[ci.order]||'').trim():'';
+    // 1) звіряємо з відкритим Hold/Available: order, потім платформа + сума
+    let hit=null;
+    if(order) hit=open.find(x=>String(x.order||'')===order);
+    if(!hit) hit=open.find(x=>String(x.platform||'')===plat && Math.abs(Number(x.amount||0)-amount)<0.02);
+    if(hit){
+      try{ await fetch('/api/cashflow/status',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id:hit.id,status:['hold','available','withdrawn'].includes(st)?st:'withdrawn'})}); matched++; }catch(e){}
+      open=open.filter(x=>x.id!==hit.id);
+      continue;
+    }
+    const body={platform:plat,amount,status:['hold','available','withdrawn'].includes(st)?st:'withdrawn',
       date:ci.date>=0?_date(r[ci.date]):new Date().toISOString().slice(0,10),
-      availableDate:(ci.available>=0&&String(r[ci.available]||'').trim())?_date(r[ci.available]):'',note:ci.note>=0?String(r[ci.note]||'').slice(0,200):''};
+      availableDate:(ci.available>=0&&String(r[ci.available]||'').trim())?_date(r[ci.available]):'',
+      note:ci.note>=0?String(r[ci.note]||'').slice(0,200):'',order};
     try{ const d=await fetch('/api/cashflow/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()); if(d.ok) added++; }catch(e){}
   }
   await loadCashflow();
-  toast('✅ Payout-записів: '+added);
+  toast('✅ Звірено: '+matched+' · нових: '+added);
   if(g('cfImport')) g('cfImport').value='';
 }
 async function cashflowSet(id,status){
