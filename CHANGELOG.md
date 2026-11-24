@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.3.0 — audit log, 2FA, dead-stock alerts
+
+### Added
+- **Action log**: last 500 changes to deals, Eldorado, stock, settings and 2FA, visible in Settings.
+- **Two-factor login (TOTP)**: 6-digit code from Google Authenticator / Aegis / 1Password.
+- 2FA setup, enable and disable in Settings; Basic auth cannot bypass it.
+- **Dead-stock alert**: Telegram notification for in-stock items older than 30 days, with 60/90-day counts and frozen value.
+- New Telegram switch: "Мертвий склад (30+ днів)".
+
 ## v1.2.0 — platform profitability
 
 ### Added

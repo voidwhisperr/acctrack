@@ -48,7 +48,7 @@ SCRAPER_API_KEY  = ""   # ← .gt_secrets.json -> "scraper_api_key" (обхід 
 
 import os, sys, json, time, threading, urllib.request, urllib.parse, shutil, datetime
 import http.server, webbrowser, pathlib, base64, hmac, subprocess, socket
-import gzip, hashlib, io, zipfile, tarfile, html as _html_mod, re, random, statistics, csv
+import gzip, hashlib, io, zipfile, tarfile, html as _html_mod, re, random, statistics, csv, struct
 
 try:
     import ui                     # HTML-шаблон дашборда
@@ -92,6 +92,7 @@ NEWS_STATE_FILE = str(_BASE_DIR / ".gt_sitemap.json")
 TAOBAO_FILE = str(_BASE_DIR / ".gt_taobao.json")
 INVENTORY_FILE = str(_BASE_DIR / ".gt_inventory.json")
 SETTINGS_FILE = str(_BASE_DIR / ".gt_settings.json")
+AUDIT_FILE    = str(_BASE_DIR / ".gt_audit.json")
 TG_FILE       = str(_BASE_DIR / ".gt_tg.json")
 GMAIL_STATE_FILE = str(_BASE_DIR / ".gt_gmail_state.json")
 MAIL_QUEUE_FILE  = str(_BASE_DIR / ".gt_mail_queue.json")
@@ -178,6 +179,22 @@ def _atomic_dump(path, obj):
     if _tag:
         _snapshot_before_save(path, _tag)
     _atomic_write(path, json.dumps(obj, ensure_ascii=False, indent=2))
+
+def _audit(event, **detail):
+    """Журнал дій: останні 500 подій, без секретів і паролів."""
+    try:
+        row = {"ts": round(time.time(), 3), "event": str(event)[:80],
+               "detail": {str(k)[:40]: (str(v)[:300] if not isinstance(v, (int, float, bool)) else v)
+                          for k, v in (detail or {}).items()}}
+        with _WRITE_LOCK:
+            rows = _read_json(AUDIT_FILE, []) or []
+            if not isinstance(rows, list):
+                rows = []
+            rows.append(row)
+            _atomic_dump(AUDIT_FILE, rows[-500:])
+    except Exception as e:
+        print(f"  ⚠ audit: {e}", flush=True)
+
 
 def _quarantine(path):
     """Копіює пошкоджений файл поруч як .corrupt-<ts>, щоб його не втратити."""
@@ -484,6 +501,54 @@ def _save_secrets(updates):
 # ─────────────────────────────────────────────────
 # ПОСТАЧАЛЬНИКИ (Shopify — де закуповувати)
 # ─────────────────────────────────────────────────
+def _totp_secret():
+    return str((_read_json(SECRETS_FILE, {}) or {}).get("totp_secret") or "")
+
+
+def _totp_enabled():
+    s = _read_json(SECRETS_FILE, {}) or {}
+    return bool(s.get("totp_enabled") and s.get("totp_secret"))
+
+
+def _totp_code(secret, at=None):
+    """6-значний TOTP (RFC 6238, SHA-1, 30 с) без зовнішніх залежностей."""
+    try:
+        key = base64.b32decode(secret + "=" * ((8 - len(secret) % 8) % 8), casefold=True)
+        counter = int((time.time() if at is None else at) // 30)
+        digest = hmac.new(key, struct.pack(">Q", counter), hashlib.sha1).digest()
+        off = digest[-1] & 0x0F
+        num = struct.unpack(">I", digest[off:off + 4])[0] & 0x7FFFFFFF
+        return str(num % 1000000).zfill(6)
+    except Exception:
+        return ""
+
+
+def _totp_verify_secret(secret, code):
+    code = re.sub(r"\D", "", str(code or ""))[-6:]
+    if len(code) != 6 or not secret:
+        return False
+    now = time.time()
+    return any(hmac.compare_digest(code, _totp_code(secret, now + d))
+               for d in (-30, 0, 30))
+
+
+def _totp_verify(code):
+    secret = _totp_secret()
+    if not (_totp_enabled() and secret):
+        return True
+    return _totp_verify_secret(secret, code)
+
+
+def _totp_new_secret():
+    return base64.b32encode(os.urandom(20)).decode("ascii").rstrip("=")
+
+
+def _totp_uri(secret):
+    label = urllib.parse.quote("AccTrack:" + str(AUTH_USER or "admin"))
+    return ("otpauth://totp/%s?secret=%s&issuer=AccTrack&digits=6&period=30"
+            % (label, secret))
+
+
 def _load_extra_suppliers():
     """Додає постачальників, яких користувач вписав у налаштуваннях."""
     try:
@@ -599,6 +664,7 @@ _TG_DEFAULTS = {
     "order": True, "message": True, "watchdog": True,
     "agent": False, "digest": False, "new": False,
     "price": False, "restock": False, "deal": False,
+    "deadstock": False,
 }
 
 
@@ -1021,6 +1087,7 @@ button:disabled{opacity:.55;cursor:default}
   <h1 id="t1">Sign in</h1>
   <p id="t2">Enter the password. This device stays signed in for a year.</p>
   <input id="pw" type="password" placeholder="Password" autofocus autocomplete="current-password">
+  <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="2FA code (if enabled)" autocomplete="one-time-code" style="letter-spacing:.18em">
   <button id="btn" type="submit">Continue</button>
   <div class="err" id="err"></div>
   <div class="lang">
@@ -1053,16 +1120,17 @@ try{ var s = localStorage.getItem('gt_lang'); if(s && L[s]) setL(s); }catch(e){}
 async function go(e){
   e.preventDefault();
   var pw = document.getElementById('pw').value;
+  var otp = document.getElementById('otp').value.trim();
   var err = document.getElementById('err'), btn = document.getElementById('btn');
   var x = L[cur];
   if(!pw){ err.textContent = x.err; return false; }
   btn.disabled = true; err.textContent = '';
   try{
     var r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({password: pw})});
+      body: JSON.stringify({password: pw, otp: otp})});
     var d = await r.json().catch(function(){ return {}; });
     if(r.ok && d.ok){ err.className = 'ok'; err.textContent = x.ok; location.href = '/'; }
-    else { err.className = 'err'; err.textContent = (r.status === 401 ? x.wrong : (d.error || (x.wrong + ' (' + r.status + ')'))); btn.disabled = false; }
+    else { err.className = 'err'; err.textContent = d.error || (r.status === 401 ? x.wrong : (x.wrong + ' (' + r.status + ')')); btn.disabled = false; }
   }catch(ex){ err.className = 'err'; err.textContent = x.net + ex.message; btn.disabled = false; }
   return false;
 }
@@ -1907,7 +1975,7 @@ def _archive_backup():
         os.makedirs(adir, exist_ok=True)
         name = f"gt_data_{datetime.datetime.now().strftime('%Y-%m-%d')}.tar.gz"
         path = os.path.join(adir, name)
-        files = [f for f in (PL_FILE, ED_FILE, GOAL_FILE, SETTINGS_FILE) if os.path.exists(f)]
+        files = [f for f in (PL_FILE, ED_FILE, GOAL_FILE, SETTINGS_FILE, AUDIT_FILE) if os.path.exists(f)]
         with tarfile.open(path, "w:gz") as tar:
             for f in files:
                 tar.add(f, arcname=os.path.basename(f))
@@ -2140,10 +2208,73 @@ def _probe_direct():
     return False
 
 
+def _deadstock_rows(days=30):
+    """Позиції на складі, старші за N днів."""
+    now = time.time()
+    out = []
+    for x in (_read_json(INVENTORY_FILE, []) or []):
+        if not isinstance(x, dict) or x.get("status") != "in_stock":
+            continue
+        age = None
+        try:
+            ts = float(x.get("ts") or 0)
+            if ts > 0:
+                age = (now - ts) / 86400
+        except Exception:
+            pass
+        if age is None:
+            try:
+                d = datetime.date.fromisoformat(str(x.get("date") or "")[:10])
+                age = (datetime.date.today() - d).days
+            except Exception:
+                age = 0
+        if age >= days:
+            out.append({"title": str(x.get("title") or "")[:80],
+                        "cost": float(x.get("cost") or 0), "age": int(age)})
+    return sorted(out, key=lambda r: -r["age"])
+
+
+def _deadstock_tick():
+    """Раз на день: повідомити про товар, що лежить 30+ днів."""
+    now = datetime.datetime.now()
+    if now.hour < 10:
+        return False
+    st = _read_json(SETTINGS_FILE, {}) or {}
+    today = now.date().isoformat()
+    if str(st.get("deadstock_last") or "") == today:
+        return False
+    rows = _deadstock_rows(30)
+    if not rows:
+        return False
+    if not _tg_flag("deadstock"):
+        return False
+    total = sum(r["cost"] for r in rows)
+    over60 = sum(1 for r in rows if r["age"] >= 60)
+    over90 = sum(1 for r in rows if r["age"] >= 90)
+    lines = ["🧊 <b>Мертвий склад</b>",
+             "Позицій 30+ днів: <b>%d</b> · заморожено <b>$%.2f</b>" % (len(rows), total),
+             "60+ днів: <b>%d</b> · 90+ днів: <b>%d</b>" % (over60, over90)]
+    for r in rows[:8]:
+        lines.append("• %s — $%.2f · %d дн." % (r["title"] or "—", r["cost"], r["age"]))
+    try:
+        if not _tg_send("\n".join(lines)):
+            return False
+    except Exception as e:
+        print(f"  ⚠ deadstock: {e}", flush=True)
+        return False
+    with _WRITE_LOCK:
+        st = _read_json(SETTINGS_FILE, {}) or {}
+        st["deadstock_last"] = today
+        _atomic_dump(SETTINGS_FILE, st)
+    print("  🧊 deadstock alert sent", flush=True)
+    return True
+
+
 def _bg_loop():
     """Фон: перевіряє, чи час оновити постачальників (інтервал sup_hours)."""
     while True:
         try:
+            _deadstock_tick()
             if _digest_due():
                 _digest_send()
             _probe_direct()
@@ -3649,6 +3780,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _auth_ok(self):
         """Basic-auth: без пароля дашборд не віддається навіть у локальній мережі."""
+        if _totp_enabled():
+            return False        # 2FA: тільки форма входу з кодом, Basic не обходить
         if not AUTH_PASS:
             return False          # порожній пароль = застосунок не працює (див. main)
         hdr = self.headers.get("Authorization", "")
@@ -3779,7 +3912,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.2.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.3.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png")
@@ -4006,6 +4139,14 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             sales = sorted(sales, key=lambda r: (str(r.get("date") or ""),
                                                  str(r.get("id") or "")), reverse=True)
             self._json({"ok": True, "sales": sales})
+        elif p == "/api/audit":
+            rows = _read_json(AUDIT_FILE, []) or []
+            if not isinstance(rows, list):
+                rows = []
+            self._json({"ok": True, "rows": list(reversed(rows[-200:]))})
+        elif p == "/api/2fa/status":
+            self._json({"ok": True, "enabled": _totp_enabled(),
+                        "available": AUTH_MODE != "off"})
         elif p == "/api/settings":
             st = _read_json(SETTINGS_FILE, {}) or {}
             tg = _tg_cfg()
@@ -4113,7 +4254,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.2.0",
+            self._json({"ok": True, "version": "1.3.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -4274,6 +4415,13 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 print(f"  🔐 failed login (form) · IP {self.client_address[0]}", flush=True)
                 self._json({"ok": False, "error": "Невірний пароль"}, code=401)
                 return
+            otp = str((body or {}).get("otp") or "").strip()
+            if _totp_enabled() and not _totp_verify(otp):
+                self._note_auth_fail()
+                self._json({"ok": False,
+                            "error": "Невірний код 2FA" if otp else "Введи код 2FA"},
+                           code=401)
+                return
             ip = self.client_address[0] if self.client_address else "?"
             with Handler._auth_lock:
                 Handler._auth_fails.pop(ip, None)
@@ -4282,6 +4430,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             if self._is_https():
                 cookie += "; Secure"
             self._json({"ok": True}, extra={"Set-Cookie": cookie})
+            _audit("auth.login", ip=ip)
             print(f"  🔑 device login · IP {ip}", flush=True)
             return
         if not self._require_auth():
@@ -4425,6 +4574,35 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             files = sorted(os.listdir(BACKUP_DIR)) if os.path.exists(BACKUP_DIR) else []
             self._json({"ok": True, "files": files[-10:], "cloud": res.get("cloud")})
             return
+        if self.path == "/api/2fa/setup":
+            if AUTH_MODE == "off":
+                self._json({"ok": False, "error": "Спочатку увімкни пароль входу"}, code=400)
+                return
+            secret = _totp_new_secret()
+            _save_secrets({"totp_pending": secret})
+            _audit("2fa.setup")
+            self._json({"ok": True, "secret": secret, "uri": _totp_uri(secret)})
+            return
+        if self.path == "/api/2fa/enable":
+            secret = str((_read_json(SECRETS_FILE, {}) or {}).get("totp_pending") or "")
+            if not secret:
+                self._json({"ok": False, "error": "Спочатку згенеруй секрет"}, code=400)
+                return
+            if not _totp_verify_secret(secret, body.get("code")):
+                self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
+                return
+            _save_secrets({"totp_secret": secret, "totp_enabled": True, "totp_pending": ""})
+            _audit("2fa.enabled")
+            self._json({"ok": True, "enabled": True})
+            return
+        if self.path == "/api/2fa/disable":
+            if _totp_enabled() and not _totp_verify(body.get("code")):
+                self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
+                return
+            _save_secrets({"totp_secret": "", "totp_enabled": False, "totp_pending": ""})
+            _audit("2fa.disabled")
+            self._json({"ok": True, "enabled": False})
+            return
         if self.path == "/api/settings/save":
             try:
                 usd = body.get("usd_uah")
@@ -4497,6 +4675,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     if "cloud_dir" in body:
                         st["cloud_dir"] = str(cloud_dir or "").strip()[:500]
                     _atomic_dump(SETTINGS_FILE, st)
+                    _audit("settings.save", keys=",".join(sorted(str(k) for k in body.keys()))[:400])
                 self._json({"ok": True, "cloud_effective": _cloud_dir()})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)}, code=400)
@@ -4895,6 +5074,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 with _inv_lock:
                     _inventory.append(rec)
                 _inv_save()
+                _audit("inventory.add", id=rec.get("id"), title=rec.get("title"), cost=rec.get("cost"))
                 self._json({"ok": True, "item": rec})
             except ValueError as e:
                 self._json({"ok": False, "error": str(e)}, code=400)
@@ -4914,6 +5094,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             if body.get("sale_id"):
                 item["sale_id"] = body.get("sale_id")
             _inv_save()
+            _audit("inventory.status", id=iid, status=status)
             self._json({"ok": True, "item": item})
             return
         if self.path == "/api/inventory/delete":
@@ -4923,6 +5104,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 _inventory[:] = [x for x in _inventory if x.get("id") != iid]
                 removed = n - len(_inventory)
             _inv_save()
+            _audit("inventory.delete", id=iid, removed=removed)
             self._json({"ok": True, "removed": removed})
             return
         if self.path == "/api/mail/clear":
@@ -5068,6 +5250,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         return
                 _snapshot_before_save(PL_FILE, "gt_pl")
                 _atomic_dump(PL_FILE, data)
+                _audit("deals.save", count=len(data))
                 self._json({"ok": True, "count": len(data)})
             except ValueError as e:
                 self._json({"ok": False, "error": str(e)}, code=400)
@@ -5087,6 +5270,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         return
                 _snapshot_before_save(ED_FILE, "gt_eldorado")
                 _atomic_dump(ED_FILE, data)
+                _audit("eldorado.save", count=len(data))
                 self._json({"ok": True, "count": len(data)})
             except ValueError as e:
                 self._json({"ok": False, "error": str(e)}, code=400)
@@ -5256,7 +5440,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.2.0")
+    print("  ▲  AccTrack v1.3.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

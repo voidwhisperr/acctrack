@@ -1000,6 +1000,43 @@ code{
     <div style="font-size:11.5px;color:var(--mu);margin-top:8px" data-i18n="pw.hint">Without a password anyone who opens the link gets in. Set one if the app is reachable from the internet.</div>
   </div>
 
+  <div class="panel" id="auditPanel" style="margin-bottom:14px">
+    <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
+      <span data-i18n="audit.title">ЖУРНАЛ ДІЙ</span>
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="loadAudit()">↻</button>
+    </div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:8px" data-i18n="audit.hint">Останні зміни угод, комісій, складу й налаштувань. Секрети й паролі не пишуться.</div>
+    <div id="auditList" style="max-height:280px;overflow:auto"><div class="none">Завантаження…</div></div>
+  </div>
+
+  <div class="panel" id="twofaPanel" style="margin-bottom:14px">
+    <div class="ph"><span data-i18n="twofa.title">ДВОФАКТОРНИЙ ВХІД (2FA)</span></div>
+    <div style="font-size:12.5px;color:var(--mu);margin-bottom:10px" id="twofaStatus">—</div>
+    <div id="twofaSetup" style="display:none">
+      <div style="font-size:11.5px;color:var(--mu);margin-bottom:8px" data-i18n="twofa.hint">Додай секрет в Authenticator (Google Authenticator, Aegis, 1Password), потім введи 6-значний код.</div>
+      <div style="font-size:11px;color:var(--mu)">SECRET</div>
+      <code id="twofaSecret" style="display:block;background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:8px 10px;font-size:13px;word-break:break-all;margin-bottom:6px"></code>
+      <div style="font-size:10px;color:var(--mu);word-break:break-all;margin-bottom:10px" id="twofaUri"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">КОД 6 ЦИФР</div>
+          <input id="twofaCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:120px;letter-spacing:.2em"></div>
+        <button class="btn gr" onclick="enable2FA()">✓ <span data-i18n="twofa.enable">Увімкнути 2FA</span></button>
+      </div>
+    </div>
+    <div id="twofaEnabled" style="display:none">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">КОД 6 ЦИФР</div>
+          <input id="twofaDisableCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:120px;letter-spacing:.2em"></div>
+        <button class="btn rd" onclick="disable2FA()">✕ <span data-i18n="twofa.disable">Вимкнути 2FA</span></button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn" onclick="setup2FA()">🔐 <span data-i18n="twofa.setup">Згенерувати новий секрет</span></button>
+      <button class="btn" onclick="load2FA()">↻ <span data-i18n="twofa.refresh">Оновити</span></button>
+    </div>
+    <div style="font-size:11px;color:var(--mu);margin-top:8px" data-i18n="twofa.note">2FA працює разом із паролем входу. Пристрій, який уже увійшов, залишається в системі до виходу.</div>
+  </div>
+
   <div class="panel" id="dataPanel" style="margin-bottom:14px">
     <div class="ph"><span>ДАНІ Й ДІАГНОСТИКА</span>
       <button class="btn" style="font-size:12px" onclick="diagLoad()">↻ Оновити</button></div>
@@ -1162,6 +1199,7 @@ code{
       <label style="cursor:pointer"><input type="checkbox" id="ntPrice"> <span data-i18n="nt.price">💸 Падіння цін</span></label>
       <label style="cursor:pointer"><input type="checkbox" id="ntRestock"> <span data-i18n="nt.restock">🔄 Ресток</span></label>
       <label style="cursor:pointer"><input type="checkbox" id="ntDeal"> <span data-i18n="nt.deal">🔥 Вигідні лоти Taobao</span></label>
+      <label style="cursor:pointer"><input type="checkbox" id="ntDeadstock"> <span data-i18n="nt.deadstock">🧊 Мертвий склад (30+ днів)</span></label>
     </div>
     <button class="btn gr" style="margin-top:8px;font-size:12px;padding:6px 12px" onclick="saveNotify()">💾 <span data-i18n="set.notifySave">Зберегти сповіщення</span></button>
     <div style="display:none">
@@ -1652,7 +1690,7 @@ const EXTRA_I18N = {
     "bk.notRestorable":"—","bk.none":"Бекапів ще немає",
     "bk.restoreConfirm":"Відновити «%s»?\n\nПоточна версія буде збережена як …_before_restore_….json",
     "bk.restored":"Відновлено","bk.saved":"Бекап збережено! Файлів:","bk.error":"Помилка бекапу:",
-    "pw.optional":"ПАРОЛЬ (НЕОБОВ'ЯЗКОВО)","pw.new8":"Новий пароль (мін. 8)",
+    "pw.optional":"ПАРОЛЬ (НЕОБОВ'ЯЗКОВО)","audit.title":"ЖУРНАЛ ДІЙ","audit.hint":"Останні зміни угод, комісій, складу й налаштувань. Секрети й паролі не пишуться.","twofa.title":"ДВОФАКТОРНИЙ ВХІД (2FA)","twofa.hint":"Додай секрет в Authenticator (Google Authenticator, Aegis, 1Password), потім введи 6-значний код.","twofa.enable":"Увімкнути 2FA","twofa.disable":"Вимкнути 2FA","twofa.setup":"Згенерувати новий секрет","twofa.refresh":"Оновити","twofa.note":"2FA працює разом із паролем входу. Пристрій, який уже увійшов, залишається в системі до виходу.","pw.new8":"Новий пароль (мін. 8)",
     "pw.enable":"Увімкнути пароль","pw.disable":"Вимкнути пароль",
     "pw.statusOn":"Пароль увімкнено","pw.statusOff":"Без пароля",
     "pw.enabledToast":"Пароль увімкнено. Перезавантажте сторінку і увійдіть.",
@@ -1763,7 +1801,7 @@ const EXTRA_I18N = {
     "bk.notRestorable":"—","bk.none":"No backups yet",
     "bk.restoreConfirm":"Restore «%s»?\n\nThe current version will be saved as …_before_restore_….json",
     "bk.restored":"Restored","bk.saved":"Backup saved! Files:","bk.error":"Backup error:",
-    "pw.optional":"PASSWORD (OPTIONAL)","pw.new8":"New password (min 8)",
+    "pw.optional":"PASSWORD (OPTIONAL)","audit.title":"ACTION LOG","audit.hint":"Recent changes to deals, fees, stock and settings. Secrets and passwords are never written.","twofa.title":"TWO-FACTOR LOGIN (2FA)","twofa.hint":"Add the secret to an authenticator (Google Authenticator, Aegis, 1Password), then enter the 6-digit code.","twofa.enable":"Enable 2FA","twofa.disable":"Disable 2FA","twofa.setup":"Generate a new secret","twofa.refresh":"Refresh","twofa.note":"2FA works together with the login password. A device that is already signed in stays signed in until logout.","pw.new8":"New password (min 8)",
     "pw.enable":"Enable password","pw.disable":"Disable password",
     "pw.statusOn":"Password enabled","pw.statusOff":"No password",
     "pw.enabledToast":"Password enabled. Reload and sign in.",
@@ -1878,7 +1916,7 @@ const EXTRA_I18N = {
     "bk.notRestorable":"—","bk.none":"Бэкапов ещё нет",
     "bk.restoreConfirm":"Восстановить «%s»?\n\nТекущая версия будет сохранена как …_before_restore_….json",
     "bk.restored":"Восстановлено","bk.saved":"Бэкап сохранён! Файлов:","bk.error":"Ошибка бэкапа:",
-    "pw.optional":"ПАРОЛЬ (ОПЦИОНАЛЬНО)","pw.new8":"Новый пароль (мин. 8)",
+    "pw.optional":"ПАРОЛЬ (ОПЦИОНАЛЬНО)","audit.title":"ЖУРНАЛ ДЕЙСТВИЙ","audit.hint":"Последние изменения сделок, комиссий, склада и настроек. Секреты и пароли не пишутся.","twofa.title":"ДВУХФАКТОРНЫЙ ВХОД (2FA)","twofa.hint":"Добавь секрет в Authenticator (Google Authenticator, Aegis, 1Password), затем введи 6-значный код.","twofa.enable":"Включить 2FA","twofa.disable":"Выключить 2FA","twofa.setup":"Сгенерировать новый секрет","twofa.refresh":"Обновить","twofa.note":"2FA работает вместе с паролем входа. Устройство, которое уже вошло, остаётся в системе до выхода.","pw.new8":"Новый пароль (мин. 8)",
     "pw.enable":"Включить пароль","pw.disable":"Отключить пароль",
     "pw.statusOn":"Пароль включён","pw.statusOff":"Без пароля",
     "pw.enabledToast":"Пароль включён. Перезагрузите страницу и войдите.",
@@ -1965,21 +2003,21 @@ const EXTRA_I18N3 = {
        "nt.order":"💰 Продажі (замовлення)","nt.message":"💬 Повідомлення покупців",
        "nt.watchdog":"⚠️ Watchdog сайту","nt.agent":"⚠️ Watchdog агента Taobao",
        "nt.digest":"📊 Дайджест (20:00)","nt.new":"🆕 Нові акаунти",
-       "nt.price":"💸 Падіння цін","nt.restock":"🔄 Ресток","nt.deal":"🔥 Вигідні лоти Taobao"},
+       "nt.price":"💸 Падіння цін","nt.restock":"🔄 Ресток","nt.deal":"🔥 Вигідні лоти Taobao","nt.deadstock":"🧊 Мертвий склад (30+ днів)"},
   en: {"set.test":"Test","set.checkNow":"Check now","set.botToken":"BOT TOKEN",
        "set.folder":"FOLDER","set.gmailLabel":"GMAIL","set.appPass":"APP PASSWORD",
        "set.cloudHint":"Copy backups to OneDrive (or any folder). Empty field = auto: OneDrive/GameTrackerBackups.",
        "nt.order":"💰 Sales (orders)","nt.message":"💬 Buyer messages",
        "nt.watchdog":"⚠️ Site watchdog","nt.agent":"⚠️ Taobao agent watchdog",
        "nt.digest":"📊 Digest (20:00)","nt.new":"🆕 New accounts",
-       "nt.price":"💸 Price drops","nt.restock":"🔄 Restock","nt.deal":"🔥 Profitable Taobao lots"},
+       "nt.price":"💸 Price drops","nt.restock":"🔄 Restock","nt.deal":"🔥 Profitable Taobao lots","nt.deadstock":"🧊 Dead stock (30+ days)"},
   ru: {"set.test":"Тест","set.checkNow":"Проверить сейчас","set.botToken":"ТОКЕН БОТА",
        "set.folder":"ПАПКА","set.gmailLabel":"GMAIL","set.appPass":"APP PASSWORD",
        "set.cloudHint":"Копия бэкапов в OneDrive (или любая папка). Пустое поле = авто: OneDrive/GameTrackerBackups.",
        "nt.order":"💰 Продажи (заказы)","nt.message":"💬 Сообщения покупателей",
        "nt.watchdog":"⚠️ Watchdog сайта","nt.agent":"⚠️ Watchdog агента Taobao",
        "nt.digest":"📊 Дайджест (20:00)","nt.new":"🆕 Новые аккаунты",
-       "nt.price":"💸 Падение цен","nt.restock":"🔄 Ресток","nt.deal":"🔥 Выгодные лоты Taobao"}
+       "nt.price":"💸 Падение цен","nt.restock":"🔄 Ресток","nt.deal":"🔥 Выгодные лоты Taobao","nt.deadstock":"🧊 Мертвый склад (30+ дней)"}
 };
 Object.keys(EXTRA_I18N3).forEach(function(l){ Object.assign(I18N[l], EXTRA_I18N3[l]); });
 I18N.uk['ph.pw6'] = 'мін. 8 символів';
@@ -2670,6 +2708,77 @@ async function pickCurrency(){
   }catch(e){}
 }
 
+async function loadAudit(){
+  const el=g('auditList'); if(!el) return;
+  const labels={ 'settings.save':'Налаштування','deals.save':'Угоди','eldorado.save':'Eldorado',
+    'inventory.add':'Склад +','inventory.status':'Статус складу','inventory.delete':'Склад −',
+    'auth.login':'Вхід','2fa.setup':'2FA секрет','2fa.enabled':'2FA увімкнено','2fa.disabled':'2FA вимкнено' };
+  try{
+    const d=await fetch('/api/audit').then(r=>r.json());
+    const rows=d.rows||[];
+    if(!rows.length){ el.innerHTML='<div class="none">Ще немає подій</div>'; return; }
+    el.innerHTML='<table class="sup-table"><thead><tr><th>Час</th><th>Дія</th><th>Деталі</th></tr></thead><tbody>'+
+      rows.map(r=>{
+        const dt=new Date((r.ts||0)*1000);
+        const ts=dt.toLocaleString(dateLocale());
+        const det=Object.entries(r.detail||{}).map(([k,v])=>k+'='+v).join(' · ');
+        return '<tr><td style="font-size:10px;color:var(--mu);white-space:nowrap">'+esc(ts)+'</td>'+
+          '<td style="font-size:11px">'+esc(labels[r.event]||r.event||'')+'</td>'+
+          '<td style="font-size:10px;color:var(--mu);word-break:break-word">'+esc(det)+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
+}
+
+async function load2FA(){
+  try{
+    const d=await fetch('/api/2fa/status').then(r=>r.json());
+    const st=g('twofaStatus');
+    if(!st) return;
+    if(!d.available){
+      st.innerHTML='⚠ '+(LANG==='en'?'Enable a login password first':LANG==='ru'?'Сначала включи пароль входа':'Спочатку увімкни пароль входу');
+      if(g('twofaSetup')) g('twofaSetup').style.display='none';
+      if(g('twofaEnabled')) g('twofaEnabled').style.display='none';
+      return;
+    }
+    st.innerHTML = d.enabled
+      ? '✅ '+(LANG==='en'?'2FA is enabled':LANG==='ru'?'2FA включена':'2FA увімкнена')
+      : '○ '+(LANG==='en'?'2FA is not enabled':LANG==='ru'?'2FA не включена':'2FA не увімкнена');
+    if(g('twofaSetup')) g('twofaSetup').style.display='none';
+    if(g('twofaEnabled')) g('twofaEnabled').style.display=d.enabled?'block':'none';
+  }catch(e){}
+}
+async function setup2FA(){
+  try{
+    const d=await fetch('/api/2fa/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    g('twofaSecret').textContent=d.secret||'';
+    g('twofaUri').textContent=d.uri||'';
+    g('twofaSetup').style.display='block';
+    g('twofaEnabled').style.display='none';
+    if(g('twofaCode')) g('twofaCode').value='';
+    toast('🔐 Секрет створено — додай його в Authenticator');
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function enable2FA(){
+  const code=(g('twofaCode')?.value||'').trim();
+  try{
+    const d=await fetch('/api/2fa/enable',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    toast('✅ 2FA увімкнено'); await load2FA();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function disable2FA(){
+  const code=(g('twofaDisableCode')?.value||'').trim();
+  if(!confirm(LANG==='en'?'Disable 2FA?':LANG==='ru'?'Выключить 2FA?':'Вимкнути 2FA?')) return;
+  try{
+    const d=await fetch('/api/2fa/disable',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    toast('2FA вимкнено'); await load2FA();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
 async function loadSettings(){
   try{
     const d = await fetch('/api/settings').then(r=>r.json());
@@ -2724,10 +2833,12 @@ async function loadSettings(){
     }
   if(d.lang && d.lang !== LANG){ LANG = d.lang; try{ localStorage.setItem('gt_lang', LANG); }catch(e){} }
   applyLang();
+  try{ load2FA(); }catch(e){}
+  try{ loadAudit(); }catch(e){}
   if(g('tgEnabled')) g('tgEnabled').checked = !!tg.enabled;
   const nt = d.notify || {};
   const map = {ntOrder:'order', ntMessage:'message', ntWatchdog:'watchdog', ntAgent:'agent',
-               ntDigest:'digest', ntNew:'new', ntPrice:'price', ntRestock:'restock', ntDeal:'deal'};
+               ntDigest:'digest', ntNew:'new', ntPrice:'price', ntRestock:'restock', ntDeal:'deal', ntDeadstock:'deadstock'};
   Object.keys(map).forEach(id => { if(g(id)) g(id).checked = !!nt[map[id]]; });
     if(g('tgPrice')) g('tgPrice').checked = tg.notify_price !== false;
     if(g('tgNew')) g('tgNew').checked = tg.notify_new !== false;
