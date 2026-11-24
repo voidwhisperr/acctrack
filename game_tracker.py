@@ -2253,6 +2253,7 @@ def do_backup():
                 try: os.remove(os.path.join(BACKUP_DIR, old))
                 except OSError: pass
         _st = _read_json(SETTINGS_FILE, {}) or {}
+        _verify_status = "ok"
         if _st.get("backup_encrypt"):
             _pw = os.environ.get("GT_BACKUP_PASSWORD") or str((_read_json(SECRETS_FILE, {}) or {}).get("backup_password") or "")
             if _pw:
@@ -2262,6 +2263,12 @@ def do_backup():
                     _ename = f"gt_enc_{date_str}.ledger.enc"
                     with open(os.path.join(BACKUP_DIR, _ename), "wb") as _f:
                         _f.write(_enc)
+                    _v = _verify_backup_zip(_enc, _pw)
+                    if not _v.get("ok"):
+                        print(f"  ⚠ Backup verify: {_v.get('error')}", flush=True)
+                        _verify_status = "failed: " + str(_v.get("error") or "")
+                    else:
+                        _verify_status = "ok"
                     made.append(_ename)
                 except Exception as e:
                     print(f"  ⚠ Encrypted backup: {e}", flush=True)
@@ -2280,6 +2287,7 @@ def do_backup():
             st = _read_json(SETTINGS_FILE, {}) or {}
             st["backup_last_ts"] = int(time.time())
             st["backup_last_status"] = "ok" if cloud.get("copied") else (cloud.get("error") or "local")
+            st["backup_last_verify"] = _verify_status
             _atomic_dump(SETTINGS_FILE, st)
     except Exception:
         pass
@@ -3865,6 +3873,29 @@ def _build_backup_zip():
     return buf.getvalue(), manifest
 
 
+def _verify_backup_zip(raw, password=""):
+    """Перевіряє zip/enc: manifest + sha256 кожного файлу."""
+    raw = _decrypt_backup(raw, password)
+    try:
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            names = set(z.namelist())
+            if "manifest.json" not in names:
+                return {"ok": False, "error": "manifest.json відсутній"}
+            manifest = json.loads(z.read("manifest.json").decode("utf-8"))
+            bad = []
+            for name, meta in (manifest.get("files") or {}).items():
+                if name not in names:
+                    bad.append(name + ": missing"); continue
+                h = hashlib.sha256(z.read(name)).hexdigest()
+                if h != meta.get("sha256"):
+                    bad.append(name + ": sha256")
+            return {"ok": not bad, "error": "; ".join(bad[:5]) if bad else None,
+                    "files": len(manifest.get("files") or {}),
+                    "created": manifest.get("created")}
+    except zipfile.BadZipFile:
+        return {"ok": False, "error": "не zip"}
+
+
 def _inspect_backup_zip(raw, password=""):
     """Перевіряє бекап без запису: manifest, файли, кількість записів."""
     raw = _decrypt_backup(raw, password)
@@ -4292,7 +4323,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.17.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.18.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4581,6 +4612,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "backup_last_ts": int(st.get("backup_last_ts") or 0),
                 "backup_last_status": str(st.get("backup_last_status") or ""),
                 "backup_encrypt": bool(st.get("backup_encrypt")),
+                "backup_last_verify": str(st.get("backup_last_verify") or ""),
                 "digest_last": str(st.get("digest_last") or ""),
                 "alerts_only_my_games": bool(st.get("alerts_only_my_games", True)),
                 "notify": {k: bool(st.get("notify_" + k, v))
@@ -4676,7 +4708,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.17.0",
+            self._json({"ok": True, "version": "1.18.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5011,6 +5043,23 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             name = "ledger_backup_%s.ledger.enc" % datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
             self._send(200, "application/octet-stream", enc,
                        extra={"Content-Disposition": f'attachment; filename="{name}"'})
+            return
+        if self.path == "/api/backup/verify":
+            try:
+                names = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith("gt_enc_") and f.endswith(".ledger.enc"))
+                if not names:
+                    self._json({"ok": True, "encrypted": False, "note": "немає encrypted-бекапів"}); return
+                pw = os.environ.get("GT_BACKUP_PASSWORD") or str((_read_json(SECRETS_FILE, {}) or {}).get("backup_password") or "")
+                if not pw:
+                    self._json({"ok": False, "error": "немає пароля шифрування"}); return
+                with open(os.path.join(BACKUP_DIR, names[-1]), "rb") as f:
+                    data = f.read()
+                v = _verify_backup_zip(data, pw)
+                v["encrypted"] = True
+                v["file"] = names[-1]
+                self._json(v)
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:200]})
             return
         if self.path == "/api/backup/encrypt":
             try:
@@ -6021,7 +6070,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.17.0")
+    print("  ▲  AccTrack v1.18.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

@@ -1473,6 +1473,7 @@ code{
       <label style="font-size:11px;color:var(--mu)">Тримати <input id="backupKeep" type="number" min="1" max="365" style="width:64px"> копій</label>
       <button class="btn" style="font-size:11px;padding:5px 10px" onclick="saveBackupSettings()">✓ Зберегти</button>
       <button class="btn gr" style="font-size:11px;padding:5px 10px" onclick="backupNow()">💾 Бекап зараз</button>
+      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="backupVerify()">🔍 Перевірити</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:9px">
       <label style="font-size:11px;display:flex;align-items:center;gap:5px"><input id="backupEncrypt" type="checkbox"> 🔒 Шифрувати автоматичні бекапи</label>
@@ -3320,7 +3321,7 @@ async function loadSettings(){
     if(g('backupKeep')) g('backupKeep').value = d.backup_keep || 30;
     if(g('backupEncrypt')) g('backupEncrypt').checked = !!d.backup_encrypt;
     if(g('backupInfo')) g('backupInfo').textContent = d.backup_last_ts
-      ? ('Останній бекап: '+new Date(d.backup_last_ts*1000).toLocaleString(dateLocale())+' · '+(d.backup_last_status||''))
+      ? ('Останній бекап: '+new Date(d.backup_last_ts*1000).toLocaleString(dateLocale())+' · '+(d.backup_last_status||'')+(d.backup_last_verify?(' · перевірка: '+d.backup_last_verify):''))
       : 'Автобекап ще не запускався';
     if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
     ['g2g','gameflip','pa','zeusx','funpay','eldorado','other'].forEach(k=>{
@@ -4217,6 +4218,14 @@ async function saveBackupEncryption(){
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     if(g('backupPass')) g('backupPass').value='';
     toast(en?'🔒 Автошифрування увімкнено':'🔓 Автошифрування вимкнено');
+    loadSettings();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function backupVerify(){
+  try{
+    const d=await fetch('/api/backup/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+    if(d.ok) toast('✅ Бекап цілий · файлів: '+(d.files||0));
+    else toast('⚠ '+(d.error||'перевірка не пройдена'), false);
     loadSettings();
   }catch(e){ toast('⚠ '+e, false); }
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.18.0 — backup integrity verification
+
+- Encrypted backup is verified (manifest + sha256) immediately after creation.
+- Settings shows last verification status and a "Verify" button.
+- Verification endpoint checks the latest encrypted backup.
+
 ## v1.17.0 — backup restore preview
 
 - Backup import validates the zip/encrypted archive before writing.
