@@ -129,6 +129,8 @@ header{
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
 }
 .logo{display:flex;align-items:center;gap:12px}
+@keyframes brandWiggle{0%,100%{transform:rotate(0) scale(1)}20%{transform:rotate(-12deg) scale(1.15)}40%{transform:rotate(12deg) scale(1.15)}60%{transform:rotate(-7deg) scale(1.08)}80%{transform:rotate(7deg) scale(1.08)}}
+#brandMark.order-alert{animation:brandWiggle 1.1s ease-in-out infinite;color:var(--gr)!important;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--gr) 70%,transparent))}
 .logo-i{
   width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;
   font-size:22px;background:linear-gradient(135deg,var(--a1),var(--a3));box-shadow:var(--shadow);
@@ -462,7 +464,7 @@ code{
 <div class="w">
 <header>
   <div class="logo">
-    <svg width="20" height="22" viewBox="0 0 24 24" style="color:var(--tx);flex:none" aria-label="Ledger"><use href="#ic-mark"/></svg>
+    <svg id="brandMark" width="20" height="22" viewBox="0 0 24 24" style="color:var(--tx);flex:none" aria-label="AccTrack"><use href="#ic-mark"/></svg>
     <h1>AccTrack<span data-i18n="hdr.sub">v5 · УГОДИ · КАНАЛИ · ПОШТА</span></h1>
   </div>
   <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
@@ -1013,7 +1015,7 @@ code{
   <div class="panel" style="margin-bottom:14px">
     <div class="ph" style="margin-bottom:12px">📊 ЗВЕДЕНО — ВСІ ЦИФРИ В ОДНОМУ МІСЦІ</div>
 
-    <div style="font-size:11px;letter-spacing:1px;color:var(--mu);margin-bottom:6px">🛒 P&amp;L (трекер закупівель)</div>
+    <div style="font-size:11px;letter-spacing:1px;color:var(--mu);margin-bottom:6px">🛒 P&amp;L + 🟡 ELDORADO — разом</div>
     <div class="stats" id="plStats">
       <div class="sc cg"><div class="sl">ПРИБУТОК</div><div class="sv" id="plProfit">$0</div></div>
       <div class="sc c1"><div class="sl">ВИРУЧКА</div><div class="sv" id="plRevenue">$0</div></div>
@@ -1024,9 +1026,7 @@ code{
       <div class="sc c4"><div class="sl" data-i18n="pl.expenses">ВИТРАТИ</div><div class="sv" id="plExpenses">$0</div></div>
     </div>
 
-    <div style="border-top:1px dashed var(--brd);margin:16px 0 12px"></div>
-    <div style="font-size:11px;letter-spacing:1px;color:var(--mu);margin-bottom:6px">🟡 ELDORADO — продажі</div>
-    <div id="edSummary" style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px"></div>
+    <div id="edSummary" style="display:none"></div>
 
     <div style="border-top:1px dashed var(--brd);margin:16px 0 12px"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -2686,7 +2686,7 @@ function mnavGo(id){
   const tab=[...document.querySelectorAll('.tabs .tab')].find(x=>String(x.getAttribute('onclick')||'').includes("'"+id+"'"));
   if(!tab) return;
   sw(id,tab);
-  if(id==='mail'){ try{ loadMailQueue(); }catch(e){} }
+  if(id==='mail'){ clearOrderAlert(); try{ loadMailQueue(); }catch(e){} }
   if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); loadReport(); }catch(e){} }
   if(id==='taobao'){ try{ loadAgentCfg(); }catch(e){} }
   if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
@@ -3964,6 +3964,8 @@ function renderPurchases(){
     if(g('plExpenses')) g('plExpenses').textContent='$'+totalExpenses.toFixed(2);
   }
 
+  refreshCombinedStats();
+
   // Render rows
   const pp=50, page=plFilt.slice((plPg-1)*pp, plPg*pp);
   const el=g('purList');
@@ -4320,6 +4322,31 @@ async function loadSupplierROI(){
         Number(x.sell_through||0).toFixed(1)+'%</td><td>'+(x.avg_days==null?'—':x.avg_days)+'</td></tr>').join('')+
       '</tbody></table></div>';
   }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
+}
+
+function refreshCombinedStats(){
+  if(!g('plProfit')) return;
+  const pl = purchases || [], ed = edSales || [];
+  const plRev = pl.reduce((s,p)=>s+Number(p.sell||0),0);
+  const plBuy = pl.reduce((s,p)=>s+Number(p.buy||0),0);
+  const plExp = pl.reduce((s,p)=>s+Number(p.expenses||0),0);
+  const plProfit = pl.reduce((s,p)=>s+Number(p.afterFee||0)-Number(p.expenses||0),0);
+  const plFees = pl.reduce((s,p)=>s+Number(p.sell||0)*feePctOf(p),0);
+  const edRev = ed.reduce((s,x)=>s+Number(x.price||0),0);
+  const edBuy = ed.reduce((s,x)=>s+Number(x.buy||0),0);
+  const edFee = ed.reduce((s,x)=>s+Number(x.fee||0),0);
+  const edProfit = ed.reduce((s,x)=>s+Number(x.profit||0),0);
+  const rev = plRev + edRev, cost = plBuy + edBuy;
+  const profit = plProfit + edProfit;
+  const margin = cost > 0 ? (profit / cost * 100) : 0;
+  g('plProfit').textContent=(profit>=0?'+':'')+'$'+profit.toFixed(2);
+  g('plProfit').style.color=profit>0?'var(--gr)':profit<0?'var(--rd)':'var(--mu)';
+  if(g('plRevenue')) g('plRevenue').textContent='$'+rev.toFixed(2);
+  if(g('plCost')) g('plCost').textContent='$'+cost.toFixed(2);
+  if(g('plMargin')){ g('plMargin').textContent=margin.toFixed(1)+'%'; g('plMargin').style.color=margin>0?'var(--gr)':'var(--mu)'; }
+  if(g('plCount')) g('plCount').textContent=pl.length + ed.length;
+  if(g('plFees')) g('plFees').textContent='$'+(plFees + edFee).toFixed(2);
+  if(g('plExpenses')) g('plExpenses').textContent='$'+plExp.toFixed(2);
 }
 
 function renderStats(){
@@ -4967,6 +4994,7 @@ function renderEldorado(){
   const el = g('edList');
   const sum = g('edSummary');
   if(!el) return;
+  refreshCombinedStats();
   const q  = (g('edQ')?.value||'').toLowerCase();
   const df = g('edDateFilter')?.value||'';
   const now = new Date();
@@ -5747,6 +5775,25 @@ async function loadPlatforms(force){
 }
 
 let mailItems=[];
+let _lastMailNew=null;
+function setFaviconBadge(show){
+  const l=document.querySelector('link[rel="icon"]'); if(!l) return;
+  if(!window._origFavicon) window._origFavicon=l.href;
+  if(!show){ l.href=window._origFavicon; return; }
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 12 52 50H12Z" fill="%23e8e8e8"/><circle cx="50" cy="14" r="12" fill="%2310b981" stroke="%230b0c0e" stroke-width="3"/></svg>';
+  l.href='data:image/svg+xml,'+svg;
+}
+function notifyNewOrder(n){
+  const mark=g('brandMark'); if(mark) mark.classList.add('order-alert');
+  document.title='('+n+') AccTrack';
+  setFaviconBadge(true);
+  toast('🔔 Нове замовлення: '+n+' — відкрий «Замовлення»');
+}
+function clearOrderAlert(){
+  const mark=g('brandMark'); if(mark) mark.classList.remove('order-alert');
+  document.title='AccTrack';
+  setFaviconBadge(false);
+}
 // 🏮 Taobao
 let tbItems = [], tbGame = '', tbSeg = '', tbSort = 'price', tbRegion = '';
 
@@ -6388,6 +6435,9 @@ async function loadMailQueue(force){
     mailItems=d.items||[];
     renderMailQueue();
     const badge=g('mailBadge'), n=d.new||0;
+    const first=_lastMailNew===null;
+    if(!first && n>_lastMailNew && !document.querySelector('#tab-mail.on')) notifyNewOrder(n);
+    _lastMailNew=n;
     if(badge) badge.innerHTML = n ? ` <span style="background:var(--a2);color:#1a0a05;border-radius:20px;padding:0 7px;font-size:11px;font-weight:800">${n}</span>` : '';
     if(g('mailStat')) g('mailStat').textContent = mailItems.length ? `${mailItems.length} ${plural(mailItems.length,'emails')} · ${LANG==='ru'?'новых':LANG==='en'?'new':'нових'} ${n}` : '';
   }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
@@ -6670,6 +6720,7 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
   loadMailQueue();  // бейдж нових замовлень у вкладці
   loadSupStatus();
   setInterval(loadSupStatus, 60000);
+  setInterval(()=>{ try{ loadMailQueue(); }catch(e){} }, 45000);
 
   // PWA: встановлення застосунку
   let _pwaPrompt=null;

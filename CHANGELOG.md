@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.21.0 — unified totals and new-order alert
+
+- P&L cards now show P&L + Eldorado combined; separate Eldorado row removed.
+- New orders animate the header mark, show a favicon badge and title count.
+- Mail queue auto-refreshes every 45 seconds.
+
 ## v1.20.0 — DPAPI backup password
 
 - On Windows, the backup encryption password is protected with user DPAPI instead of plaintext.
