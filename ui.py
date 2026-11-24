@@ -905,6 +905,14 @@ code{
     </div>
   </div>
   <div class="panel">
+    <div id="tbPaidBar" style="display:none;margin-bottom:12px">
+      <div class="ph" style="margin-bottom:10px">TAOBAO — ціни з Китаю</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn gr" style="font-size:12px;padding:6px 11px" onclick="tbRequest()">⚡ <span data-i18n="tb.collect">Зібрати зараз</span></button>
+        <button class="btn" style="font-size:12px;padding:6px 11px" onclick="tbAddManual()">＋ <span data-i18n="tb.lot">Додати лот</span></button>
+        <button class="btn" style="font-size:12px;padding:6px 11px" onclick="tbEnrich()">💳 <span data-i18n="tb.checkPay">Перевірити оплату</span></button>
+      </div>
+    </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
       <input id="tbQ" placeholder="🔍 Пошук по назві..." oninput="renderTaobao()" style="width:220px">
       <label style="font-size:12px;color:var(--mu);display:flex;align-items:center;gap:5px">
@@ -1069,6 +1077,15 @@ code{
       </div>
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
+      <div style="font-size:14px;font-weight:800;margin-bottom:4px">🎯 <span data-i18n="target.title">ЦІЛЬОВІ ЦІНИ</span></div>
+      <div style="font-size:12px;color:var(--mu);line-height:1.55;margin-bottom:8px" data-i18n="target.hint">Напиши назву гри/лота й максимальну ціну в доларах. Ledger перевіряє кеш постачальників і надсилає Telegram-алерт, коли ціна досягає порогу. Один рядок = одна ціль.</div>
+      <textarea id="targetPrices" placeholder="Genshin | 15&#10;Honkai Star Rail | 12" style="width:100%;height:74px;font-family:var(--font);font-size:12px"></textarea>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
+        <button class="btn gr" style="font-size:12px;padding:6px 12px" onclick="savePriceTargets()">💾 <span data-i18n="target.save">Зберегти цілі</span></button>
+        <span style="font-size:10.5px;color:var(--mu)" data-i18n="target.needPrice">Потрібно увімкнути Telegram-сповіщення «Падіння цін».</span>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
         <div style="font-size:14px;font-weight:800">📄 Місячний звіт</div>
         <input id="repMonth" type="month" style="font-size:13px">
@@ -1113,6 +1130,16 @@ code{
 
 <!-- ⚙️ НАЛАШТУВАННЯ -->
 <div id="tab-setup" class="tc">
+
+  <div class="panel" id="pwaPanel" style="margin-bottom:14px">
+    <div class="ph"><span data-i18n="app.title">ЗАСТОСУНОК</span></div>
+    <div style="font-size:12.5px;color:var(--mu);line-height:1.6;margin-bottom:9px" data-i18n="app.desc">Встанови Ledger як застосунок на телефон або комп’ютер: іконка на робочому столі, повноекранний режим, швидший запуск.</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn gr" id="pwaInstallBtn" onclick="pwaInstall()">⬇ <span data-i18n="app.install">Встановити Ledger</span></button>
+      <span id="pwaStatus" style="font-size:11.5px;color:var(--mu)"></span>
+    </div>
+    <div style="font-size:11px;color:var(--mu);margin-top:7px" data-i18n="app.hint">Android/Chrome: кнопка вище або меню ⋮ → «Встановити застосунок». iPhone/Safari: «Поділитися» → «На екран Домівки».</div>
+  </div>
 
   <div class="panel" id="pwPanel" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="pw.optional">PASSWORD (OPTIONAL)</span></div>
@@ -1544,6 +1571,7 @@ let purchases=[];
 let plPg=1, plFilt=[];
 // Комісії приходять з Python (єдине джерело істини: PLATFORM_FEES/PAYOUT_FEES/ED_FEE)
 const FEE_CFG = __FEE_CONFIG__;
+const GT_PAID = __PAID_MODE__;
 const FEES        = FEE_CFG.fees;                 // комісія майданчика → P&L
 const PAYOUT_FEES = FEE_CFG.payout;               // вивід грошей → калькулятор
 const ED_FEE      = FEE_CFG.ed;                   // ELDORADO
@@ -2267,6 +2295,18 @@ Object.assign(I18N.ru, {
   'tb.ben2t':'Маржа вместо угадывания','tb.ben2d':'Цена в юанях, примерный доллар, ваша цена продажи и потенциальная прибыль — в одной строке.',
   'tb.ben3t':'Один клик до сделки','tb.ben3d':'Нашли выгодный лот — добавьте его в P&L, и он сразу станет частью учёта.',
   'tb.how':'Как работает агент и что нужно'
+});
+Object.assign(I18N.uk, {
+  'app.title':'ЗАСТОСУНОК','app.desc':'Встанови Ledger як застосунок на телефон або комп’ютер: іконка на робочому столі, повноекранний режим, швидший запуск.','app.install':'Встановити Ledger','app.hint':'Android/Chrome: кнопка вище або меню ⋮ → «Встановити застосунок». iPhone/Safari: «Поділитися» → «На екран Домівки».',
+  'target.title':'ЦІЛЬОВІ ЦІНИ','target.hint':'Напиши назву гри/лота й максимальну ціну в доларах. Ledger перевіряє кеш постачальників і надсилає Telegram-алерт, коли ціна досягає порогу. Один рядок = одна ціль.','target.save':'Зберегти цілі','target.needPrice':'Потрібно увімкнути Telegram-сповіщення «Падіння цін».'
+});
+Object.assign(I18N.en, {
+  'app.title':'APP','app.desc':'Install Ledger as an app on your phone or computer: desktop icon, full-screen mode, faster launch.','app.install':'Install Ledger','app.hint':'Android/Chrome: button above or menu ⋮ → Install app. iPhone/Safari: Share → Add to Home Screen.',
+  'target.title':'TARGET PRICES','target.hint':'Write a game/lot name and the maximum price in USD. Ledger checks the supplier cache and sends a Telegram alert when the price reaches the target. One line = one target.','target.save':'Save targets','target.needPrice':'Enable Telegram notifications for "Price drops".'
+});
+Object.assign(I18N.ru, {
+  'app.title':'ПРИЛОЖЕНИЕ','app.desc':'Установи Ledger как приложение на телефон или компьютер: иконка на рабочем столе, полноэкранный режим, быстрый запуск.','app.install':'Установить Ledger','app.hint':'Android/Chrome: кнопка выше или меню ⋮ → «Установить приложение». iPhone/Safari: «Поделиться» → «На экран Домой».',
+  'target.title':'ЦЕЛЕВЫЕ ЦЕНЫ','target.hint':'Напиши название игры/лота и максимальную цену в долларах. Ledger проверяет кеш поставщиков и отправляет Telegram-алерт, когда цена достигает порога. Одна строка = одна цель.','target.save':'Сохранить цели','target.needPrice':'Нужно включить Telegram-уведомления «Падение цен».'
 });
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
@@ -3192,6 +3232,7 @@ async function loadSettings(){
       if(_cur !== 'USD' && _stale) setTimeout(()=>{ try{ refreshRate(); }catch(e){} }, 400);
     }
     if(g('cloudDir')) g('cloudDir').value = d.cloud_dir || '';
+    if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
     if(g('cloudInfo')) g('cloudInfo').innerHTML = d.cloud_effective
       ? ((LANG==='ru'?'Копирование в: ':LANG==='en'?'Copying to: ':'Копіювання у: ')+'<code>'+esc(d.cloud_effective)+'</code> '+(d.cloud_exists?'✓':(LANG==='ru'?'· папка создастся при бэкапе':LANG==='en'?'· folder will be created on backup':'· папка створиться при бекапі')))
       : (LANG==='ru'?'⚠ Облако не найдено — укажи папку вручную':LANG==='en'?'⚠ Cloud folder not found — set it manually':'⚠ Хмару не знайдено — вкажи папку вручну');
@@ -5822,11 +5863,33 @@ async function loadAnalytics(){
     if(g('stScraperLimit')) g('stScraperLimit').value = st.scraper_limit || 30;
     if(g('stDigestHour') && st.digest_hour != null) g('stDigestHour').value = st.digest_hour;
     if(g('stDealX') && st.deal_x != null) g('stDealX').value = st.deal_x;
+    if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
+    if(g('targetPrices')){
+      g('targetPrices').value = (st.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
+    }
     if(g('repMonth') && !g('repMonth').value){
       const d0 = new Date(); g('repMonth').value = d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0');
     }
     loadReport();
   }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function savePriceTargets(){
+  const rows = String(g('targetPrices')?.value || '').split(/\r?\n/).map(line => {
+    const p = line.split('|').map(s => s.trim());
+    if (p.length < 2) return null;
+    const q = p[0].slice(0,80);
+    let mx = parseFloat(String(p[1]).replace(',', '.'));
+    if(!q || !Number.isFinite(mx) || mx <= 0) return null;
+    return {q, max: Math.round(mx*100)/100};
+  }).filter(Boolean);
+  try{
+    const r = await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({price_targets: rows})});
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok || d.ok === false){ toast('⚠ '+(d.error||('HTTP '+r.status)), false); return; }
+    toast('🎯 Цілі збережено: '+rows.length);
+  }catch(e){ toast('⚠ '+e, false); }
 }
 
 async function saveSchedule(){
@@ -6156,6 +6219,52 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
   loadMailQueue();  // бейдж нових замовлень у вкладці
   loadSupStatus();
   setInterval(loadSupStatus, 60000);
+
+  // PWA: встановлення застосунку
+  let _pwaPrompt=null;
+  window.addEventListener('beforeinstallprompt', e=>{
+    e.preventDefault(); _pwaPrompt=e;
+    const s=g('pwaStatus'); if(s) s.textContent='✅ '+(LANG==='ru'?'Готово к установке':LANG==='en'?'Ready to install':'Готово до встановлення');
+  });
+  window.addEventListener('appinstalled', ()=>{
+    _pwaPrompt=null;
+    const s=g('pwaStatus'); if(s) s.textContent='✅ '+(LANG==='ru'?'Установлено':LANG==='en'?'Installed':'Встановлено');
+  });
+  function pwaInstall(){
+    if(window.matchMedia('(display-mode: standalone)').matches){
+      toast(LANG==='ru'?'Уже открыто как приложение':LANG==='en'?'Already running as an app':'Вже відкрито як застосунок'); return;
+    }
+    if(_pwaPrompt){
+      _pwaPrompt.prompt();
+      _pwaPrompt.userChoice.then(c=>{
+        if(c && c.outcome==='accepted') toast('✅ '+(LANG==='ru'?'Установлено':LANG==='en'?'Installed':'Встановлено'));
+        _pwaPrompt=null;
+      }).catch(()=>{});
+      return;
+    }
+    const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
+    if(ios) alert(LANG==='ru'?'Safari → «Поделиться» → «На экран Домой»':LANG==='en'?'Safari → Share → Add to Home Screen':'Safari → «Поділитися» → «На екран Домівки»');
+    else alert(LANG==='ru'?'Меню браузера ⋮ → «Установить приложение»':LANG==='en'?'Browser menu ⋮ → Install app':'Меню браузера ⋮ → «Встановити застосунок»');
+  }
+  window.pwaInstall = pwaInstall;
+  try{
+    const s=g('pwaStatus');
+    if(s && window.matchMedia('(display-mode: standalone)').matches) s.textContent='✅ '+(LANG==='ru'?'Установлено':LANG==='en'?'Installed':'Встановлено');
+  }catch(e){}
+
+  // Paid Ledger: без продажної сторінки Taobao, тільки робочий інтерфейс
+  function applyPaidMode(){
+    if(typeof GT_PAID === 'undefined' || !GT_PAID) return;
+    const hero=g('tbHero'), bar=g('tbPaidBar');
+    if(hero) hero.style.display='none';
+    if(bar){
+      bar.style.display='block';
+      ['tbStatus','tbProgress'].forEach(id=>{
+        const el=g(id); if(el){ bar.appendChild(el); }
+      });
+    }
+  }
+  try{ applyPaidMode(); }catch(e){}
 
   // PWA: реєструємо service worker (без кешу — тільки для встановлення застосунку)
   if('serviceWorker' in navigator){
@@ -6888,6 +6997,7 @@ function translateAll(){
 </html>"""
 
 
-def render_html(fee_cfg_json):
-    """HTML з підставленими комісіями."""
-    return HTML.replace("__FEE_CONFIG__", fee_cfg_json)
+def render_html(fee_cfg_json, paid=False):
+    """HTML з підставленими комісіями та режимом без продажної сторінки."""
+    return (HTML.replace("__FEE_CONFIG__", fee_cfg_json)
+                .replace("__PAID_MODE__", "true" if paid else "false"))

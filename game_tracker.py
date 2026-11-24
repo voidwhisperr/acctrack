@@ -2324,6 +2324,65 @@ def _deadstock_rows(days=30):
     return sorted(out, key=lambda r: -r["age"])
 
 
+def _price_target_tick():
+    """Раз на день: алерт, якщо товар у кеші постачальників досяг цільової ціни."""
+    if not _tg_flag("price"):
+        return 0
+    st = _read_json(SETTINGS_FILE, {}) or {}
+    targets = st.get("price_targets") or []
+    if not isinstance(targets, list) or not targets:
+        return 0
+    today = datetime.date.today().isoformat()
+    hits, changed = [], False
+    for t in targets[:50]:
+        if not isinstance(t, dict) or str(t.get("last") or "") == today:
+            continue
+        q = str(t.get("q") or "").strip().lower()
+        try:
+            mx = float(t.get("max") or 0)
+        except (TypeError, ValueError):
+            mx = 0
+        if not q or mx <= 0:
+            continue
+        best = None
+        for x in _supplier_cache:
+            try:
+                title = str(x.get("title") or "")
+                price = float(x.get("price") or 0)
+            except (TypeError, ValueError):
+                continue
+            if q in title.lower() and 0 < price <= mx:
+                if best is None or price < best[1]:
+                    best = (title, price, x.get("sourceName") or "")
+        if best:
+            hits.append(best)
+            t["last"] = today
+            changed = True
+    if not hits:
+        return 0
+    lines = ["🎯 <b>Цільова ціна досягнута</b>"]
+    for title, price, src in hits[:10]:
+        lines.append("• %s — <b>$%.2f</b> · %s" %
+                     (_html_mod.escape(title[:70]), price, _html_mod.escape(str(src)[:30])))
+    try:
+        if not _tg_send("\n".join(lines)):
+            return 0
+    except Exception as e:
+        print(f"  ⚠ target: {e}", flush=True)
+        return 0
+    if changed:
+        with _WRITE_LOCK:
+            st2 = _read_json(SETTINGS_FILE, {}) or {}
+            by_q = {str(t.get("q")): t for t in (st2.get("price_targets") or []) if isinstance(t, dict)}
+            for t in targets:
+                if str(t.get("q")) in by_q:
+                    by_q[str(t.get("q"))]["last"] = t.get("last")
+            st2["price_targets"] = list(by_q.values())[:50]
+            _atomic_dump(SETTINGS_FILE, st2)
+    print(f"  🎯 target alert: {len(hits)}", flush=True)
+    return len(hits)
+
+
 def _deadstock_tick():
     """Раз на день: повідомити про товар, що лежить 30+ днів."""
     now = datetime.datetime.now()
@@ -2365,6 +2424,7 @@ def _bg_loop():
     while True:
         try:
             _deadstock_tick()
+            _price_target_tick()
             if _digest_due():
                 _digest_send()
             _probe_direct()
@@ -4061,7 +4121,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.5.2", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.6.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4325,6 +4385,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "taobao_min_cny": float(st.get("taobao_min_cny") or 5),
                 "digest_hour": int(st.get("digest_hour") if st.get("digest_hour") is not None else 9),
                 "deal_x": float(st.get("deal_x") or 5),
+                "price_targets": st.get("price_targets") or [],
                 "digest_last": str(st.get("digest_last") or ""),
                 "alerts_only_my_games": bool(st.get("alerts_only_my_games", True)),
                 "notify": {k: bool(st.get("notify_" + k, v))
@@ -4420,7 +4481,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.5.2",
+            self._json({"ok": True, "version": "1.6.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -4868,6 +4929,21 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         st["taobao_min_cny"] = round(_fnum(body.get("taobao_min_cny"), "taobao_min_cny", 0, 10000), 2)
                     if "deal_x" in body:
                         st["deal_x"] = round(_fnum(body.get("deal_x"), "deal_x", 1, 100), 1)
+                    if isinstance(body.get("price_targets"), list):
+                        old_last = {str(t.get("q")): t.get("last") for t in (st.get("price_targets") or [])
+                                    if isinstance(t, dict)}
+                        clean = []
+                        for item in body["price_targets"][:50]:
+                            if not isinstance(item, dict):
+                                continue
+                            q = str(item.get("q") or "").strip()[:80]
+                            try:
+                                mx = round(float(item.get("max") or 0), 2)
+                            except (TypeError, ValueError):
+                                continue
+                            if q and mx > 0:
+                                clean.append({"q": q, "max": mx, "last": old_last.get(q, "")})
+                        st["price_targets"] = clean
                     if "scraper_limit" in body:
                         st["scraper_limit"] = int(_fnum(body.get("scraper_limit"), "scraper_limit", 1, 5000))
                     if "usd_uah" in body:
@@ -5551,7 +5627,9 @@ def _render_html():
     if ui is None:
         return ("<h1>UI недоступний</h1><p>Не знайдено модуль ui.py — "
                 "поклади його поруч із game_tracker.py</p>")
-    return ui.render_html(payload)
+    paid = (os.environ.get("GT_PAID") == "1"
+            or bool((_read_json(SETTINGS_FILE, {}) or {}).get("paid_mode")))
+    return ui.render_html(payload, paid)
 
 
 def _startup_supplier_refresh(allow_network=True):
@@ -5645,7 +5723,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.5.2")
+    print("  ▲  Ledger v1.6.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

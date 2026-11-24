@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.6.0 — PWA install and target prices
+
+- Install Ledger as an app from Settings (Chrome/Android prompt, iOS instructions).
+- Target prices: game/lot name + max USD, checked against supplier cache.
+- Daily Telegram alert when a target is reached; enable Price-drop notifications.
+- Paid Ledger hides the Taobao sales page; free release keeps it.
+
 ## v1.5.2 — Taobao sales page
 
 - Taobao tab redesigned as an automation showcase.
