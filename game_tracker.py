@@ -1670,6 +1670,58 @@ def inventory_data():
             "sources": sorted({x.get("source") for x in items if x.get("source")})}
 
 
+def supplier_roi():
+    """ROI по постачальниках: склад + прив'язані продажі P&L."""
+    _inv_load()
+    pl = _read_json(PL_FILE, []) or []
+    by_inv = {}
+    for r in pl:
+        if isinstance(r, dict) and r.get("inventoryId") not in (None, ""):
+            by_inv[str(r.get("inventoryId"))] = r
+    today = datetime.date.today()
+    agg = {}
+    for x in _inventory:
+        if not isinstance(x, dict):
+            continue
+        src = str(x.get("source") or "").strip() or "—"
+        row = agg.setdefault(src, {"source": src, "items": 0, "sold": 0, "stock": 0,
+                                   "cost_total": 0.0, "sold_cost": 0.0,
+                                   "revenue": 0.0, "profit": 0.0, "days": []})
+        row["items"] += 1
+        cost = float(x.get("cost") or 0)
+        row["cost_total"] += cost
+        status = x.get("status") or "in_stock"
+        if status == "sold":
+            row["sold"] += 1
+            row["sold_cost"] += cost
+            sale = by_inv.get(str(x.get("id")))
+            if sale:
+                row["revenue"] += float(sale.get("sell") or 0)
+                row["profit"] += float(sale.get("afterFee") or 0) - float(sale.get("expenses") or 0)
+            try:
+                ts = float(x.get("sold_at") or 0)
+                d0 = datetime.date.fromisoformat(str(x.get("date") or "")[:10])
+                if ts:
+                    row["days"].append(max(0, (datetime.date.fromtimestamp(ts) - d0).days))
+            except Exception:
+                pass
+        else:
+            row["stock"] += 1
+    out = []
+    for r in agg.values():
+        sold_cost = r["sold_cost"]
+        out.append({
+            "source": r["source"], "items": r["items"], "sold": r["sold"], "stock": r["stock"],
+            "cost_total": round(r["cost_total"], 2), "sold_cost": round(sold_cost, 2),
+            "revenue": round(r["revenue"], 2), "profit": round(r["profit"], 2),
+            "roi": round(r["profit"] * 100.0 / sold_cost, 1) if sold_cost > 0 else 0.0,
+            "sell_through": round(r["sold"] * 100.0 / max(1, r["items"]), 1),
+            "avg_days": round(sum(r["days"]) / len(r["days"]), 1) if r["days"] else None,
+        })
+    out.sort(key=lambda x: (x["profit"], x["revenue"]), reverse=True)
+    return {"ok": True, "suppliers": out, "count": len(out)}
+
+
 def _inv_match(title, limit=3):
     """Схожі позиції на складі (для підказки при продажу)."""
     import difflib
@@ -4121,7 +4173,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.6.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.7.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4305,6 +4357,21 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._send(200, "text/csv", data, extra={
                 "Content-Disposition":
                 'attachment; filename="report_%s.csv"' % rep.get("month")})
+        elif p == "/api/taobao/agent-config":
+            _sec = _read_json(SECRETS_FILE, {}) or {}
+            tok = os.environ.get("GT_COLLECTOR_TOKEN") or str(_sec.get("collector_token") or "")
+            if not tok:
+                tok = os.urandom(16).hex()
+                _sec["collector_token"] = tok
+                try:
+                    _atomic_dump(SECRETS_FILE, _sec)
+                except Exception:
+                    pass
+            host = str(self.headers.get("Host") or "localhost:8766")
+            proto = str(self.headers.get("X-Forwarded-Proto") or "http").split(",")[0].strip() or "http"
+            self._json({"ok": True, "server": f"{proto}://{host}", "token": tok})
+        elif p == "/api/supplier_roi":
+            self._json(supplier_roi())
         elif p == "/api/analytics":
             self._json(_analytics())
         elif p == "/api/backup/export":
@@ -4481,7 +4548,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.6.0",
+            self._json({"ok": True, "version": "1.7.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5723,7 +5790,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.6.0")
+    print("  ▲  Ledger v1.7.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

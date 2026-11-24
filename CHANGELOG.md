@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.7.0 — supplier ROI and agent setup
+
+- Supplier ROI table: items, sold, cost, revenue, profit, ROI, sell-through, days.
+- Taobao agent setup panel with server + token copy.
+- One-click Windows installer `install_taobao_agent.bat` (Python check, Playwright, Chromium, config).
+
 ## v1.6.0 — PWA install and target prices
 
 - Install Ledger as an app from Settings (Chrome/Android prompt, iOS instructions).

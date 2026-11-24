@@ -913,6 +913,14 @@ code{
         <button class="btn" style="font-size:12px;padding:6px 11px" onclick="tbEnrich()">💳 <span data-i18n="tb.checkPay">Перевірити оплату</span></button>
       </div>
     </div>
+    <details id="agentSetup" style="margin-bottom:12px;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 12px">
+      <summary style="cursor:pointer;font-size:12px;font-weight:700">⚙ Налаштування Taobao-агента</summary>
+      <div style="font-size:11.5px;color:var(--mu);line-height:1.55;margin-top:8px">
+        <div>Сервер: <code id="agentServer">—</code> <button class="btn" style="padding:2px 7px;font-size:10px" onclick="copyAgent('agentServer')">Копіювати</button></div>
+        <div style="margin-top:4px">Токен: <code id="agentToken">—</code> <button class="btn" style="padding:2px 7px;font-size:10px" onclick="copyAgent('agentToken')">Копіювати</button></div>
+        <div style="margin-top:6px">На ПК: запусти <b>install_taobao_agent.bat</b> з папки Ledger, встав ці два значення, дочекайся Chromium. Потім один раз увійди в Taobao через QR.</div>
+      </div>
+    </details>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
       <input id="tbQ" placeholder="🔍 Пошук по назві..." oninput="renderTaobao()" style="width:220px">
       <label style="font-size:12px;color:var(--mu);display:flex;align-items:center;gap:5px">
@@ -1095,6 +1103,11 @@ code{
       <div id="repBox"><div class="none">Виберіть місяць</div></div>
     </div>
     <div id="anDead" style="margin-top:14px"></div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph">🏭 SUPPLIER ROI</div>
+    <div style="font-size:11.5px;color:var(--mu);margin:-4px 0 9px">Прибуток, ROI і sell-through по постачальниках — на основі складу та прив’язаних продажів.</div>
+    <div id="supRoi"><div class="none">⏳ …</div></div>
   </div>
   <div class="panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -2611,6 +2624,8 @@ function mnavGo(id){
   if(!tab) return;
   sw(id,tab);
   if(id==='mail'){ try{ loadMailQueue(); }catch(e){} }
+  if(id==='stats'){ try{ loadSupplierROI(); }catch(e){} }
+  if(id==='taobao'){ try{ loadAgentCfg(); }catch(e){} }
   if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
   if(id==='stats'){ try{ renderStats(); setTimeout(renderRevenueChart,80); }catch(e){} }
 }
@@ -2623,6 +2638,9 @@ function sw(id,el){
   if(id==='overview'){ renderOverview(); }
   if(id==='tracker'){ setTimeout(()=>{ renderPurchases(); renderRevenueChart(); },50); }
   if(id==='channels'){ renderChAll(); setTimeout(()=>{ try{ translateAll(); }catch(e){} }, 700); }
+  if(id==='stats'){ try{ loadSupplierROI(); }catch(e){} }
+  if(id==='taobao'){ try{ loadAgentCfg(); }catch(e){} }
+  if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
 }
 function toast(msg,ok=true){
   const t=document.createElement('div');
@@ -3946,6 +3964,41 @@ function plGo(n){plPg=n;renderPurchases();window.scrollTo({top:0,behavior:'smoot
 // 📊 СТАТИСТИКА ПО ІГРАХ
 // ═══════════════════════════════════════════════
 let _statsChart = null;
+
+async function loadAgentCfg(){
+  if(!g('agentServer')) return;
+  try{
+    const d=await fetch('/api/taobao/agent-config').then(r=>r.json());
+    if(!d.ok) return;
+    g('agentServer').textContent=d.server||'—';
+    g('agentToken').textContent=d.token||'—';
+  }catch(e){}
+}
+async function copyAgent(id){
+  const el=g(id); if(!el) return;
+  const txt=el.textContent||'';
+  try{ await navigator.clipboard.writeText(txt); toast('✅ Скопійовано'); }
+  catch(e){ prompt('Скопіюй:', txt); }
+}
+async function loadSupplierROI(){
+  const el=g('supRoi'); if(!el) return;
+  try{
+    const d=await fetch('/api/supplier_roi').then(r=>r.json());
+    const rows=d.suppliers||[];
+    if(!rows.length){ el.innerHTML='<div class="none">Немає даних: додай товар на склад із постачальником.</div>'; return; }
+    const H=LANG==='en'?['Supplier','Items','Sold','Stock','Cost','Revenue','Profit','ROI','ST%','Days']:
+            LANG==='ru'?['Поставщик','Товары','Продано','Склад','Затраты','Выручка','Прибыль','ROI','ST%','Дней']:
+            ['Постачальник','Товари','Продано','Склад','Витрати','Виручка','Прибуток','ROI','ST%','Днів'];
+    el.innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr>'+
+      H.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+
+      rows.map(x=>'<tr><td><b>'+esc(x.source||'—')+'</b></td><td>'+x.items+'</td><td>'+x.sold+'</td><td>'+x.stock+
+        '</td><td>$'+Number(x.cost_total||0).toFixed(2)+'</td><td>$'+Number(x.revenue||0).toFixed(2)+
+        '</td><td style="color:'+(x.profit>=0?'var(--gr)':'var(--rd)')+';font-weight:700">$'+Number(x.profit||0).toFixed(2)+
+        '</td><td style="color:'+(x.roi>=0?'var(--gr)':'var(--rd)')+'">'+Number(x.roi||0).toFixed(1)+'%</td><td>'+
+        Number(x.sell_through||0).toFixed(1)+'%</td><td>'+(x.avg_days==null?'—':x.avg_days)+'</td></tr>').join('')+
+      '</tbody></table></div>';
+  }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
+}
 
 function renderStats(){
   fillMonthOptions();
