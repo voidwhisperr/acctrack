@@ -204,19 +204,19 @@ def _read_json_strict(path, default):
 #   ed     — комісія ELDORADO
 # ─────────────────────────────────────────────────
 PLATFORM_FEES = {"zeusx": 0.10, "funpay": 0.10, "eldorado": 0.10, "other": 0.0}
-PAYOUT_FEES   = {"zeusx": 0.005, "funpay": 0.055}
+PAYOUT_FEES   = {"zeusx": 0.015, "funpay": 0.055}
 ED_FEE        = 0.10
 
 # ZeusX: комісія залежить від рангу продавця (5–10%).
 # Точну ставку продавець бачить у кабінеті; це стартові пресети,
 # які можна перебити полем «Комісія %».
 ZEUSX_TIERS = [
-    {"id": "iron",     "name": "Iron",     "fee": 0.10},
-    {"id": "bronze",   "name": "Bronze",   "fee": 0.09},
-    {"id": "silver",   "name": "Silver",   "fee": 0.08},
-    {"id": "gold",     "name": "Gold",     "fee": 0.07},
-    {"id": "platinum", "name": "Platinum", "fee": 0.06},
-    {"id": "diamond",  "name": "Diamond",  "fee": 0.05},
+    {"id": "iron",      "name": "Iron",      "fee": 0.10, "criteria": "Default"},
+    {"id": "bronze",    "name": "Bronze",    "fee": 0.09, "criteria": ">$300 total successful sales"},
+    {"id": "silver",    "name": "Silver",    "fee": 0.08, "criteria": ">$1,000 total successful sales"},
+    {"id": "gold",      "name": "Gold",      "fee": 0.07, "criteria": ">$10,000 total successful sales"},
+    {"id": "platinum",  "name": "Platinum",  "fee": 0.06, "criteria": ">$100,000 total successful sales"},
+    {"id": "vibranium", "name": "Vibranium", "fee": 0.05, "criteria": "Invitation / admin approval only"},
 ]
 
 # Майданчики для калькулятора «де вигідніше продавати» (комісії орієнтовні!)
@@ -3760,7 +3760,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.0.2", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.0.3", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png")
@@ -4086,7 +4086,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.0.2",
+            self._json({"ok": True, "version": "1.0.3",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5194,7 +5194,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.0.2")
+    print("  ▲  AccTrack v1.0.3")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

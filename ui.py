@@ -2265,12 +2265,12 @@ function zeusxTiers(){
   return (FEE_CFG.zeusx_tiers && FEE_CFG.zeusx_tiers.length) ? FEE_CFG.zeusx_tiers : [
     {id:'iron',name:'Iron',fee:0.10},{id:'bronze',name:'Bronze',fee:0.09},
     {id:'silver',name:'Silver',fee:0.08},{id:'gold',name:'Gold',fee:0.07},
-    {id:'platinum',name:'Platinum',fee:0.06},{id:'diamond',name:'Diamond',fee:0.05}
+    {id:'platinum',name:'Platinum',fee:0.06},{id:'vibranium',name:'Vibranium',fee:0.05}
   ];
 }
 function fillZeusRanks(){
   const sel=g('plZeusRank'); if(!sel) return;
-  sel.innerHTML=zeusxTiers().map(t=>'<option value="'+t.id+'">'+t.name+' · '+(t.fee*100).toFixed(0)+'%</option>').join('');
+  sel.innerHTML=zeusxTiers().map(t=>'<option value="'+t.id+'" title="'+esc(t.criteria||'')+'">'+t.name+' · '+(t.fee*100).toFixed(0)+'%</option>').join('');
 }
 function plZeusRankPick(){
   const sel=g('plZeusRank'), fp=g('plFeePct');

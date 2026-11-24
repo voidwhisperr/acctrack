@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.3 — exact ZeusX tier table
+
+### Changed
+- ZeusX tiers are now the official six-step table: Iron 10%, Bronze 9%, Silver 8%, Gold 7%, Platinum 6%, Vibranium 5%.
+- Tier criteria are shown in the selector: $300 / $1,000 / $10,000 / $100,000 / invitation.
+- ZeusX withdrawal cost is reflected as 1.5% + $3 in the marketplace comparison note; the sales fee remains 5–10% by tier.
+- The old approximate "Diamond" tier was removed; the correct top tier is **Vibranium**.
+
 ## v1.0.2 — real marketplace fees and ZeusX tiers
 
 ### Added
