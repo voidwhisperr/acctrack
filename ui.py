@@ -540,6 +540,10 @@ code{
         </div>
       </div>
       <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.feePct">КОМІСІЯ %</div>
+        <input type="number" id="plFeePct" value="9.5" step="0.1" min="0" max="100" style="width:82px" oninput="updateFeePreview()">
+      </div>
+      <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.buy">КУПИВ $</div>
         <input type="number" id="plBuy" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
       </div>
@@ -1465,8 +1469,8 @@ const I18N = {
        'ph.sec':'БЕЗПЕКА','ph.contact':'ПОТРІБНА АВТОМАТИЗАЦІЯ?','ph.contact.desc':'Хочете таку саму автоматизацію: збір Taobao, FunPay/ZeusX, проходження капчі, авто-імпорт замовлень — напишіть у Telegram.','ph.allch':'Усі канали — останні продажі','ph.edsales':'Eldorado — продажі',
        'btn.add':'Додати','btn.refresh':'Оновити','btn.save':'Зберегти','btn.clear':'Очистити',
        'btn.csv':'CSV','btn.excel':'Excel (всі дані)','btn.search':'Пошук…','btn.month':'Весь час',
-       'f.title':'НАЗВА (необов.)','f.platform':'ПЛАТФОРМА','f.buy':'КУПИВ $','f.sell':'ПРОДАВ $',
-       'f.after':'ПІСЛЯ КОМІСІЇ','f.date':'ДАТА','f.other':'Інше (0%)',
+       'f.title':'НАЗВА (необов.)','f.platform':'ПЛАТФОРМА','f.feePct':'КОМІСІЯ %','f.buy':'КУПИВ $','f.sell':'ПРОДАВ $',
+       'f.after':'ПІСЛЯ КОМІСІЇ','f.date':'ДАТА','f.other':'Інше',
        'b.add':'+ ДОДАТИ','b.sync':'СИНХРОНІЗУВАТИ','b.bulk':'МАСОВО','b.clear':'Очистити',
        'search':'Пошук…','allPlat':'Всі платформи','allTime':'Весь час','byDate':'Дата ↓',
        'cf.search':'Пошук...','cf.sortNone':'Без сорт.','cf.sortNew':'Нові першими','cf.sortUpdated':'Оновлені першими','cf.priceUp':'Ціна ↑','cf.priceDown':'Ціна ↓','cf.saleFirst':'Sale першими','cf.avail':'є в наявності','cf.gone':'зниклі','cf.cheaper':'дешевше','ct.name':'НАЗВА','ct.src':'ДЖЕРЕЛО','ct.price':'ЦІНА','ct.disc':'ЗНИЖКА','ct.avail':'НАЯ.','ct.date':'ДАТА','cb.shop':'Магазин','cb.history':'Історія','cb.compare':'Порівняти','cb.lot':'Лот','tb.lot':'Лот','tb.checkPay':'Перевірити оплату','tb.collect':'Зібрати зараз','plan.title':'ЩО КУПИТИ СЬОГОДНІ','plan.hint':'Ціна постачальника проти вашої медіани продажу по схожих лотах (та сама гра + спільні слова назви), комісія ZeusX 9.5%.','inv.name':'Назва','inv.game':'Гра','inv.cost':'Собівартість, $','inv.source':'Джерело','inv.account':'Дані акаунта (логін / пароль / пошта)','inv.all':'Всі','inv.inStock':'На складі','inv.sold':'Продані','inv.off':'Списані','inv.intro':'Тут куплені акаунти: скільки коштували, у кого, і чи продані. Дає реальну маржу й показує, скільки грошей «заморожено».','inv.csvStock':'CSV (склад, +30%)','inv.csvSup':'CSV (постач., +30%)','tbth.lot':'ЛОТ','tbth.game':'ГРА','tbth.price':'ЦІНА','tbth.atSup':'У ПОСТАЧАЛЬНИКА','tbth.diff':'РІЗНИЦЯ','tbth.qty':'К-СТЬ','tbth.withAgent':'З ПОСЕРЕДНИКОМ','per.all':'Весь час','per.today':'Сьогодні','per.week':'Цей тиждень','per.month':'Цей місяць','per.months':'Місяці','per.custom':'Свій період','st.setup':'Готово до роботи','tb.d1':'Збирається колектором на вашому ПК. Агент працює у фоні (автозапуск при вході в Windows) і сам відкриває вікно браузера, якщо його немає. Капчу проходите ви — колектор чекає. Ціни в юанях, нижче — орієнтовний долар.','tb.d2':'Мітки: натисніть 💳 біля лота, якщо там оплата карткою, і 🎛 — скільки варіантів акаунтів. Taobao часто блокує автоматичне читання сторінок лотів, тому ручна мітка — найнадійніше.','tb.d3':'Оплата: картка / Apple Pay через Alipay International (платформа, не продавець). Лоти «代充 / 充值 / 话费» (поповнення балансу, телефон, ключі) не підходять під таку оплату — вони вже відфільтровані.','tg.hint':'Бот пише лише про те, що прийшло з пошти (нові замовлення й повідомлення FunPay / ZeusX / Eldorado) та про досягнення цілі. Ручне внесення продажу в таблицю не сповіщає. Створи бота у @BotFather, встав токен і свій chat_id (дізнатись у @userinfobot).','pw.hint':'Без пароля будь-хто, хто відкриє посилання, отримає доступ. Увімкніть пароль, якщо застосунок доступний з інтернету.','tg.cmds':'Бот відповідає на команди (тільки ваш чат): /stats — продажі сьогодні й за місяць · /balance — баланс ZeusX / FunPay / Eldorado · /new — останні замовлення · /taobao — топ вигідних лотів · /help','gm.hint':'Трекер читає пошту (IMAP) і надсилає в Telegram нові замовлення та повідомлення FunPay / ZeusX / Eldorado. Потрібен App Password (не звичайний пароль): Google Account → Security → 2-Step Verification → App passwords + увімкнений IMAP у Gmail.','inv.ph':'логін: user@mail.com\nпароль: 12345\nпошта: user@mail.com','tb.need':'Щоб збір запрацював, потрібно: 1) агент збору на вашому ПК (окремий файл, запускається разом із Windows); 2) акаунт Taobao; 3) один раз увійти в браузері агента — сканування QR-коду з телефона; 4) капчу при першому запиті проходите ви вручну. Після цього лоти оновлюються у фоні, а ви бачите ціни тут.','cta.screens':'Скріншоти функцій →','ed.buy':'Ціна купівлі $','ed.sell':'Ціна продажу $','ed.oid':'Order ID (необов\'язково)','ed.cat':'Категорія (необов\'язково)','ed.csvbtn':'CSV (фільтр)','ed.empty':'Ще немає записів','k.buy':'Купив','k.sell':'Продав','k.fee':'Комісія','k.profit':'Прибуток',
@@ -1491,8 +1495,8 @@ const I18N = {
        'ph.sec':'SECURITY','ph.contact':'NEED AUTOMATION?','ph.contact.desc':'Want the same automation: Taobao collection, FunPay/ZeusX, captcha handling, order auto-import — message me on Telegram.','ph.allch':'All channels — recent sales','ph.edsales':'Eldorado — sales',
        'btn.add':'Add','btn.refresh':'Refresh','btn.save':'Save','btn.clear':'Clear',
        'btn.csv':'CSV','btn.excel':'Excel (all data)','btn.search':'Search…','btn.month':'All time',
-       'f.title':'TITLE (optional)','f.platform':'PLATFORM','f.buy':'BOUGHT $','f.sell':'SOLD $',
-       'f.after':'AFTER FEE','f.date':'DATE','f.other':'Other (0%)',
+       'f.title':'TITLE (optional)','f.platform':'PLATFORM','f.feePct':'FEE %','f.buy':'BOUGHT $','f.sell':'SOLD $',
+       'f.after':'AFTER FEE','f.date':'DATE','f.other':'Other',
        'b.add':'+ ADD','b.sync':'SYNC','b.bulk':'BULK','b.clear':'Clear',
        'search':'Search…','allPlat':'All platforms','allTime':'All time','byDate':'Date ↓',
        'cf.search':'Search...','cf.sortNone':'No sorting','cf.sortNew':'Newest first','cf.sortUpdated':'Recently updated','cf.priceUp':'Price ↑','cf.priceDown':'Price ↓','cf.saleFirst':'On sale first','cf.avail':'in stock','cf.gone':'gone','cf.cheaper':'cheaper','ct.name':'NAME','ct.src':'SOURCE','ct.price':'PRICE','ct.disc':'DISCOUNT','ct.avail':'STOCK','ct.date':'DATE','cb.shop':'Shop','cb.history':'History','cb.compare':'Compare','cb.lot':'Lot','tb.lot':'Lot','tb.checkPay':'Check payment','tb.collect':'Collect now','plan.title':'WHAT TO BUY TODAY','plan.hint':'Supplier price against your median sale price for similar lots (same game + shared title words), ZeusX fee 9.5%.','inv.name':'Name','inv.game':'Game','inv.cost':'Cost, $','inv.source':'Source','inv.account':'Account data (login / password / mail)','inv.all':'All','inv.inStock':'In stock','inv.sold':'Sold','inv.off':'Written off','inv.intro':'Bought accounts: what they cost, from whom, and whether they sold. Shows real margin and how much money is frozen.','inv.csvStock':'CSV (stock, +30%)','inv.csvSup':'CSV (suppliers, +30%)','tbth.lot':'LOT','tbth.game':'GAME','tbth.price':'PRICE','tbth.atSup':'AT SUPPLIER','tbth.diff':'DIFF','tbth.qty':'QTY','tbth.withAgent':'WITH AGENT','per.all':'All time','per.today':'Today','per.week':'This week','per.month':'This month','per.months':'Months','per.custom':'Custom range','st.setup':'Ready to use','tb.d1':'Collected by the agent on your PC. The agent runs in the background (autostart on Windows sign-in) and opens the browser window itself if needed. You pass the captcha — the agent waits. Prices are in CNY; approximate USD below.','tb.d2':'Marks: press 💳 next to a lot if card payment is available there, and 🎛 for how many account variants. Taobao often blocks automatic page reading of lots, so the manual mark is the most reliable.','tb.d3':'Payment: card / Apple Pay via Alipay International (platform, not a seller). Lots «代充 / 充值 / 话费» (balance top-up, phone, keys) do not support this payment — they are already filtered out.','tg.hint':'The bot writes only about what came from mail (new orders and messages from FunPay / ZeusX / Eldorado) and about reaching the goal. Manual sale entries in the table do not notify. Create a bot at @BotFather, paste the token and your chat_id (find it at @userinfobot).','pw.hint':'Without a password anyone who opens the link gets in. Set one if the app is reachable from the internet.','tg.cmds':'The bot answers commands (your chat only): /stats — sales today and for the month · /balance — ZeusX / FunPay / Eldorado balance · /new — latest orders · /taobao — top profitable lots · /help','gm.hint':'The tracker reads mail (IMAP) and sends new orders and messages from FunPay / ZeusX / Eldorado to Telegram. An App Password is required (not a regular password): Google Account → Security → 2-Step Verification → App passwords + IMAP enabled in Gmail.','inv.ph':'login: user@mail.com\npassword: 12345\nmail: user@mail.com','tb.need':'To start collecting you need: 1) the collector agent on your PC (separate file, starts with Windows); 2) a Taobao account; 3) sign in once in the agent\'s browser — scan the QR code with your phone; 4) pass the first captcha yourself. After that lots refresh in the background and you see prices here.','cta.screens':'Feature screenshots →','ed.buy':'Purchase price $','ed.sell':'Sale price $','ed.oid':'Order ID (optional)','ed.cat':'Category (optional)','ed.csvbtn':'CSV (filter)','ed.empty':'No records yet','k.buy':'Bought','k.sell':'Sold','k.fee':'Fee','k.profit':'Profit',
@@ -1517,8 +1521,8 @@ const I18N = {
        'ph.sec':'БЕЗОПАСНОСТЬ','ph.contact':'НУЖНА АВТОМАТИЗАЦИЯ?','ph.contact.desc':'Хотите такую же автоматизацию: сбор Taobao, FunPay/ZeusX, прохождение капчи, авто-импорт заказов — напишите в Telegram.','ph.allch':'Все каналы — последние продажи','ph.edsales':'Eldorado — продажи',
        'btn.add':'Добавить','btn.refresh':'Обновить','btn.save':'Сохранить','btn.clear':'Очистить',
        'btn.csv':'CSV','btn.excel':'Excel (все данные)','btn.search':'Поиск…','btn.month':'Всё время',
-       'f.title':'НАЗВАНИЕ (необяз.)','f.platform':'ПЛАТФОРМА','f.buy':'КУПИЛ $','f.sell':'ПРОДАЛ $',
-       'f.after':'ПОСЛЕ КОМИССИИ','f.date':'ДАТА','f.other':'Другое (0%)',
+       'f.title':'НАЗВАНИЕ (необяз.)','f.platform':'ПЛАТФОРМА','f.feePct':'КОМИССИЯ %','f.buy':'КУПИЛ $','f.sell':'ПРОДАЛ $',
+       'f.after':'ПОСЛЕ КОМИССИИ','f.date':'ДАТА','f.other':'Другое',
        'b.add':'+ ДОБАВИТЬ','b.sync':'СИНХРОНИЗИРОВАТЬ','b.bulk':'МАССОВО','b.clear':'Очистить',
        'search':'Поиск…','allPlat':'Все платформы','allTime':'Всё время','byDate':'Дата ↓',
        'cf.search':'Поиск...','cf.sortNone':'Без сорт.','cf.sortNew':'Новые первыми','cf.sortUpdated':'Обновлённые','cf.priceUp':'Цена ↑','cf.priceDown':'Цена ↓','cf.saleFirst':'Sale первыми','cf.avail':'в наличии','cf.gone':'исчезли','cf.cheaper':'дешевле','ct.name':'НАЗВАНИЕ','ct.src':'ИСТОЧНИК','ct.price':'ЦЕНА','ct.disc':'СКИДКА','ct.avail':'В НАЛ.','ct.date':'ДАТА','cb.shop':'Магазин','cb.history':'История','cb.compare':'Сравнить','cb.lot':'Лот','tb.lot':'Лот','tb.checkPay':'Проверить оплату','tb.collect':'Собрать сейчас','plan.title':'ЧТО КУПИТЬ СЕГОДНЯ','plan.hint':'Цена поставщика против вашей медианы продажи по похожим лотам (та же игра + общие слова названия), комиссия ZeusX 9.5%.','inv.name':'Название','inv.game':'Игра','inv.cost':'Себестоимость, $','inv.source':'Источник','inv.account':'Данные аккаунта (логин / пароль / почта)','inv.all':'Все','inv.inStock':'На складе','inv.sold':'Проданы','inv.off':'Списаны','inv.intro':'Купленные аккаунты: сколько стоили, у кого, и проданы ли. Даёт реальную маржу и показывает, сколько денег «заморожено».','inv.csvStock':'CSV (склад, +30%)','inv.csvSup':'CSV (постав., +30%)','tbth.lot':'ЛОТ','tbth.game':'ИГРА','tbth.price':'ЦЕНА','tbth.atSup':'У ПОСТАВЩИКА','tbth.diff':'РАЗНИЦА','tbth.qty':'КОЛ-ВО','tbth.withAgent':'С ПОСРЕДНИКОМ','per.all':'Все время','per.today':'Сегодня','per.week':'Эта неделя','per.month':'Этот месяц','per.months':'Месяцы','per.custom':'Свой период','st.setup':'Готово к работе','tb.d1':'Собирается коллектором на вашем ПК. Агент работает в фоне (автозапуск при входе в Windows) и сам открывает окно браузера, если его нет. Капчу проходите вы — коллектор ждёт. Цены в юанях, ниже — ориентировочный доллар.','tb.d2':'Метки: нажмите 💳 у лота, если там оплата картой, и 🎛 — сколько вариантов аккаунтов. Taobao часто блокирует автоматическое чтение страниц лотов, поэтому ручная метка — надёжнее всего.','tb.d3':'Оплата: карта / Apple Pay через Alipay International (площадка, не продавец). Лоты «代充 / 充值 / 话费» (пополнение баланса, телефон, ключи) не поддерживают такую оплату — они уже отфильтрованы.','tg.hint':'Бот пишет только о том, что пришло из почты (новые заказы и сообщения FunPay / ZeusX / Eldorado) и о достижении цели. Ручное внесение продажи в таблицу не уведомляет. Создай бота в @BotFather, вставь токен и свой chat_id (узнать в @userinfobot).','pw.hint':'Без пароля любой, кто откроет ссылку, получит доступ. Включите пароль, если приложение доступно из интернета.','tg.cmds':'Бот отвечает на команды (только ваш чат): /stats — продажи сегодня и за месяц · /balance — баланс ZeusX / FunPay / Eldorado · /new — последние заказы · /taobao — топ выгодных лотов · /help','gm.hint':'Трекер читает почту (IMAP) и отправляет в Telegram новые заказы и сообщения FunPay / ZeusX / Eldorado. Нужен App Password (не обычный пароль): Google Account → Security → 2-Step Verification → App passwords + включённый IMAP в Gmail.','inv.ph':'логин: user@mail.com\nпароль: 12345\nпочта: user@mail.com','tb.need':'Чтобы сбор заработал, нужно: 1) агент сбора на вашем ПК (отдельный файл, запускается вместе с Windows); 2) аккаунт Taobao; 3) один раз войти в браузере агента — сканирование QR-кода с телефона; 4) капчу при первом запросе проходите вы вручную. После этого лоты обновляются в фоне, а вы видите цены здесь.','cta.screens':'Скриншоты функций →','ed.buy':'Цена покупки $','ed.sell':'Цена продажи $','ed.oid':'Order ID (необязательно)','ed.cat':'Категория (необязательно)','ed.csvbtn':'CSV (фильтр)','ed.empty':'Пока нет записей','k.buy':'Купил','k.sell':'Продал','k.fee':'Комиссия','k.profit':'Прибыль',
@@ -2250,11 +2254,33 @@ function toast(msg,ok=true){
 // Встановлюємо сьогоднішню дату в формі
 ;(()=>{ const d=g('plDate'); if(d) d.value=todayLocal(); })();
 
+function defaultFeePct(src){
+  return src==='eldorado' ? ED_FEE : (FEES[src]||0);
+}
+function feePctOf(p){
+  if(!p) return 0;
+  if(p._ed){
+    const sell=Number(p.sell||0);
+    if(sell>0) return Math.max(0, Math.min(1, Number(p.fee||0)/sell));
+    return ED_FEE;
+  }
+  let raw = Number(p.feePct);
+  if(p.feePct!=null && Number.isFinite(raw)){
+    if(raw>1 && raw<=100) raw/=100;
+    if(raw>=0 && raw<=1) return raw;
+  }
+  const sell=Number(p.sell||0), buy=Number(p.buy||0), aft=Number(p.afterFee);
+  if(p.afterFee!=null && sell>0 && Number.isFinite(aft)){
+    const v=(sell-buy-aft)/sell;
+    if(v>=0 && v<=1) return v;
+  }
+  return defaultFeePct(p.src);
+}
 function updateFeePreview(){
   const sell = parseFloat(g('plSell').value)||0;
   const buy  = parseFloat(g('plBuy').value)||0;
-  const plat = g('plPlatform').value;
-  const fee  = FEES[plat]||0;
+  const raw  = parseFloat(g('plFeePct')?.value);
+  const fee  = Number.isFinite(raw) ? Math.max(0, Math.min(100, raw))/100 : 0;
   const after = sell*(1-fee) - buy;
   const el = g('plFeePreview');
   el.textContent = (after>=0?'+':'')+'$'+after.toFixed(2);
@@ -2901,19 +2927,23 @@ function plPlatPick(val){
   }
   document.querySelectorAll('#plPlatSel .psel-opt').forEach(o=>o.classList.toggle('on', o.dataset.val===val));
   const el = g('plPlatSel'); if(el) el.classList.remove('open');
+  const fp = g('plFeePct');
+  if(fp) fp.value = (defaultFeePct(val)*100).toFixed(1).replace(/\.0$/,'');
   try{ updateFeePreview(); }catch(e){}
 }
 document.addEventListener('click', (e)=>{
   const el = g('plPlatSel');
   if(el && !el.contains(e.target)) el.classList.remove('open');
 });
+try{ plPlatPick(g('plPlatform')?.value || 'zeusx'); }catch(e){}
 
 async function addPLRecord(){
   const sell = parseFloat(g('plSell').value)||0;
   const buy  = parseFloat(g('plBuy').value)||0;
   if(!sell && !buy){ alert(t('deal.enterPrices')); return; }
   const plat = g('plPlatform').value;
-  const fee  = plat==='eldorado' ? ED_FEE : (FEES[plat]||0);
+  const feeRaw = parseFloat(g('plFeePct')?.value);
+  const fee  = Number.isFinite(feeRaw) ? Math.max(0, Math.min(100, feeRaw))/100 : defaultFeePct(plat);
 
   if(plat === 'eldorado'){
     // Eldorado веде окремий облік — пишемо туди, щоб не було дублів
@@ -2926,6 +2956,7 @@ async function addPLRecord(){
     await saveED();
     g('plTitle').value=''; g('plBuy').value=''; g('plSell').value='';
     g('plFeePreview').textContent='$0.00';
+    plPlatPick(plat);
     plPg=1; renderPurchases();
     if(typeof renderEldorado==='function') renderEldorado();
     toast(t('deal.addedED'));
@@ -2937,7 +2968,8 @@ async function addPLRecord(){
     title: g('plTitle').value.trim(),
     src: plat,
     srcName: plat==='zeusx'?'ZeusX':plat==='funpay'?'FunPay':plat==='eldorado'?'Eldorado':t('f.other2'),
-    buy, sell, afterFee: Math.round(afterFee*10000)/10000,
+    buy, sell, feePct: Math.round(fee*1000000)/1000000,
+    afterFee: Math.round(afterFee*10000)/10000,
     qty: 1,
     date: g('plDate').value || todayLocal(),
     platform: plat,
@@ -2945,6 +2977,7 @@ async function addPLRecord(){
   await savePL();
   g('plTitle').value=''; g('plBuy').value=''; g('plSell').value='';
   g('plFeePreview').textContent='$0.00';
+  plPlatPick(plat);
   plPg=1; renderPurchases();
   toast(t('deal.added'));
   // v4.6: без Telegram-сповіщення — це ручне внесення, користувач і так знає
@@ -2961,7 +2994,9 @@ function edAsPL(){
     id: 'ed:' + s.id, date: s.date, title: s.title,
     src: 'eldorado', srcName: 'Eldorado',
     buy: Number(s.buy||0), sell: Number(s.price||0),
-    afterFee: Number(s.profit||0), fee: Number(s.fee||0), qty: 1, platform: 'eldorado',
+    afterFee: Number(s.profit||0), fee: Number(s.fee||0),
+    feePct: Number(s.price||0)>0 ? Math.max(0, Math.min(1, Number(s.fee||0)/Number(s.price||1))) : ED_FEE,
+    qty: 1, platform: 'eldorado',
     _ed: true, _edId: s.id
   }));
 }
@@ -3011,7 +3046,7 @@ function renderPurchases(){
   const totalSell   = plFilt.reduce((s,p)=>s+(p.sell||0),0);
   const totalBuy    = plFilt.reduce((s,p)=>s+(p.buy||0),0);
   const totalProfit = plFilt.reduce((s,p)=>s+(p.afterFee||0),0);
-  const totalFees   = plFilt.reduce((s,p)=>s+(p.sell||0)*(FEES[p.src]||0),0);
+  const totalFees   = plFilt.reduce((s,p)=>s+(p.sell||0)*feePctOf(p),0);
   const margin      = totalBuy>0?(totalProfit/totalBuy*100).toFixed(1):0;
 
   g('purCnt').textContent = plFilt.length;
@@ -3034,8 +3069,9 @@ function renderPurchases(){
 
   const inpStyle='width:100%;background:var(--bg2);border:1px solid var(--a1);border-radius:4px;color:var(--tx);padding:2px 4px;font-size:11px;font-family:inherit';
   el.innerHTML = '<div class="bub-wrap">' + page.map(p=>{
-    const fee=p._ed?Number(p.fee||0):(p.sell||0)*(FEES[p.src]||0);
-    const profit=p.afterFee!=null?p.afterFee:((p.sell||0)*(1-(FEES[p.src]||0))-(p.buy||0));
+    const _fp=feePctOf(p);
+    const fee=p._ed?Number(p.fee||0):(p.sell||0)*_fp;
+    const profit=p.afterFee!=null?p.afterFee:((p.sell||0)*(1-_fp)-(p.buy||0));
     const platClr=p._ed?'var(--yw)':p.src==='zeusx'?'var(--a1)':p.src==='funpay'?'var(--a3)':'var(--mu)';
     const LOGO2={zeusx:'/logo/zeusx.png',funpay:'/logo/funpay.png',eldorado:'/logo/eldorado.png'};
     const logoImg=LOGO2[p.src]?'<img src="'+LOGO2[p.src]+'" alt="" style="width:13px;height:13px;border-radius:3px;object-fit:contain;vertical-align:-2px;margin-right:4px">':'';
@@ -3045,6 +3081,7 @@ function renderPurchases(){
         + '<input id="ei_date" value="'+esc(p.date||'')+'" type="date" style="'+inpStyle+'">'
         + '<input id="ei_title" value="'+esc(p.title||'')+'" placeholder="Назва" style="'+inpStyle+'">'
         + '<select id="ei_plat" style="'+inpStyle+'"><option value="zeusx"'+(p.src==='zeusx'?' selected':'')+'>⚡ ZeusX</option><option value="funpay"'+(p.src==='funpay'?' selected':'')+'>🔵 FunPay</option><option value="other"'+(p.src==='other'?' selected':'')+' data-i18n="f.other2">Інше</option></select>'
+        + '<input id="ei_feePct" value="'+(feePctOf(p)*100).toFixed(2).replace(/\.?0+$/,'')+'" type="number" step="0.1" min="0" max="100" placeholder="Комісія %" style="'+inpStyle+'">'
         + '<div style="display:flex;gap:8px"><input id="ei_buy" value="'+(p.buy||0).toFixed(2)+'" type="number" step="0.01" placeholder="Купив" style="'+inpStyle+';flex:1"><input id="ei_sell" value="'+(p.sell||0).toFixed(2)+'" type="number" step="0.01" placeholder="Продав" style="'+inpStyle+';flex:1"></div>'
         + '<div style="display:flex;gap:8px">'
         + '<button onclick="saveEdit('+p.id+')" style="flex:1;background:var(--gr);border:none;color:#000;padding:9px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700">✓ Зберегти</button>'
@@ -3254,13 +3291,15 @@ async function saveEdit(id){
   const buy  = parseFloat(g('ei_buy').value)||0;
   const sell = parseFloat(g('ei_sell').value)||0;
   const plat = g('ei_plat').value;
-  const fee  = FEES[plat]||0;
+  const feeRaw = parseFloat(g('ei_feePct')?.value);
+  const fee  = Number.isFinite(feeRaw) ? Math.max(0, Math.min(100, feeRaw))/100 : defaultFeePct(plat);
   p.title    = g('ei_title').value.trim();
   p.date     = g('ei_date').value;
   p.buy      = buy;
   p.sell     = sell;
   p.src      = plat;
-  p.srcName  = plat==='zeusx'?'ZeusX':plat==='funpay'?'FunPay':t('f.other2');
+  p.srcName  = plat==='zeusx'?'ZeusX':plat==='funpay'?'FunPay':plat==='eldorado'?'Eldorado':t('f.other2');
+  p.feePct   = Math.round(fee*1000000)/1000000;
   p.afterFee = Math.round((sell*(1-fee)-buy)*10000)/10000;
   _editId    = null;
   await savePL(); renderPurchases();
@@ -3311,8 +3350,9 @@ function exportCSV(){
   // CSV тільки P&L (поточний фільтр)
   const rows=[[t('th.date'),t('inv.name'),t('f.platform'),t('th.buy')+' $',t('th.sell')+' $',t('th.fee')+' $',t('an.profit')+' $']];
   plFilt.forEach(p=>{
-    const fee=(p.sell||0)*(FEES[p.src]||0);
-    const profit=p.afterFee!=null?p.afterFee:((p.sell||0)*(1-(FEES[p.src]||0))-(p.buy||0));
+    const _fp=feePctOf(p);
+    const fee=(p.sell||0)*_fp;
+    const profit=p.afterFee!=null?p.afterFee:((p.sell||0)*(1-_fp)-(p.buy||0));
     rows.push([p.date||'',p.title||'',p.srcName||p.src,(p.buy||0).toFixed(2),(p.sell||0).toFixed(2),fee.toFixed(2),profit.toFixed(2)]);
   });
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -3365,8 +3405,9 @@ async function exportFullExcel(){
 
   const plRows=[[X.date,X.name,X.platform,X.buy,X.sell,X.fee,X.profit]];
   purchases.forEach(p=>{
-    const fee=(p.sell||0)*(FEES[p.src]||0);
-    const profit=p.afterFee!=null?p.afterFee:((p.sell||0)*(1-(FEES[p.src]||0))-(p.buy||0));
+    const _fp=feePctOf(p);
+    const fee=(p.sell||0)*_fp;
+    const profit=p.afterFee!=null?p.afterFee:((p.sell||0)*(1-_fp)-(p.buy||0));
     plRows.push([p.date||'',p.title||'',p.srcName||p.src,
       parseFloat((p.buy||0).toFixed(2)),parseFloat((p.sell||0).toFixed(2)),
       parseFloat(fee.toFixed(2)),parseFloat(profit.toFixed(2))]);
@@ -3374,7 +3415,7 @@ async function exportFullExcel(){
   const totSell=purchases.reduce((s,p)=>s+(p.sell||0),0);
   const totBuy=purchases.reduce((s,p)=>s+(p.buy||0),0);
   const totProfit=purchases.reduce((s,p)=>s+(p.afterFee||0),0);
-  const totFee=purchases.reduce((s,p)=>s+(p.sell||0)*(FEES[p.src]||0),0);
+  const totFee=purchases.reduce((s,p)=>s+(p.sell||0)*feePctOf(p),0);
   plRows.push([]);
   plRows.push(['','',X.total,parseFloat(totBuy.toFixed(2)),parseFloat(totSell.toFixed(2)),parseFloat(totFee.toFixed(2)),parseFloat(totProfit.toFixed(2))]);
   const wsP=XLSX.utils.aoa_to_sheet(plRows);

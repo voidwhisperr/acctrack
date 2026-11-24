@@ -255,6 +255,44 @@ def _fnum(value, field, minimum=0.0, maximum=1e9, default=0.0):
     return num
 
 
+def _fee_pct_of(rec, default=None):
+    """Частка комісії для запису P&L (0…1).
+
+    Нові записи зберігають feePct. Для старих записів без feePct
+    відновлюємо частку з afterFee, щоб історія не змінювалася після
+    зміни дефолтних ставок. Якщо нічого не відомо — беремо default.
+    """
+    if not isinstance(rec, dict):
+        return 0.0 if default is None else default
+    raw = rec.get("feePct")
+    if raw not in (None, ""):
+        try:
+            v = float(raw)
+            if 1.0 < v <= 100.0:
+                v /= 100.0
+            if 0.0 <= v <= 1.0:
+                return v
+        except (TypeError, ValueError):
+            pass
+    src = str(rec.get("src") or "")
+    base = PLATFORM_FEES.get(src, 0.0) if default is None else default
+    after = rec.get("afterFee")
+    if after in (None, ""):
+        return base
+    try:
+        sell = float(rec.get("sell") or 0)
+        buy = float(rec.get("buy") or 0)
+        aft = float(after)
+    except (TypeError, ValueError):
+        return base
+    if sell <= 0:
+        return base
+    v = (sell - buy - aft) / sell
+    if 0.0 <= v <= 1.0:
+        return v
+    return base
+
+
 _EMOJI_RE = re.compile(r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F]+\s*")
 
 
@@ -282,19 +320,19 @@ def _clean_pl(data):
         date = str(rec.get("date") or "")[:10]
         if not _is_date(date):
             raise ValueError(f"запис #{i + 1}: дата має бути YYYY-MM-DD")
-        fee = PLATFORM_FEES.get(src, 0.0)
-        after = rec.get("afterFee")
-        after = (round(sell * (1 - fee) - buy, 6) if after is None
-                 else _fnum(after, f"запис #{i + 1} afterFee", -1e9))
+        fee_pct = _fee_pct_of({**rec, "src": src, "sell": sell, "buy": buy},
+                              PLATFORM_FEES.get(src, 0.0))
+        after = round(sell * (1 - fee_pct) - buy, 6)
         out.append({
             **{k: v for k, v in rec.items() if k not in
-               ("id", "title", "src", "srcName", "buy", "sell", "afterFee", "qty", "date", "platform")},
+               ("id", "title", "src", "srcName", "buy", "sell", "afterFee", "feePct", "qty", "date", "platform")},
             "id": rid,
             "title": str(rec.get("title") or "")[:500],
             "src": src,
             "srcName": _strip_emoji(str(rec.get("srcName") or src))[:64],
             "buy": round(buy, 6),
             "sell": round(sell, 6),
+            "feePct": round(fee_pct, 6),
             "afterFee": after,
             "qty": int(_fnum(rec.get("qty"), "qty", 0, 1e6, 1) or 1),
             "date": date,
@@ -1032,9 +1070,12 @@ def _bot_stats():
             if profit_key:
                 prof += float(r.get(profit_key) or 0)
             else:
-                src = str(r.get("src") or "")
-                fee = float(r.get("afterFee") or 0) - float(r.get("sell") or 0)
-                prof += float(r.get("sell") or 0) + fee - float(r.get("buy") or 0)
+                after = r.get("afterFee")
+                if after not in (None, ""):
+                    prof += float(after)
+                else:
+                    sell = float(r.get("sell") or 0)
+                    prof += sell * (1 - _fee_pct_of(r)) - float(r.get("buy") or 0)
         return n, sell, prof
     def block(label, pred):
         rows_pl = [r for r in pl if pred(str(r.get("date") or ""))]
@@ -2949,7 +2990,7 @@ def _analytics():
             sell = float(r.get("sell") or 0); buy = float(r.get("buy") or 0)
         except Exception:
             sell = buy = 0.0
-        fee = round(sell * PLATFORM_FEES.get(str(r.get("src") or ""), 0.0), 2)
+        fee = round(sell * _fee_pct_of(r), 2)
         add(_game_of(r.get("title")), str(r.get("date") or "")[:7] or "?",
             sell, round(sell - buy - fee, 2))
     for r in (ed if isinstance(ed, list) else []):
@@ -3177,8 +3218,7 @@ def _month_report(month=""):
     pl_buy = round(sum(num(r.get("buy")) for r in pl), 2)
     # afterFee вже = sell - fee - buy, тому комісію НЕ можна рахувати як sell - afterFee
     # (інакше в комісії опиняється закупівля, а прибуток зменшується вдвічі).
-    pl_fee = round(sum(num(r.get("sell")) * PLATFORM_FEES.get(str(r.get("src") or ""), 0.0)
-                       for r in pl), 2)
+    pl_fee = round(sum(num(r.get("sell")) * _fee_pct_of(r) for r in pl), 2)
     pl_profit = pl_after
 
     ed_rev = round(sum(num(r.get("price")) for r in ed), 2)
@@ -3708,7 +3748,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.0.1", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png")
@@ -3808,13 +3848,18 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 head = ["date", "title", "platform", "buy", "sell", "qty", "afterFee", "profit"]
                 for r in (data if isinstance(data, list) else []):
                     try:
-                        pr = round(float(r.get("sell") or 0) - float(r.get("buy") or 0), 2)
+                        sell = float(r.get("sell") or 0)
+                        buy = float(r.get("buy") or 0)
+                        aft = r.get("afterFee")
+                        pr = (float(aft) if aft not in (None, "")
+                              else round(sell * (1 - _fee_pct_of(r)) - buy, 2))
                     except Exception:
+                        sell = buy = 0
                         pr = 0
                     rows.append([r.get("date", ""), r.get("title", ""),
                                  r.get("srcName") or r.get("platform") or "",
                                  r.get("buy", 0), r.get("sell", 0), r.get("qty", 1),
-                                 r.get("afterFee", 0), pr])
+                                 r.get("afterFee", 0), round(pr, 2)])
             else:
                 data = _read_json(ED_FILE, []) or []
                 head = ["date", "title", "price", "buy", "fee", "profit", "orderId"]
@@ -4029,7 +4074,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.0",
+            self._json({"ok": True, "version": "1.0.1",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -4511,7 +4556,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                          "title": ("title", "назва", "название", "name", "гра", "игра"),
                          "buy": ("buy", "купів", "купил", "закупка", "cost"),
                          "sell": ("sell", "продав", "продал", "price", "ціна", "цена"),
-                         "platform": ("platform", "платформа", "src", "канал")}
+                         "platform": ("platform", "платформа", "src", "канал"),
+                         "feePct": ("feepct", "fee_pct", "fee%", "fee", "комісія", "комиссия", "ставка"),
+                         "afterFee": ("afterfee", "after_fee", "після комісії", "после комиссии")}
                 def pick(row, key):
                     for k, v in row.items():
                         if not k:
@@ -4539,12 +4586,31 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                                 "eldorado" if "eld" in plat_raw or "ель" in plat_raw else "other")
                         src_name = {"zeusx": "ZeusX", "funpay": "FunPay",
                                     "eldorado": "Eldorado", "other": "Інше"}[plat]
-                        fee = PLATFORM_FEES.get(plat, 0.0)
+                        fee_pct = None
+                        fee_raw = pick(row, "feePct").replace("%", "").replace(",", ".").strip()
+                        if fee_raw:
+                            try:
+                                fee_pct = float(fee_raw)
+                                if fee_pct > 1:
+                                    fee_pct /= 100.0
+                                fee_pct = max(0.0, min(1.0, fee_pct))
+                            except ValueError:
+                                fee_pct = None
+                        after_raw = pick(row, "afterFee").replace(",", ".").replace("$", "").strip()
+                        after_fee = None
+                        if after_raw:
+                            try:
+                                after_fee = float(after_raw)
+                            except ValueError:
+                                after_fee = None
+                        if fee_pct is None and after_fee is None:
+                            fee_pct = PLATFORM_FEES.get(plat, 0.0)
                         cur.append({"id": int(time.time() * 1000) + i, "date": d_,
                                     "title": pick(row, "title")[:120] or "—",
                                     "src": plat, "srcName": src_name, "qty": 1,
                                     "platform": plat, "buy": buy, "sell": sell,
-                                    "afterFee": round(sell * (1 - fee) - buy, 4)})
+                                    **({"feePct": round(fee_pct, 6)} if fee_pct is not None else {}),
+                                    **({"afterFee": round(after_fee, 4)} if after_fee is not None else {})})
                         added += 1
                     except Exception as e:
                         errs.append("рядок %d: %s" % (i, str(e)[:40]))
@@ -5116,7 +5182,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.0")
+    print("  ▲  AccTrack v1.0.1")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

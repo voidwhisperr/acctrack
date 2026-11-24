@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.0.1 — custom marketplace fees
+
+### Added
+- **Per-deal commission**: every P&L record stores its own fee percentage, so historical deals keep the rate they were entered with.
+- **Editable fee in the add form**: changing the marketplace pre-fills its default, but the user can override it before saving.
+- **Editable fee when editing a deal**: existing deals can be corrected without deleting and re-adding them.
+- **Custom "Other" fee**: any percentage from 0% to 100% for non-standard marketplaces.
+- **CSV import**: optional `fee` / `feePct` / `afterFee` columns are recognised; `9.5` and `9.5%` are both accepted.
+- Defaults still come from `PLATFORM_FEES`, but they are no longer hard-coded into reports or totals.
+
+### Fixed
+- Marketplace fees are now read from the record instead of the global default, so changing a default no longer rewrites history.
+- Old records without `feePct` recover their rate from `afterFee` on save.
+- P&L totals, monthly report, analytics, CSV/Excel exports, and row cards all use the per-record fee.
+
 ## v1.0.0 — first public release
 
 First stable public release of AccTrack: manual bookkeeping by default, tokens optional.
