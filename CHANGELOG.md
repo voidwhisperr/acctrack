@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.13.0 — payout rules
+
+- Configurable payout hold days per platform (G2G, Gameflip, PlayerAuctions, ZeusX, FunPay, Eldorado, other).
+- New Hold gets an automatic Available date from the sale date + platform rule.
+- Manual available date still overrides the rule.
+
 ## v1.12.0 — payout reconciliation
 
 - Payout CSV matches open Hold/Available entries by order, then by platform + amount.

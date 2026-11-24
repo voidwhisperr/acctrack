@@ -224,6 +224,8 @@ def _read_json_strict(path, default):
 PLATFORM_FEES = {"zeusx": 0.10, "funpay": 0.10, "eldorado": 0.10, "other": 0.0,
                  "g2g": 0.08, "gameflip": 0.10, "pa": 0.13}
 PAYOUT_FEES   = {"zeusx": 0.015, "funpay": 0.055, "g2g": 0.02, "gameflip": 0.0, "pa": 0.02}
+PAYOUT_DAYS_DEFAULT = {"g2g": 7, "gameflip": 3, "pa": 7, "zeusx": 3,
+                       "funpay": 3, "eldorado": 3, "other": 3}
 ED_FEE        = 0.10
 
 DEFAULT_PLATFORM_FEES = dict(PLATFORM_FEES)
@@ -4223,7 +4225,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.12.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.13.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4505,6 +4507,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "digest_hour": int(st.get("digest_hour") if st.get("digest_hour") is not None else 9),
                 "deal_x": float(st.get("deal_x") or 5),
                 "price_targets": st.get("price_targets") or [],
+                "payout_days": {**PAYOUT_DAYS_DEFAULT, **(st.get("payout_days") or {})},
                 "digest_last": str(st.get("digest_last") or ""),
                 "alerts_only_my_games": bool(st.get("alerts_only_my_games", True)),
                 "notify": {k: bool(st.get("notify_" + k, v))
@@ -4600,7 +4603,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.12.0",
+            self._json({"ok": True, "version": "1.13.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5048,6 +5051,14 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         st["taobao_min_cny"] = round(_fnum(body.get("taobao_min_cny"), "taobao_min_cny", 0, 10000), 2)
                     if "deal_x" in body:
                         st["deal_x"] = round(_fnum(body.get("deal_x"), "deal_x", 1, 100), 1)
+                    if isinstance(body.get("payout_days"), dict):
+                        pd = {}
+                        for k in PAYOUT_DAYS_DEFAULT:
+                            try:
+                                pd[k] = max(0, min(90, int(body["payout_days"].get(k, PAYOUT_DAYS_DEFAULT[k]))))
+                            except (TypeError, ValueError):
+                                pd[k] = PAYOUT_DAYS_DEFAULT[k]
+                        st["payout_days"] = pd
                     if isinstance(body.get("price_targets"), list):
                         old_last = {str(t.get("q")): t.get("last") for t in (st.get("price_targets") or [])
                                     if isinstance(t, dict)}
@@ -5478,13 +5489,22 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 status = str(body.get("status") or "hold").lower()
                 if status not in ("hold", "available", "withdrawn"):
                     status = "hold"
+                _date = str(body.get("date") or datetime.date.today().isoformat())[:10]
+                _ad = str(body.get("availableDate") or "")[:10]
+                if not _ad and status == "hold":
+                    try:
+                        _pd = (_read_json(SETTINGS_FILE, {}) or {}).get("payout_days") or {}
+                        _days = int(_pd.get(platform, PAYOUT_DAYS_DEFAULT.get(platform, 3)))
+                        _ad = (datetime.date.fromisoformat(_date) + datetime.timedelta(days=max(0, min(90, _days)))).isoformat()
+                    except Exception:
+                        _ad = ""
                 rec = {"id": "cf-" + str(int(time.time() * 1000)),
                        "platform": platform, "amount": amount, "status": status,
-                       "date": str(body.get("date") or datetime.date.today().isoformat())[:10],
+                       "date": _date,
                        "note": str(body.get("note") or "")[:200], "ts": int(time.time()),
                        "saleId": str(body.get("saleId") or "")[:80],
                        "order": str(body.get("order") or "")[:80],
-                       "availableDate": str(body.get("availableDate") or "")[:10]}
+                       "availableDate": _ad}
                 with _WRITE_LOCK:
                     items = _read_json(CASHFLOW_FILE, []) or []
                     if not isinstance(items, list):
@@ -5897,7 +5917,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.12.0")
+    print("  ▲  AccTrack v1.13.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

@@ -1122,6 +1122,20 @@ code{
       <button class="btn gr" onclick="cashflowAdd()">＋ Додати</button>
       <label class="btn" style="font-size:11px;cursor:pointer">⬆ Payout CSV<input id="cfImport" type="file" accept=".csv,text/csv" onchange="importCashflowCsv(this)" style="display:none"></label>
     </div>
+    <details style="margin-bottom:10px;font-size:11px;color:var(--mu)">
+      <summary style="cursor:pointer;font-weight:700">⚙ Правила payout (днів до Available)</summary>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:7px" id="pdRules">
+        <label>G2G <input id="pd_g2g" type="number" min="0" max="90" style="width:56px"></label>
+        <label>Gameflip <input id="pd_gameflip" type="number" min="0" max="90" style="width:56px"></label>
+        <label>PA <input id="pd_pa" type="number" min="0" max="90" style="width:56px"></label>
+        <label>ZeusX <input id="pd_zeusx" type="number" min="0" max="90" style="width:56px"></label>
+        <label>FunPay <input id="pd_funpay" type="number" min="0" max="90" style="width:56px"></label>
+        <label>Eldorado <input id="pd_eldorado" type="number" min="0" max="90" style="width:56px"></label>
+        <label>Інше <input id="pd_other" type="number" min="0" max="90" style="width:56px"></label>
+        <button class="btn" style="font-size:11px;padding:4px 9px" onclick="savePayoutRules()">Зберегти</button>
+        <span>Дата в полі «Доступно з» має пріоритет.</span>
+      </div>
+    </details>
     <div id="cfList"><div class="none">⏳ …</div></div>
   </div>
   <div class="panel" style="margin-bottom:14px">
@@ -3284,6 +3298,9 @@ async function loadSettings(){
     }
     if(g('cloudDir')) g('cloudDir').value = d.cloud_dir || '';
     if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
+    ['g2g','gameflip','pa','zeusx','funpay','eldorado','other'].forEach(k=>{
+      const el=g('pd_'+k); if(el) el.value=(d.payout_days&&d.payout_days[k]!=null)?d.payout_days[k]:3;
+    });
     if(g('cloudInfo')) g('cloudInfo').innerHTML = d.cloud_effective
       ? ((LANG==='ru'?'Копирование в: ':LANG==='en'?'Copying to: ':'Копіювання у: ')+'<code>'+esc(d.cloud_effective)+'</code> '+(d.cloud_exists?'✓':(LANG==='ru'?'· папка создастся при бэкапе':LANG==='en'?'· folder will be created on backup':'· папка створиться при бекапі')))
       : (LANG==='ru'?'⚠ Облако не найдено — укажи папку вручную':LANG==='en'?'⚠ Cloud folder not found — set it manually':'⚠ Хмару не знайдено — вкажи папку вручну');
@@ -4154,6 +4171,16 @@ async function cashflowAdd(){
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     g('cfAmount').value=''; g('cfNote').value='';
     await loadCashflow();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function savePayoutRules(){
+  const days={};
+  ['g2g','gameflip','pa','zeusx','funpay','eldorado','other'].forEach(k=>{
+    const v=parseInt(g('pd_'+k)?.value||'3'); days[k]=Number.isFinite(v)?Math.max(0,Math.min(90,v)):3;
+  });
+  try{
+    const d=await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({payout_days:days})}).then(r=>r.json());
+    toast(d.ok?'✅ Правила payout збережено':'⚠ '+(d.error||''), !!d.ok);
   }catch(e){ toast('⚠ '+e, false); }
 }
 async function importCashflowCsv(input){
@@ -6172,6 +6199,9 @@ async function loadAnalytics(){
     if(g('stDigestHour') && st.digest_hour != null) g('stDigestHour').value = st.digest_hour;
     if(g('stDealX') && st.deal_x != null) g('stDealX').value = st.deal_x;
     if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
+    ['g2g','gameflip','pa','zeusx','funpay','eldorado','other'].forEach(k=>{
+      const el=g('pd_'+k); if(el) el.value=(d.payout_days&&d.payout_days[k]!=null)?d.payout_days[k]:3;
+    });
     if(g('targetPrices')){
       g('targetPrices').value = (st.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
     }
