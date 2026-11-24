@@ -2335,6 +2335,10 @@ async function refreshActiveTab(){
 async function setLang(l){
   LANG = (l==='en') ? 'en' : (l==='ru' ? 'ru' : 'uk');
   try{ localStorage.setItem('gt_lang', LANG); }catch(e){}
+  const _autoLang = !_currencyManual;
+  if(_autoLang){
+    _cur = ({uk:'UAH', en:'USD', ru:'RUB'})[LANG] || _cur;
+  }
   applyLang();
   try{ applyCurrency(); }catch(e){}
   try{ loadAudit(); }catch(e){}
@@ -2343,7 +2347,8 @@ async function setLang(l){
   try{ renderPurchases(); if(typeof renderEldorado==='function') renderEldorado(); }catch(e){}
   try{ translateAll(); }catch(e){}
   try{ await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({lang: LANG})}); }catch(e){}
+        body: JSON.stringify(_autoLang ? {lang: LANG, currency: _cur} : {lang: LANG})}); }catch(e){}
+  if(_autoLang){ try{ await refreshRate(); }catch(e){} }
   try{ await refreshActiveTab(); }catch(e){}
 }
 
@@ -2861,6 +2866,7 @@ const CUR_SYM = {UAH:'₴', EUR:'€', USD:'$', PLN:'zł', CZK:'Kč', TRY:'₺',
   BRL:'R$', MXN:'MX$', ZAR:'R', SEK:'kr', NOK:'kr', DKK:'kr', ILS:'₪', AED:'د.إ', SAR:'﷼'};
 const CURRENCIES = ['USD','EUR','GBP','UAH','PLN','CZK','TRY','CHF','CAD','AUD','NZD','JPY','CNY','HKD','SGD','INR','KRW','BRL','MXN','ZAR','SEK','NOK','DKK','ILS','AED','SAR','KZT','GEL','RUB'];
 let _cur = 'USD';
+let _currencyManual = false;
 function curSym(){ return CUR_SYM[_cur] || _cur; }
 function currencyOptions(sel){
   return CURRENCIES.map(c=>'<option value="'+c+'"'+(c===sel?' selected':'')+'>'+c+' '+(CUR_SYM[c]||'')+'</option>').join('');
@@ -2929,10 +2935,11 @@ function applyCurrency(){
 }
 async function pickCurrency(){
   _cur = (g('curSel') && g('curSel').value) || 'USD';
+  _currencyManual = true;
   applyCurrency();
   try{
     await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({currency: _cur})});
+      body: JSON.stringify({currency: _cur, currency_manual: true})});
     await refreshRate();
     setTimeout(()=>location.reload(),300);
   }catch(e){}
@@ -3060,6 +3067,7 @@ async function loadSettings(){
     const d = await fetch('/api/settings').then(r=>r.json());
     _rate = parseFloat(d.usd_uah)||0;
     if(d.currency) _cur = d.currency;
+    _currencyManual = !!d.currency_manual;
     applyCurrency();
     if(g('rateVal')) g('rateVal').value = _rate ? _rate.toFixed(2) : '';
     if(g('rateInfo')) g('rateInfo').textContent = d.rate_ts
@@ -3109,6 +3117,16 @@ async function loadSettings(){
     }
   if(d.lang && d.lang !== LANG){ LANG = d.lang; try{ localStorage.setItem('gt_lang', LANG); }catch(e){} }
   applyLang();
+  if(!_currencyManual){
+    const _autoCur = ({uk:'UAH', en:'USD', ru:'RUB'})[LANG] || _cur;
+    if(_autoCur !== _cur){
+      _cur = _autoCur;
+      try{ fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({currency:_cur})}); }catch(e){}
+      applyCurrency();
+      setTimeout(()=>{ try{ refreshRate(); }catch(e){} }, 150);
+    }
+  }
   try{ load2FA(); }catch(e){}
   try{ loadAudit(); }catch(e){}
   if(g('tgEnabled')) g('tgEnabled').checked = !!tg.enabled;
@@ -4861,12 +4879,12 @@ function onbSetLang(l){
   }
   onbRender();
 }
-function onbSetCurrency(v){ _onbCurManual = true; _cur = v || 'USD'; applyCurrency(); }
+function onbSetCurrency(v){ _onbCurManual = true; _currencyManual = true; _cur = v || 'USD'; applyCurrency(); }
 function onbDone(){
   _onboarded = true;
   try{ localStorage.setItem('gt_onboarded','1'); }catch(e){}
   try{ fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({onboarded: true, currency: _cur})})
+        body: JSON.stringify({onboarded: true, currency: _cur, currency_manual: _onbCurManual})})
         .then(()=>{ try{ refreshRate(); }catch(e){} }); }catch(e){}
   const el = g('onb'); if(el) el.style.display = 'none';
   try{ renderOverview(); }catch(e){}

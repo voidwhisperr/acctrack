@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.5 — currency follows language
+
+- Switching UI language maps UA→UAH, EN→USD, RU→RUB when currency was not manually chosen.
+- Manual currency selection now persists via `currency_manual` and is not overridden.
+- Live backend now stores and returns currency.
+
 ## v1.4.4 — readable schedule settings
 
 - Each schedule field now explains what it controls and what a safe value means.

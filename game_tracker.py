@@ -4023,7 +4023,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.4.4", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.4.5", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4307,6 +4307,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "scraper_limit": int(st.get("scraper_limit") or _scraper_state.get("limit") or 30),
                 "usd_uah": rate,
                 "currency": str((_read_json(SETTINGS_FILE, {}) or {}).get("currency") or "USD").upper()[:3],
+                "currency_manual": bool(st.get("currency_manual")),
                 "rate_ts": ts,
                 "rate_source": src,
                 "cloud_dir": st.get("cloud_dir") or "",
@@ -4381,7 +4382,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.4.4",
+            self._json({"ok": True, "version": "1.4.5",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -4783,6 +4784,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         _c = str(body.get("currency") or "USD").upper()[:3]
                         if _c.isalpha():
                             st["currency"] = _c
+                    if "currency_manual" in body:
+                        st["currency_manual"] = bool(body.get("currency_manual"))
                     if "app_name" in body:
                         st["app_name"] = (str(body.get("app_name") or "").strip()[:32] or "AccTrack")
                     if "zeusx_tier" in body:
@@ -5602,7 +5605,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.4.4")
+    print("  ▲  Ledger v1.4.5")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 
