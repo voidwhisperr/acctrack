@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.4.1 — currency applied to displayed amounts
+
+### Fixed
+- Selecting a currency now converts displayed amounts across the dashboard, deals, analytics, inventory and channels.
+- Currency switch reloads the page, so values are not double-converted.
+- Form inputs remain in USD; a note explains that display is in the selected currency.
+
 ## v1.4.0 — recovery, devices, updates, encryption
 
 ### Added

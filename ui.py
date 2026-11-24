@@ -556,6 +556,7 @@ code{
   <!-- Додати запис -->
   <div class="panel">
     <div class="ph"><span data-i18n="ph.newDeal">+ НОВИЙ ПРОДАЖ</span></div>
+    <div style="font-size:10.5px;color:var(--mu);margin:-6px 0 10px">Введення та збереження — у USD. Показ сум — в обраній валюті.</div>
     <div id="invSellBanner" style="display:none;margin:0 0 10px;padding:8px 11px;border:1px solid var(--gr);border-radius:8px;background:color-mix(in srgb,var(--gr) 8%,transparent);font-size:12px;display:none;align-items:center;gap:8px">
       <span>📦 <b data-i18n="inv.sellFromStock">Продаж зі складу:</b> <span id="invSellText"></span></span>
       <button class="btn" style="margin-left:auto;padding:3px 8px;font-size:11px" onclick="clearInvSell()">✕</button>
@@ -2792,13 +2793,61 @@ function initCurrencySelects(){
 function fmtUah(usd){
   return _rate ? curSym()+(usd*_rate).toFixed(2) : '';
 }
+let _moneyNodes=[];
+let _moneyOrig=new WeakMap();
+let _moneyTimer=null;
+function _canMoneyNode(node){
+  const el=node && node.parentElement;
+  if(!el) return false;
+  if(el.closest('script,style,input,textarea,select,option,code,pre')) return false;
+  return true;
+}
+function _moneyConvertNode(node){
+  if(!_canMoneyNode(node)) return;
+  const txt=node.nodeValue||'';
+  if(txt.indexOf('$') < 0) return;
+  const rate=parseFloat(_rate)||0;
+  if(!rate || _cur==='USD') return;
+  const re=/\$(\d[\d,]*(?:\.\d+)?)/g;
+  if(!re.test(txt)) return;
+  _moneyOrig.set(node, txt);
+  _moneyNodes.push(node);
+  node.nodeValue=txt.replace(re,(m,num)=>{
+    const v=(parseFloat(num.replace(/,/g,''))||0)*rate;
+    return curSym()+v.toFixed(2);
+  });
+}
+function convertMoneyText(root){
+  if(_cur==='USD' || !_rate) return;
+  const base=root||document.body;
+  if(!base) return;
+  if(base.nodeType===3){ _moneyConvertNode(base); return; }
+  const w=document.createTreeWalker(base, NodeFilter.SHOW_TEXT, null);
+  let n; while((n=w.nextNode())) _moneyConvertNode(n);
+}
+function restoreMoneyText(){
+  _moneyNodes.forEach(n=>{
+    try{ if(n.isConnected && _moneyOrig.has(n)) n.nodeValue=_moneyOrig.get(n); }catch(e){}
+  });
+  _moneyNodes=[]; _moneyOrig=new WeakMap();
+}
+function scheduleMoneyConvert(){
+  clearTimeout(_moneyTimer);
+  _moneyTimer=setTimeout(()=>{ try{ convertMoneyText(document.body); }catch(e){} }, 40);
+}
+try{
+  const mo=new MutationObserver(()=>scheduleMoneyConvert());
+  mo.observe(document.body,{childList:true,subtree:true,characterData:true});
+}catch(e){}
 function applyCurrency(){
+  restoreMoneyText();
   initCurrencySelects();
   if(g('curSel')) g('curSel').value = _cur;
   const s = curSym();
   const L = ({uk:{t:'ВАЛЮТА',l:'КУРС (',p:' за $1)'},en:{t:'CURRENCY',l:'RATE (',p:' per $1)'},ru:{t:'ВАЛЮТА',l:'КУРС (',p:' за $1)'}})[LANG] || {t:'CURRENCY',l:'RATE (',p:' per $1)'};
   if(g('rateLbl')) g('rateLbl').textContent = L.l + s + L.p;
   if(g('rateTitle')) g('rateTitle').textContent = _cur==='USD' ? (L.t+' · USD') : (L.t+' · USD → '+_cur);
+  scheduleMoneyConvert();
 }
 async function pickCurrency(){
   _cur = (g('curSel') && g('curSel').value) || 'USD';
@@ -2807,6 +2856,7 @@ async function pickCurrency(){
     await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
       body: JSON.stringify({currency: _cur})});
     await refreshRate();
+    setTimeout(()=>location.reload(),300);
   }catch(e){}
 }
 
@@ -3043,7 +3093,7 @@ async function refreshRate(){
     }
     toast(t('cur.nbu'));
     const d = await fetch('/api/rate?refresh=1').then(r=>r.json());
-    if(d.ok){ _rate = parseFloat(d.usd_uah)||0; toast(t('cur.refreshed')+' '+_rate.toFixed(2)+' '+curSym()); await loadSettings(); }
+    if(d.ok){ _rate = parseFloat(d.usd_uah)||0; toast(t('cur.refreshed')+' '+_rate.toFixed(2)+' '+curSym()); restoreMoneyText(); await loadSettings(); scheduleMoneyConvert(); }
     else toast(t('cur.nbuFail'), false);
   }catch(e){ toast('⚠ '+e, false); }
 }
