@@ -539,6 +539,13 @@ def _totp_verify(code):
     return _totp_verify_secret(secret, code)
 
 
+def _device_version():
+    try:
+        return str(int((_read_json(SECRETS_FILE, {}) or {}).get("device_version") or 0))
+    except Exception:
+        return "0"
+
+
 def _totp_new_secret():
     return base64.b32encode(os.urandom(20)).decode("ascii").rstrip("=")
 
@@ -547,6 +554,41 @@ def _totp_uri(secret):
     label = urllib.parse.quote("AccTrack:" + str(AUTH_USER or "admin"))
     return ("otpauth://totp/%s?secret=%s&issuer=AccTrack&digits=6&period=30"
             % (label, secret))
+
+
+def _recovery_norm(code):
+    return re.sub(r"[^A-Z0-9]", "", str(code or "").upper())
+
+
+def _recovery_hash(code):
+    return hashlib.sha256(_recovery_norm(code).encode("utf-8")).hexdigest()
+
+
+def _recovery_generate(count=8):
+    """Генерує одноразові recovery-коди; у файлі зберігаються лише хеші."""
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    codes, hashes = [], []
+    for _ in range(count):
+        raw = "".join(random.choice(alphabet) for _ in range(8))
+        code = raw[:4] + "-" + raw[4:]
+        codes.append(code)
+        hashes.append(_recovery_hash(code))
+    _save_secrets({"totp_recovery": hashes})
+    return codes
+
+
+def _recovery_consume(code):
+    norm = _recovery_norm(code)
+    if len(norm) != 8:
+        return False
+    h = _recovery_hash(code)
+    s = _read_json(SECRETS_FILE, {}) or {}
+    rows = list(s.get("totp_recovery") or [])
+    if h not in rows:
+        return False
+    rows.remove(h)
+    _save_secrets({"totp_recovery": rows})
+    return True
 
 
 def _load_extra_suppliers():
@@ -1087,7 +1129,7 @@ button:disabled{opacity:.55;cursor:default}
   <h1 id="t1">Sign in</h1>
   <p id="t2">Enter the password. This device stays signed in for a year.</p>
   <input id="pw" type="password" placeholder="Password" autofocus autocomplete="current-password">
-  <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="2FA code (if enabled)" autocomplete="one-time-code" style="letter-spacing:.18em">
+  <input id="otp" type="text" inputmode="text" maxlength="20" placeholder="2FA code or recovery code" autocomplete="one-time-code" style="letter-spacing:.12em">
   <button id="btn" type="submit">Continue</button>
   <div class="err" id="err"></div>
   <div class="lang">
@@ -1910,11 +1952,21 @@ def _get_rate(force=False):
             rate = float(data[0]["rate"])
             src = "nbu"
         else:
-            url = ("https://api.frankfurter.app/latest?from=USD&to=" + cur)
-            with urllib.request.urlopen(url, timeout=10) as r:
-                data = json.loads(r.read().decode("utf-8", "replace"))
-            rate = float((data.get("rates") or {}).get(cur) or 0)
+            rate = 0.0
             src = "frankfurter"
+            try:
+                url = ("https://api.frankfurter.app/latest?from=USD&to=" + cur)
+                with urllib.request.urlopen(url, timeout=10) as r:
+                    data = json.loads(r.read().decode("utf-8", "replace"))
+                rate = float((data.get("rates") or {}).get(cur) or 0)
+            except Exception:
+                rate = 0.0
+            if not rate:
+                url2 = "https://open.er-api.com/v6/latest/USD"
+                with urllib.request.urlopen(url2, timeout=10) as r:
+                    data2 = json.loads(r.read().decode("utf-8", "replace"))
+                rate = float((data2.get("rates") or {}).get(cur) or 0)
+                src = "er-api"
             if not rate:
                 return rate or 0.0, time.time(), "manual"
         ts = time.time()
@@ -3499,6 +3551,47 @@ def _report_csv(rep, lang="uk"):
     return "\ufeff" + buf.getvalue()
 
 
+ENC_MAGIC = b"LEDGER-ENC-1\n"
+
+
+def _encrypt_backup(raw, password):
+    if len(str(password or "")) < 4:
+        raise ValueError("пароль закороткий (мін. 4)")
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        from cryptography.hazmat.primitives import hashes
+    except Exception:
+        raise ValueError("для шифрування потрібен пакет cryptography")
+    salt = os.urandom(16)
+    nonce = os.urandom(12)
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=200000)
+    key = kdf.derive(str(password).encode("utf-8"))
+    ct = AESGCM(key).encrypt(nonce, raw, ENC_MAGIC + salt)
+    return ENC_MAGIC + salt + nonce + ct
+
+
+def _decrypt_backup(raw, password):
+    if not raw.startswith(ENC_MAGIC):
+        return raw
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        from cryptography.hazmat.primitives import hashes
+    except Exception:
+        raise ValueError("для розшифрування потрібен пакет cryptography")
+    body = raw[len(ENC_MAGIC):]
+    if len(body) < 29:
+        raise ValueError("пошкоджений зашифрований бекап")
+    salt, nonce, ct = body[:16], body[16:28], body[28:]
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=200000)
+    key = kdf.derive(str(password or "").encode("utf-8"))
+    try:
+        return AESGCM(key).decrypt(nonce, ct, ENC_MAGIC + salt)
+    except Exception:
+        raise ValueError("невірний пароль або пошкоджений файл")
+
+
 def _build_backup_zip():
     """zip з P&L + ELDORADO + ціль + налаштування + manifest sha256.
 
@@ -3529,10 +3622,11 @@ def _build_backup_zip():
     return buf.getvalue(), manifest
 
 
-def _import_backup_zip(raw):
+def _import_backup_zip(raw, password=""):
     """Відновлення з zip: перевіряє manifest/sha256, робить бекап поточного стану."""
     if not raw:
         raise ValueError("порожній файл")
+    raw = _decrypt_backup(raw, password)
     if len(raw) > 50 * 1024 * 1024:
         raise ValueError("файл завеликий (>50 МБ)")
     allowed = {".gt_pl.json": ("pl", PL_FILE), ".gt_eldorado.json": ("ed", ED_FILE),
@@ -3775,7 +3869,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _device_token(self):
         """Підписаний токен пристрою (щоб не вводити пароль щоразу)."""
         ts = str(int(time.time()))
-        sig = hmac.new(_csrf_key(), ("v1|" + ts).encode("utf-8"), "sha256").hexdigest()[:24]
+        ver = _device_version()
+        sig = hmac.new(_csrf_key(), ("v1|" + ver + "|" + ts).encode("utf-8"), "sha256").hexdigest()[:24]
         return ts + "." + sig
 
     def _device_ok(self):
@@ -3791,7 +3886,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return False
         if age < 0 or age > 365 * 86400:
             return False
-        want = hmac.new(_csrf_key(), ("v1|" + ts).encode("utf-8"), "sha256").hexdigest()[:24]
+        want = hmac.new(_csrf_key(), ("v1|" + _device_version() + "|" + ts).encode("utf-8"), "sha256").hexdigest()[:24]
         return hmac.compare_digest(sig, want)
 
     def _auth_ok(self):
@@ -3928,7 +4023,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.3.2", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.4.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4155,6 +4250,22 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             sales = sorted(sales, key=lambda r: (str(r.get("date") or ""),
                                                  str(r.get("id") or "")), reverse=True)
             self._json({"ok": True, "sales": sales})
+        elif p == "/api/update/check":
+            try:
+                req = urllib.request.Request(
+                    "https://api.github.com/repos/voidwhisperr/acctrack/releases/latest",
+                    headers={"User-Agent": "Ledger-update-check",
+                             "Accept": "application/vnd.github+json"})
+                with urllib.request.urlopen(req, timeout=8) as r:
+                    rel = json.loads(r.read().decode("utf-8", "replace"))
+                self._json({"ok": True, "current": "1.4.0",
+                            "latest": rel.get("tag_name") or "",
+                            "name": rel.get("name") or "",
+                            "url": rel.get("html_url") or "",
+                            "body": rel.get("body") or "",
+                            "published_at": rel.get("published_at") or ""})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:300]}, code=502)
         elif p == "/api/audit":
             rows = _read_json(AUDIT_FILE, []) or []
             if not isinstance(rows, list):
@@ -4270,7 +4381,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.3.2",
+            self._json({"ok": True, "version": "1.4.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -4432,7 +4543,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._json({"ok": False, "error": "Невірний пароль"}, code=401)
                 return
             otp = str((body or {}).get("otp") or "").strip()
-            if _totp_enabled() and not _totp_verify(otp):
+            if _totp_enabled() and not _totp_verify(otp) and not _recovery_consume(otp):
                 self._note_auth_fail()
                 self._json({"ok": False,
                             "error": "Невірний код 2FA" if otp else "Введи код 2FA"},
@@ -4465,7 +4576,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         raw_body = self.rfile.read(n) if n else b""
         if self.path == "/api/backup/import":
             try:
-                self._json(_import_backup_zip(raw_body))
+                self._json(_import_backup_zip(raw_body, self.headers.get("X-Backup-Password", "")))
             except ValueError as e:
                 self._json({"ok": False, "error": str(e)}, code=400)
             except Exception as e:
@@ -4585,10 +4696,36 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             except Exception as e:
                 self._json({"ok": False, "error": str(e)}, code=400)
             return
+        if self.path == "/api/backup/export/encrypted":
+            try:
+                pw = str(body.get("password") or "")
+                raw, _m = _build_backup_zip()
+                enc = _encrypt_backup(raw, pw)
+            except ValueError as e:
+                self._json({"ok": False, "error": str(e)}, code=400)
+                return
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)}, code=500)
+                return
+            name = "ledger_backup_%s.ledger.enc" % datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
+            self._send(200, "application/octet-stream", enc,
+                       extra={"Content-Disposition": f'attachment; filename="{name}"'})
+            return
         if self.path == "/api/backup/run":
             res = do_backup()
             files = sorted(os.listdir(BACKUP_DIR)) if os.path.exists(BACKUP_DIR) else []
             self._json({"ok": True, "files": files[-10:], "cloud": res.get("cloud")})
+            return
+        if self.path == "/api/logout/all":
+            s = _read_json(SECRETS_FILE, {}) or {}
+            try:
+                n = int(s.get("device_version") or 0) + 1
+            except Exception:
+                n = 1
+            _save_secrets({"device_version": n})
+            _audit("auth.logout_all")
+            self._json({"ok": True}, extra={"Set-Cookie":
+                       "gt_device=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"})
             return
         if self.path == "/api/2fa/setup":
             if AUTH_MODE == "off":
@@ -4608,14 +4745,23 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
                 return
             _save_secrets({"totp_secret": secret, "totp_enabled": True, "totp_pending": ""})
+            codes = _recovery_generate()
             _audit("2fa.enabled")
-            self._json({"ok": True, "enabled": True})
+            self._json({"ok": True, "enabled": True, "recovery": codes})
+            return
+        if self.path == "/api/2fa/recovery":
+            if not _totp_enabled() or not _totp_verify(body.get("code")):
+                self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
+                return
+            codes = _recovery_generate()
+            _audit("2fa.recovery")
+            self._json({"ok": True, "recovery": codes})
             return
         if self.path == "/api/2fa/disable":
             if _totp_enabled() and not _totp_verify(body.get("code")):
                 self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
                 return
-            _save_secrets({"totp_secret": "", "totp_enabled": False, "totp_pending": ""})
+            _save_secrets({"totp_secret": "", "totp_enabled": False, "totp_pending": "", "totp_recovery": []})
             _audit("2fa.disabled")
             self._json({"ok": True, "enabled": False})
             return
@@ -5456,7 +5602,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.3.2")
+    print("  ▲  Ledger v1.4.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

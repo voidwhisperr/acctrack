@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.4.0 — recovery, devices, updates, encryption
+
+### Added
+- 2FA recovery codes (one-time, hashed at rest).
+- Logout from all devices (device token version bump).
+- In-app update checker against the latest GitHub release.
+- Password-encrypted backup export (.ledger.enc, AES-GCM + PBKDF2).
+- Encrypted backup import with password.
+- Currency selection on the first onboarding screen with 29 popular currencies.
+- Currency changes are applied everywhere and can be changed later in Settings.
+
+### Changed
+- Exchange-rate fallback: Frankfurter, then open.er-api; NBU for UAH.
+
 ## v1.3.2 — Ledger icon and PWA branding
 
 ### Changed

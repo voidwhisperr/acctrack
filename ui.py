@@ -1070,6 +1070,13 @@ code{
         <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">КОД 6 ЦИФР</div>
           <input id="twofaDisableCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:120px;letter-spacing:.2em"></div>
         <button class="btn rd" onclick="disable2FA()">✕ <span data-i18n="twofa.disable">Вимкнути 2FA</span></button>
+        <button class="btn" onclick="regenRecovery()">🔑 Recovery-коди</button>
+        <button class="btn rd" onclick="logoutAll()">Вийти на всіх пристроях</button>
+      </div>
+      <div id="twofaRecovery" style="display:none;margin-top:10px;padding:10px;border:1px solid var(--yw);border-radius:8px;background:color-mix(in srgb,var(--yw) 8%,transparent)">
+        <div style="font-size:11px;color:var(--yw);margin-bottom:6px">Збережи ці коди. Кожен працює один раз.</div>
+        <pre id="twofaRecoveryList" style="margin:0;white-space:pre-wrap;font-size:13px;line-height:1.6"></pre>
+        <button class="btn" style="margin-top:8px;font-size:11px;padding:5px 10px" onclick="copyRecovery()">📋 Копіювати</button>
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -1077,6 +1084,14 @@ code{
       <button class="btn" onclick="load2FA()">↻ <span data-i18n="twofa.refresh">Оновити</span></button>
     </div>
     <div style="font-size:11px;color:var(--mu);margin-top:8px" data-i18n="twofa.note">2FA працює разом із паролем входу. Пристрій, який уже увійшов, залишається в системі до виходу.</div>
+  </div>
+
+  <div class="panel" id="updatePanel" style="margin-bottom:14px">
+    <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
+      <span>ОНОВЛЕННЯ</span>
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="checkUpdates()">↻ Перевірити</button>
+    </div>
+    <div id="updateInfo" style="font-size:12px;color:var(--mu)">Натисни «Перевірити», щоб дізнатися останню версію.</div>
   </div>
 
   <div class="panel" id="dataPanel" style="margin-bottom:14px">
@@ -1163,8 +1178,9 @@ code{
     <div style="border-top:1px solid var(--brd);margin:12px 0"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <a class="btn gr" href="/api/backup/export" download style="text-decoration:none">⬇ Експорт усіх даних (zip)</a>
-      <label class="btn" style="cursor:pointer">⬆ Імпорт zip
-        <input type="file" id="importZip" accept=".zip" style="display:none" onchange="importBackup(this)">
+      <button class="btn" onclick="exportEncrypted()">🔒 Експорт зашифрований</button>
+      <label class="btn" style="cursor:pointer">⬆ Імпорт zip / .enc
+        <input type="file" id="importZip" accept=".zip,.enc" style="display:none" onchange="importBackup(this)">
       </label>
       <span style="font-size:10px;color:var(--mu)">P&amp;L + ELDORADO + ціль + налаштування · без паролів і токенів · sha256-перевірка</span>
     </div>
@@ -2716,15 +2732,37 @@ async function restoreBackup(name){
   }catch(e){ toast('⚠ '+e, false); }
 }
 
+async function exportEncrypted(){
+  const pw = prompt('Пароль для зашифрованого бекапу (мін. 4 символи)');
+  if(!pw) return;
+  if(pw.length < 4){ toast('⚠ Пароль закороткий', false); return; }
+  try{
+    toast('🔒 Шифрую бекап…');
+    const r = await fetch('/api/backup/export/encrypted',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:pw})});
+    if(!r.ok){ const d=await r.json().catch(()=>({})); toast('⚠ '+(d.error||('HTTP '+r.status)), false); return; }
+    const blob=await r.blob();
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='ledger_backup_'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.ledger.enc';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+    toast('✅ Зашифрований бекап завантажено');
+  }catch(e){ toast('⚠ '+e, false); }
+}
 async function importBackup(input){
   const f = input.files && input.files[0];
   input.value = '';
   if(!f) return;
   if(!confirm(t('csv.importConfirm').replace('%s', f.name))) return;
+  const enc = /\.enc$/i.test(f.name);
+  const pw = enc ? prompt('Пароль від зашифрованого бекапу') : '';
+  if(enc && !pw) return;
   try{
     toast(t('loading'));
+    const headers={'Content-Type':'application/octet-stream'};
+    if(enc) headers['X-Backup-Password']=pw;
     const r = await fetch('/api/backup/import',{method:'POST',
-      headers:{'Content-Type':'application/zip'}, body:f});
+      headers, body:f});
     const d = await r.json().catch(()=>({}));
     if(!r.ok || d.ok === false){ toast('⚠ '+(d.error||('HTTP '+r.status)), false); return; }
     await reloadAllData();
@@ -2739,13 +2777,23 @@ async function importBackup(input){
 // ═══════════════════════════════════════════════
 let _rate = 0;
 
-const CUR_SYM = {UAH:'₴', EUR:'€', USD:'$', PLN:'zł', CZK:'Kč', TRY:'₺', GBP:'£', KZT:'₸', GEL:'₾', RUB:'₽'};
+const CUR_SYM = {UAH:'₴', EUR:'€', USD:'$', PLN:'zł', CZK:'Kč', TRY:'₺', GBP:'£', KZT:'₸', GEL:'₾', RUB:'₽',
+  CHF:'Fr', CAD:'C$', AUD:'A$', NZD:'NZ$', JPY:'¥', CNY:'¥', HKD:'HK$', SGD:'S$', INR:'₹', KRW:'₩',
+  BRL:'R$', MXN:'MX$', ZAR:'R', SEK:'kr', NOK:'kr', DKK:'kr', ILS:'₪', AED:'د.إ', SAR:'﷼'};
+const CURRENCIES = ['USD','EUR','GBP','UAH','PLN','CZK','TRY','CHF','CAD','AUD','NZD','JPY','CNY','HKD','SGD','INR','KRW','BRL','MXN','ZAR','SEK','NOK','DKK','ILS','AED','SAR','KZT','GEL','RUB'];
 let _cur = 'USD';
 function curSym(){ return CUR_SYM[_cur] || _cur; }
+function currencyOptions(sel){
+  return CURRENCIES.map(c=>'<option value="'+c+'"'+(c===sel?' selected':'')+'>'+c+' '+(CUR_SYM[c]||'')+'</option>').join('');
+}
+function initCurrencySelects(){
+  if(g('curSel')) g('curSel').innerHTML = currencyOptions(_cur);
+}
 function fmtUah(usd){
   return _rate ? curSym()+(usd*_rate).toFixed(2) : '';
 }
 function applyCurrency(){
+  initCurrencySelects();
   if(g('curSel')) g('curSel').value = _cur;
   const s = curSym();
   const L = ({uk:{t:'ВАЛЮТА',l:'КУРС (',p:' за $1)'},en:{t:'CURRENCY',l:'RATE (',p:' per $1)'},ru:{t:'ВАЛЮТА',l:'КУРС (',p:' за $1)'}})[LANG] || {t:'CURRENCY',l:'RATE (',p:' per $1)'};
@@ -2760,6 +2808,19 @@ async function pickCurrency(){
       body: JSON.stringify({currency: _cur})});
     await refreshRate();
   }catch(e){}
+}
+
+async function checkUpdates(){
+  const el=g('updateInfo'); if(el) el.innerHTML='⏳ Перевіряю GitHub…';
+  try{
+    const d=await fetch('/api/update/check').then(r=>r.json());
+    if(!d.ok){ el.innerHTML='⚠ '+esc(d.error||'Не вдалося перевірити'); return; }
+    const same=String(d.latest||'').replace(/^v/,'')===String(d.current||'').replace(/^v/,'');
+    el.innerHTML='<div>Поточна: <b>v'+esc(d.current||'?')+'</b> · Остання на GitHub: <b>'+esc(d.latest||'?')+'</b></div>'+
+      '<div style="margin-top:4px;color:'+(same?'var(--gr)':'var(--yw)')+'">'+(same?'✅ У тебе остання версія':'⬆ Доступна новіша версія')+'</div>'+
+      (d.url?'<div style="margin-top:8px"><a class="btn" style="text-decoration:none" href="'+esc(d.url)+'" target="_blank" rel="noopener">Відкрити release</a></div>':'')+
+      (d.body?'<pre style="margin-top:8px;max-height:180px;overflow:auto;white-space:pre-wrap;font-size:11px">'+esc(d.body)+'</pre>':'');
+  }catch(e){ el.innerHTML='⚠ '+esc(String(e)); }
 }
 
 async function loadAudit(){
@@ -2799,6 +2860,7 @@ async function load2FA(){
       : '○ '+(LANG==='en'?'2FA is not enabled':LANG==='ru'?'2FA не включена':'2FA не увімкнена');
     if(g('twofaSetup')) g('twofaSetup').style.display='none';
     if(g('twofaEnabled')) g('twofaEnabled').style.display=d.enabled?'block':'none';
+    if(g('twofaRecovery')) g('twofaRecovery').style.display='none';
   }catch(e){}
 }
 async function setup2FA(){
@@ -2813,13 +2875,43 @@ async function setup2FA(){
     toast('🔐 Секрет створено — додай його в Authenticator');
   }catch(e){ toast('⚠ '+e, false); }
 }
+function showRecovery(codes){
+  if(!codes || !codes.length) return;
+  const box=g('twofaRecovery'), list=g('twofaRecoveryList');
+  if(!box || !list) return;
+  list.textContent=codes.join('\n');
+  box.style.display='block';
+}
+function copyRecovery(){
+  const txt=g('twofaRecoveryList')?.textContent||'';
+  navigator.clipboard.writeText(txt).then(()=>toast('📋 Recovery-коди скопійовано')).catch(()=>toast('⚠ Буфер недоступний', false));
+}
 async function enable2FA(){
   const code=(g('twofaCode')?.value||'').trim();
   try{
     const d=await fetch('/api/2fa/enable',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
-    toast('✅ 2FA увімкнено'); await load2FA();
+    toast('✅ 2FA увімкнено'); await load2FA(); showRecovery(d.recovery);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function regenRecovery(){
+  const code=prompt('Введи поточний 6-значний код 2FA');
+  if(!code) return;
+  try{
+    const d=await fetch('/api/2fa/recovery',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    showRecovery(d.recovery);
+    toast('🔑 Нові recovery-коди створено');
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function logoutAll(){
+  if(!confirm('Вийти на всіх пристроях? Потрібно буде увійти заново.')) return;
+  try{
+    const d=await fetch('/api/logout/all',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    location.href='/login';
   }catch(e){ toast('⚠ '+e, false); }
 }
 async function disable2FA(){
@@ -4613,31 +4705,32 @@ function onbOpen(){
   onbRender();
 }
 function onbRender(){
-  const L = ONB[LANG] || ONB.en;
   g('onbStepInfo').textContent = '';
   g('onbSkip').style.display = 'none';
   g('onbNext').style.display = 'none';
-  g('onbTitle').textContent = (LANG==='uk' ? 'Оберіть мову інтерфейсу'
-                            : LANG==='ru' ? 'Выберите язык интерфейса'
-                            : 'Choose interface language');
+  g('onbTitle').textContent = (LANG==='uk' ? 'Оберіть мову та валюту'
+                            : LANG==='ru' ? 'Выберите язык и валюту'
+                            : 'Choose language and currency');
   g('onbBody').innerHTML =
       '<div class="onb-lang" style="gap:10px">'
     + '<button class="' + (LANG==='uk'?'on':'') + '" onclick="onbSetLang(\'uk\')">Українська</button>'
     + '<button class="' + (LANG==='en'?'on':'') + '" onclick="onbSetLang(\'en\')">English</button>'
     + '<button class="' + (LANG==='ru'?'on':'') + '" onclick="onbSetLang(\'ru\')">Русский</button>'
     + '</div>'
-    + '<div style="color:var(--mu);font-size:11.5px;margin-top:14px;text-align:center">'
+    + '<div style="margin-top:14px"><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:5px">'+(LANG==='en'?'CURRENCY':LANG==='ru'?'ВАЛЮТА':'ВАЛЮТА')+'</div>'
+    + '<select id="onbCur" onchange="onbSetCurrency(this.value)" style="width:100%;font-size:15px">'+currencyOptions(_cur)+'</select></div>'
+    + '<button class="btn gr" style="width:100%;margin-top:14px;padding:12px" onclick="onbDone()">'+(LANG==='en'?'Start':LANG==='ru'?'Начать':'Почати')+'</button>'
+    + '<div style="color:var(--mu);font-size:11.5px;margin-top:12px;text-align:center">'
     + t('onb.hint')+'</div>';
 }
-function onbSetLang(l){
-  setLang(l);
-  onbDone();
-}
+function onbSetLang(l){ setLang(l); onbRender(); }
+function onbSetCurrency(v){ _cur = v || 'USD'; applyCurrency(); }
 function onbDone(){
   _onboarded = true;
   try{ localStorage.setItem('gt_onboarded','1'); }catch(e){}
   try{ fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({onboarded: true})}); }catch(e){}
+        body: JSON.stringify({onboarded: true, currency: _cur})})
+        .then(()=>{ try{ refreshRate(); }catch(e){} }); }catch(e){}
   const el = g('onb'); if(el) el.style.display = 'none';
   try{ renderOverview(); }catch(e){}
 }
