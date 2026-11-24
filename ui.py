@@ -833,15 +833,69 @@ code{
 
 <!-- 🇨🇳 TAOBAO -->
 <div id="tab-taobao" class="tc">
-  <div class="panel">
-    <div class="ph"><span data-i18n="ph.taobao">TAOBAO — ціни з Китаю</span>
-      <span style="display:flex;gap:10px;align-items:center">
-        <span id="tbStatus" style="font-size:12px;color:var(--mu);font-weight:400"></span>
-        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="tbAddManual()" title="Додати лот вручну (посилання + ціна)"><svg class="ic"><use href="#ic-plus"/></svg><span data-i18n="tb.lot">Лот</span></button>
-        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="tbEnrich()" title="Перевірити оплату карткою і кількість варіантів у топ-25 лотів"><span data-i18n="tb.checkPay">Перевірити оплату</span></button>
-        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="tbRequest()"><svg class="ic"><use href="#ic-refresh"/></svg><span data-i18n="tb.collect">Зібрати зараз</span></button>
-      </span></div>
-    <div id="tbProgress" style="display:none;margin-bottom:12px">
+  <div class="panel" id="tbHero" style="margin-bottom:14px;background:radial-gradient(700px 260px at 0% 0%,rgba(52,211,153,.16),transparent 60%),linear-gradient(135deg,var(--card),var(--card2));border-color:color-mix(in srgb,var(--gr) 28%,var(--brd))">
+    <div style="display:inline-flex;align-items:center;gap:7px;padding:4px 9px;border:1px solid color-mix(in srgb,var(--gr) 45%,var(--brd));border-radius:999px;font-size:10px;letter-spacing:.14em;color:var(--gr);font-weight:800;margin-bottom:12px">⚡ <span data-i18n="tb.heroBadge">АВТОМАТИЗАЦІЯ TAOBAO</span></div>
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:280px">
+        <div style="font-size:24px;font-weight:800;line-height:1.18;letter-spacing:-.02em;margin-bottom:8px" data-i18n="tb.heroTitle">Купуйте акаунти з Таобао дешевше — без ручного пошуку</div>
+        <div style="font-size:13px;color:var(--mu);line-height:1.65;max-width:720px" data-i18n="tb.heroSub">Ledger щогодини збирає лоти, переводить юані в долари, показує потенційну маржу й підсвічує вигідні. Ви купуєте тільки те, що реально продається.</div>
+        <div id="tbStatus" style="font-size:12px;color:var(--mu);font-weight:400;margin-top:10px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
+          <button class="btn gr" style="font-size:12px;padding:7px 12px" onclick="tbRequest()">⚡ <span data-i18n="tb.collect">Зібрати зараз</span></button>
+          <button class="btn" style="font-size:12px;padding:7px 12px" onclick="tbAddManual()">＋ <span data-i18n="tb.lot">Додати лот</span></button>
+          <button class="btn" style="font-size:12px;padding:7px 12px" onclick="tbEnrich()">💳 <span data-i18n="tb.checkPay">Перевірити оплату</span></button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:260px;flex:0 1 330px">
+        <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px 12px"><div style="font-size:10px;color:var(--mu)" data-i18n="tb.stat1">Економія часу</div><div style="font-size:19px;font-weight:800;color:var(--gr)">3–5 <span style="font-size:11px" data-i18n="tb.stat1u">год/день</span></div></div>
+        <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px 12px"><div style="font-size:10px;color:var(--mu)" data-i18n="tb.stat2">Ціни</div><div style="font-size:19px;font-weight:800">¥ → $</div></div>
+        <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px 12px"><div style="font-size:10px;color:var(--mu)" data-i18n="tb.stat3">Оновлення</div><div style="font-size:19px;font-weight:800;color:var(--a1)" data-i18n="tb.stat3v">у фоні</div></div>
+        <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px 12px"><div style="font-size:10px;color:var(--mu)" data-i18n="tb.stat4">Маржа</div><div style="font-size:19px;font-weight:800;color:var(--gr)" data-i18n="tb.stat4v">одразу</div></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin-top:14px">
+      <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px 12px"><div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="tb.ben1t">Автоматичний збір</div><div style="font-size:10.5px;color:var(--mu);line-height:1.45" data-i18n="tb.ben1d">Агент сам відкриває Таобао, оновлює лоти й чекає, поки ви пройдете капчу.</div></div>
+      <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px 12px"><div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="tb.ben2t">Маржа замість вгадування</div><div style="font-size:10.5px;color:var(--mu);line-height:1.45" data-i18n="tb.ben2d">Ціна в юанях, орієнтовний долар, ваша ціна продажу та потенційний прибуток — в одному рядку.</div></div>
+      <div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px 12px"><div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="tb.ben3t">Один клік до угоди</div><div style="font-size:10.5px;color:var(--mu);line-height:1.45" data-i18n="tb.ben3d">Знайшли вигідний лот — додайте його в P&L, і він одразу стане частиною вашого обліку.</div></div>
+    </div>
+    <div style="margin-top:12px;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--mu)">ЯК ЦЕ ВИГЛЯДАЄ В РОБОТІ</div>
+        <div style="font-size:9px;padding:2px 7px;border:1px solid var(--brd);border-radius:999px;color:var(--mu)">ДЕМО-ПРИКЛАД</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
+        <div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:9px 11px">
+          <div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:12px">Genshin AR60</b><span style="font-size:9px;color:var(--gr);border:1px solid color-mix(in srgb,var(--gr) 40%,var(--brd));border-radius:5px;padding:1px 5px">HOT</span></div>
+          <div style="font-size:10px;color:var(--mu);margin:3px 0 6px">EU · 5★ · e-mail</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px"><span>Купити</span><b>¥128 <span style="color:var(--mu)">≈$17.8</span></b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span>Продати</span><b>$39</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span>Маржа</span><b>+$21.2 · 54%</b></div>
+        </div>
+        <div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:9px 11px">
+          <div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:12px">Honkai: Star Rail</b><span style="font-size:9px;color:var(--yw);border:1px solid color-mix(in srgb,var(--yw) 40%,var(--brd));border-radius:5px;padding:1px 5px">NEW</span></div>
+          <div style="font-size:10px;color:var(--mu);margin:3px 0 6px">Global · starter · 5★</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px"><span>Купити</span><b>¥80 <span style="color:var(--mu)">≈$11.1</span></b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span>Продати</span><b>$29</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span>Маржа</span><b>+$14.9 · 51%</b></div>
+        </div>
+        <div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:9px 11px">
+          <div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:12px">Wuthering Waves</b><span style="font-size:9px;color:var(--a1);border:1px solid color-mix(in srgb,var(--a1) 40%,var(--brd));border-radius:5px;padding:1px 5px">VALUE</span></div>
+          <div style="font-size:10px;color:var(--mu);margin:3px 0 6px">Asia · 2×5★ · linked</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px"><span>Купити</span><b>¥245 <span style="color:var(--mu)">≈$34.0</span></b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span>Продати</span><b>$59</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span>Маржа</span><b>+$19.1 · 32%</b></div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--mu);margin-top:7px">Це демонстраційний приклад. Реальні лоти, ціни й маржа з’являться після запуску агента.</div>
+    </div>
+    <details style="margin-top:12px;font-size:11.5px;color:var(--mu);line-height:1.6">
+      <summary style="cursor:pointer;color:var(--tx);font-weight:600" data-i18n="tb.how">Як працює агент і що потрібно</summary>
+      <div data-i18n="tb.d1" style="margin-top:8px">Збирається колектором на вашому ПК. Агент працює у фоні (автозапуск при вході в Windows) і сам відкриває вікно браузера, якщо його немає. Капчу проходите ви — колектор чекає. Ціни в юанях, нижче — орієнтовний долар.</div>
+      <div data-i18n="tb.d2" style="margin-top:6px">Мітки: натисніть 💳 біля лота, якщо там оплата карткою, і 🎛 — скільки варіантів акаунтів. Taobao часто блокує автоматичне читання сторінок лотів, тому ручна мітка — найнадійніше.</div>
+      <div data-i18n="tb.need" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--brd);color:var(--tx)">Щоб збір запрацював, потрібно: 1) агент збору на вашому ПК (окремий файл, запускається разом із Windows); 2) акаунт Taobao; 3) один раз увійти в браузері агента — сканування QR-коду з телефона; 4) капчу при першому запиті проходите ви вручну. Після цього лоти оновлюються у фоні, а ви бачите ціни тут.</div>
+      <div data-i18n="tb.d3" style="margin-top:6px">Оплата: картка / Apple Pay через Alipay International (платформа, не продавець). Лоти «代充 / 充值 / 话费» (поповнення балансу, телефон, ключі) не підходять під таку оплату — вони вже відфільтровані.</div>
+    </details>
+    <div id="tbProgress" style="display:none;margin-top:12px">
       <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mu);margin-bottom:5px">
         <span id="tbProgText">—</span><span id="tbProgPct">0%</span>
       </div>
@@ -849,12 +903,8 @@ code{
         <div id="tbProgBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--a1),var(--gr));transition:width .4s"></div>
       </div>
     </div>
-    <div style="font-size:13px;color:var(--mu);margin-bottom:14px">
-      <div data-i18n="tb.d1">Збирається колектором на вашому ПК. Агент працює у фоні (автозапуск при вході в Windows) і сам відкриває вікно браузера, якщо його немає. Капчу проходите ви — колектор чекає. Ціни в юанях, нижче — орієнтовний долар.</div>
-      <div data-i18n="tb.d2" style="margin-top:6px">Мітки: натисніть 💳 біля лота, якщо там оплата карткою, і 🎛 — скільки варіантів акаунтів. Taobao часто блокує автоматичне читання сторінок лотів, тому ручна мітка — найнадійніше.</div>
-      <div data-i18n="tb.need" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--brd);color:var(--tx)">Щоб збір запрацював, потрібно: 1) агент збору на вашому ПК (окремий файл, запускається разом із Windows); 2) акаунт Taobao; 3) один раз увійти в браузері агента — сканування QR-коду з телефона; 4) капчу при першому запиті проходите ви вручну. Після цього лоти оновлюються у фоні, а ви бачите ціни тут.</div>
-      <div data-i18n="tb.d3" style="margin-top:6px">Оплата: картка / Apple Pay через Alipay International (платформа, не продавець). Лоти «代充 / 充值 / 话费» (поповнення балансу, телефон, ключі) не підходять під таку оплату — вони вже відфільтровані.</div>
-    </div>
+  </div>
+  <div class="panel">
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
       <input id="tbQ" placeholder="🔍 Пошук по назві..." oninput="renderTaobao()" style="width:220px">
       <label style="font-size:12px;color:var(--mu);display:flex;align-items:center;gap:5px">
@@ -2191,6 +2241,33 @@ Object.assign(I18N.ru, {
 Object.assign(I18N.uk, {'cur.auto':'Курс оновлюється автоматично раз на 6 годин. Кнопка ↻ — примусове оновлення.','cur.manualHint':'Можна вибрати будь-яку валюту вручну. Після цього зміна мови не змінюватиме валюту.'});
 Object.assign(I18N.en, {'cur.auto':'The rate refreshes automatically every 6 hours. The ↻ button refreshes it now.','cur.manualHint':'You can choose any currency manually. After that, changing the language will not change the currency.'});
 Object.assign(I18N.ru, {'cur.auto':'Курс обновляется автоматически раз в 6 часов. Кнопка ↻ — принудительное обновление.','cur.manualHint':'Можно выбрать любую валюту вручную. После этого смена языка не будет менять валюту.'});
+Object.assign(I18N.uk, {
+  'tb.heroBadge':'АВТОМАТИЗАЦІЯ TAOBAO','tb.heroTitle':'Купуйте акаунти з Таобао дешевше — без ручного пошуку',
+  'tb.heroSub':'Ledger щогодини збирає лоти, переводить юані в долари, показує потенційну маржу й підсвічує вигідні. Ви купуєте тільки те, що реально продається.',
+  'tb.stat1':'Економія часу','tb.stat1u':'год/день','tb.stat2':'Ціни','tb.stat3':'Оновлення','tb.stat3v':'у фоні','tb.stat4':'Маржа','tb.stat4v':'одразу',
+  'tb.ben1t':'Автоматичний збір','tb.ben1d':'Агент сам відкриває Таобао, оновлює лоти й чекає, поки ви пройдете капчу.',
+  'tb.ben2t':'Маржа замість вгадування','tb.ben2d':'Ціна в юанях, орієнтовний долар, ваша ціна продажу та потенційний прибуток — в одному рядку.',
+  'tb.ben3t':'Один клік до угоди','tb.ben3d':'Знайшли вигідний лот — додайте його в P&L, і він одразу стане частиною вашого обліку.',
+  'tb.how':'Як працює агент і що потрібно'
+});
+Object.assign(I18N.en, {
+  'tb.heroBadge':'TAOBAO AUTOMATION','tb.heroTitle':'Buy Taobao accounts cheaper — without manual searching',
+  'tb.heroSub':'Ledger collects lots hourly, converts yuan to dollars, shows potential margin and highlights the best deals. You buy only what actually sells.',
+  'tb.stat1':'Time saved','tb.stat1u':'h/day','tb.stat2':'Prices','tb.stat3':'Refresh','tb.stat3v':'in background','tb.stat4':'Margin','tb.stat4v':'instantly',
+  'tb.ben1t':'Automatic collection','tb.ben1d':'The agent opens Taobao, refreshes lots and waits while you pass the captcha.',
+  'tb.ben2t':'Margin, not guessing','tb.ben2d':'Yuan price, estimated dollars, your sale price and potential profit in one row.',
+  'tb.ben3t':'One click to a deal','tb.ben3d':'Found a good lot — add it to P&L and it becomes part of your ledger.',
+  'tb.how':'How the agent works and what is needed'
+});
+Object.assign(I18N.ru, {
+  'tb.heroBadge':'АВТОМАТИЗАЦИЯ TAOBAO','tb.heroTitle':'Покупайте аккаунты с Taobao дешевле — без ручного поиска',
+  'tb.heroSub':'Ledger каждый час собирает лоты, переводит юани в доллары, показывает потенциальную маржу и подсвечивает выгодные. Вы покупаете только то, что реально продаётся.',
+  'tb.stat1':'Экономия времени','tb.stat1u':'ч/день','tb.stat2':'Цены','tb.stat3':'Обновление','tb.stat3v':'в фоне','tb.stat4':'Маржа','tb.stat4v':'сразу',
+  'tb.ben1t':'Автоматический сбор','tb.ben1d':'Агент сам открывает Taobao, обновляет лоты и ждёт, пока вы пройдёте капчу.',
+  'tb.ben2t':'Маржа вместо угадывания','tb.ben2d':'Цена в юанях, примерный доллар, ваша цена продажи и потенциальная прибыль — в одной строке.',
+  'tb.ben3t':'Один клик до сделки','tb.ben3d':'Нашли выгодный лот — добавьте его в P&L, и он сразу станет частью учёта.',
+  'tb.how':'Как работает агент и что нужно'
+});
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
   n = Math.abs(Number(n) || 0);

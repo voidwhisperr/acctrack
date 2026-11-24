@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.2 — Taobao sales page
+
+- Taobao tab redesigned as an automation showcase.
+- Benefit cards, demo lots with margin, CTA and collapsible technical setup.
+- Demo preview labelled clearly; real lots appear after agent connection.
+
 ## v1.5.1 — order-to-draft
 
 - Orders from mail have a "Draft" button.
