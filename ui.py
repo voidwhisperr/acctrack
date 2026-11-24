@@ -5783,12 +5783,31 @@ async function loadPlatforms(force){
 
 let mailItems=[];
 let _lastMailNew=null;
+let _favTimer=null, _titleTimer=null, _alertCount=0, _favTick=0;
+function _favFrame(phase){
+  const c = phase%2 ? '%2310b981' : '%23f59e0b';
+  const r = phase%2 ? 15 : 11;
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 12 52 50H12Z" fill="%23f2f2f2"/><circle cx="50" cy="14" r="'+r+'" fill="'+c+'" stroke="%230b0c0e" stroke-width="3"/><circle cx="50" cy="14" r="22" fill="none" stroke="'+c+'" stroke-width="2" opacity=".5"/></svg>';
+}
+function _paintFavicon(phase){
+  const l=document.querySelector('link[rel="icon"]'); if(!l) return;
+  l.href='data:image/svg+xml,'+_favFrame(phase);
+}
 function setFaviconBadge(show){
   const l=document.querySelector('link[rel="icon"]'); if(!l) return;
   if(!window._origFavicon) window._origFavicon=l.href;
-  if(!show){ l.href=window._origFavicon; return; }
-  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 12 52 50H12Z" fill="%23e8e8e8"/><circle cx="50" cy="14" r="12" fill="%2310b981" stroke="%230b0c0e" stroke-width="3"/></svg>';
-  l.href='data:image/svg+xml,'+svg;
+  if(!show){
+    clearInterval(_favTimer); clearInterval(_titleTimer);
+    _favTimer=null; _titleTimer=null; l.href=window._origFavicon; return;
+  }
+  if(_favTimer) return;
+  _favTick=0; _paintFavicon(0);
+  _favTimer=setInterval(()=>{ _favTick++; _paintFavicon(_favTick); }, 450);
+  _titleTimer=setInterval(()=>{
+    document.title = (document.title.indexOf('🔔')>=0)
+      ? '('+_alertCount+') AccTrack'
+      : '('+_alertCount+') 🔔 AccTrack';
+  }, 1000);
 }
 let _audioCtx=null;
 function _ensureAudio(){
@@ -5802,15 +5821,19 @@ function playOrderSound(){
   try{
     if(g('orderSound') && !g('orderSound').checked) return;
     const ctx=_ensureAudio(); if(!ctx) return;
-    const now=ctx.currentTime;
-    [0,0.16].forEach((dt,i)=>{
-      const o=ctx.createOscillator(), gain=ctx.createGain();
-      o.type='sine'; o.frequency.value=i?990:740;
-      gain.gain.setValueAtTime(0.001,now+dt);
-      gain.gain.exponentialRampToValueAtTime(0.18,now+dt+0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001,now+dt+0.13);
-      o.connect(gain).connect(ctx.destination); o.start(now+dt); o.stop(now+dt+0.15);
-    });
+    const play=()=>{
+      const now=ctx.currentTime;
+      [[0,660],[0.18,880],[0.36,1320]].forEach(step=>{
+        const o=ctx.createOscillator(), gain=ctx.createGain();
+        o.type='triangle'; o.frequency.value=step[1];
+        gain.gain.setValueAtTime(0.001,now+step[0]);
+        gain.gain.exponentialRampToValueAtTime(0.55,now+step[0]+0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001,now+step[0]+0.20);
+        o.connect(gain).connect(ctx.destination); o.start(now+step[0]); o.stop(now+step[0]+0.22);
+      });
+    };
+    if(ctx.state==='suspended') ctx.resume().then(play).catch(()=>{});
+    else play();
   }catch(e){}
 }
 function updateOrderNotifyUI(){
@@ -5840,6 +5863,7 @@ function orderNotify(n){
 }
 function notifyNewOrder(n){
   const mark=g('brandMark'); if(mark) mark.classList.add('order-alert');
+  _alertCount=n;
   document.title='('+n+') AccTrack';
   setFaviconBadge(true);
   const b=g('orderBanner'); if(b){ b.style.display='flex'; const t=g('orderBannerText'); if(t) t.textContent='Нове замовлення: '+n; }

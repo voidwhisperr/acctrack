@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.25.0 — louder alert and animated tab
+
+- Three-tone louder order sound with AudioContext resume.
+- Animated favicon (pulsing green/amber ring) and alternating 🔔 title.
+- Banner remains visible until Orders opened.
+
 ## v1.24.0 — visible order alert
 
 - New-order banner with "Open" button; cannot be missed.
