@@ -131,6 +131,8 @@ header{
 .logo{display:flex;align-items:center;gap:12px}
 @keyframes brandWiggle{0%,100%{transform:rotate(0) scale(1)}20%{transform:rotate(-12deg) scale(1.15)}40%{transform:rotate(12deg) scale(1.15)}60%{transform:rotate(-7deg) scale(1.08)}80%{transform:rotate(7deg) scale(1.08)}}
 #brandMark.order-alert{animation:brandWiggle 1.1s ease-in-out infinite;color:var(--gr)!important;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--gr) 70%,transparent))}
+#orderBanner{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9998;display:none;align-items:center;gap:10px;background:linear-gradient(135deg,#0f3d2e,#0b2a21);border:1px solid var(--gr);color:#eafff6;padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.5);font-size:12.5px;animation:orderDrop .35s ease-out}
+@keyframes orderDrop{from{opacity:0;transform:translate(-50%,-14px)}to{opacity:1;transform:translate(-50%,0)}}
 .logo-i{
   width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;
   font-size:22px;background:linear-gradient(135deg,var(--a1),var(--a3));box-shadow:var(--shadow);
@@ -477,6 +479,7 @@ code{
     <button class="btn" onclick="location.reload()" title="Оновити сторінку" style="padding:7px 12px">↺</button>
   </div>
 </header>
+<div id="orderBanner"><span style="font-size:17px">🔔</span><b id="orderBannerText">Нове замовлення</b><button class="btn gr" style="padding:5px 10px;font-size:11px" onclick="goOrders()">Відкрити</button></div>
 
 <div id="onb" class="onb" style="display:none">
   <div class="onb-card">
@@ -773,6 +776,7 @@ code{
       <div style="display:flex;gap:8px;align-items:center">
         <span id="mailStat" style="font-size:12px;color:var(--mu)"></span>
         <button class="btn" id="orderNotifyBtn" style="padding:5px 10px;font-size:11px" onclick="enableOrderNotifications()">🔔 Сповіщення</button>
+        <button class="btn" style="padding:5px 10px;font-size:11px" onclick="playOrderSound()" title="Перевірити звук">🔊</button>
         <button class="btn" style="padding:5px 10px;font-size:11px" onclick="createDemoOrder()">🧪 Демо</button>
         <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="orderSound" type="checkbox" checked> звук</label>
         <button class="btn" onclick="loadMailQueue(true)">↺ Оновити</button>
@@ -5821,14 +5825,15 @@ async function enableOrderNotifications(){
   try{
     const p=await Notification.requestPermission();
     updateOrderNotifyUI();
+    playOrderSound();
     toast(p==='granted'?'🔔 Сповіщення увімкнено':'⚠ Сповіщення не дозволено', p==='granted');
   }catch(e){ toast('⚠ '+e, false); }
 }
 function orderNotify(n){
   try{
-    if(document.hidden && Notification.permission==='granted'){
-      const note=new Notification('🔔 Нове замовлення', {body:n+' нове замовлення в AccTrack', icon:'/icon-192.png', tag:'acctrack-orders'});
-      note.onclick=()=>{ try{ window.focus(); note.close(); }catch(e){} };
+    if(Notification.permission==='granted'){
+      const note=new Notification('🔔 Нове замовлення', {body:n+' нове замовлення в AccTrack', icon:'/icon-192.png', tag:'acctrack-orders', requireInteraction:true});
+      note.onclick=()=>{ try{ window.focus(); goOrders(); note.close(); }catch(e){} };
     }
   }catch(e){}
   playOrderSound();
@@ -5837,13 +5842,19 @@ function notifyNewOrder(n){
   const mark=g('brandMark'); if(mark) mark.classList.add('order-alert');
   document.title='('+n+') AccTrack';
   setFaviconBadge(true);
+  const b=g('orderBanner'); if(b){ b.style.display='flex'; const t=g('orderBannerText'); if(t) t.textContent='Нове замовлення: '+n; }
   orderNotify(n);
   toast('🔔 Нове замовлення: '+n+' — відкрий «Замовлення»');
+}
+function goOrders(){
+  const tab=[...document.querySelectorAll('.tab')].find(x=>String(x.getAttribute('onclick')||'').includes("'mail'"));
+  if(tab) tab.click();
 }
 function clearOrderAlert(){
   const mark=g('brandMark'); if(mark) mark.classList.remove('order-alert');
   document.title='AccTrack';
   setFaviconBadge(false);
+  const b=g('orderBanner'); if(b) b.style.display='none';
 }
 // 🏮 Taobao
 let tbItems = [], tbGame = '', tbSeg = '', tbSort = 'price', tbRegion = '';
@@ -6496,6 +6507,11 @@ async function loadMailQueue(force){
 
 async function createDemoOrder(){
   try{
+    _ensureAudio();
+    playOrderSound();
+    if('Notification' in window && Notification.permission==='default'){
+      try{ Notification.requestPermission().then(updateOrderNotifyUI).catch(()=>{}); }catch(e){}
+    }
     const d=await fetch('/api/mail/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     await loadMailQueue(true);

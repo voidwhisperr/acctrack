@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.24.0 — visible order alert
+
+- New-order banner with "Open" button; cannot be missed.
+- Browser notification shows even when the tab is visible.
+- Sound test button; demo plays a sound immediately on click.
+
 ## v1.23.0 — demo order
 
 - Test order button in Orders; creates a clearly labelled demo order and triggers the new-order alert.
