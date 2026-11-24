@@ -153,6 +153,7 @@ h1 span b{color:var(--a1);font-weight:700}
 .tab:hover{color:var(--tx);background:color-mix(in srgb, var(--a1) 7%, transparent)}
 .tab.on{color:var(--a1);border-bottom-color:var(--a1);background:color-mix(in srgb, var(--a1) 8%, transparent)}
 .tc{display:none}.tc.on{display:block}
+#mnav{display:none}
 
 /* ── кнопки ── */
 .btn{
@@ -366,11 +367,44 @@ code{
 }
 @media(max-width:780px){.g2,.g3{grid-template-columns:1fr}}
 @media(max-width:640px){
-  .w{padding:0 12px 50px}
+  body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+  .w{padding:0 12px 18px}
+  .tabs{
+    position:sticky;top:0;z-index:50;background:var(--bg);
+    flex-wrap:nowrap;padding:6px 4px;margin-bottom:14px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:9px 10px;font-size:.8rem;gap:5px}
+  .tab .ic{width:16px;height:16px}
+  .tabs .tsep{margin:4px 3px}
+  #mnav{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;
+    background:color-mix(in srgb,var(--card) 94%,transparent);
+    border-top:1px solid var(--brd);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  }
+  .mn{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:5px 2px;border:0;border-radius:9px;background:transparent;
+    color:var(--mu);font-family:var(--font);font-size:10px;font-weight:600;
+    cursor:pointer;line-height:1.15;min-width:0;
+  }
+  .mn .ic{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7}
+  .mn.on{color:var(--a1);background:color-mix(in srgb,var(--a1) 9%,transparent)}
+  .mn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px!important;min-height:42px}
+  .btn{min-height:40px}
+  .bub-acts .bub-btn{width:36px;height:36px;font-size:16px}
+  .sc{padding:12px}
+  .pur-row,.bub{padding:12px}
+  .psel{min-width:0;width:100%}
+  .psel-btn{width:100%}
   .panel{padding:14px 12px;border-radius:12px}
   .ph{font-size:.95rem;margin-bottom:12px}
-  .tabs{gap:4px;flex-wrap:wrap;overflow-x:visible}
-  .tab{font-size:.85rem;padding:9px 12px;flex:0 0 auto}
+  .tabs{gap:4px}
+  .tab{font-size:.8rem;padding:9px 10px;flex:0 0 auto}
   #chAll{overflow-x:auto;max-width:100%}
   #chAll table{min-width:0;width:100%}
   #chAll table th:nth-child(1),#chAll table td:nth-child(1),
@@ -468,6 +502,14 @@ code{
   <div class="tab" onclick="sw('stats',this);renderStats();setTimeout(renderRevenueChart,80)"><svg class="ic"><use href="#ic-chart"/></svg><span data-i18n="nav.analytics">Аналітика</span></div>
   <div class="tab" onclick="sw('setup',this);loadBackupList();loadSettings()"><svg class="ic"><use href="#ic-gear"/></svg></div>
 </div>
+
+<nav id="mnav" aria-label="Mobile navigation">
+  <button type="button" class="mn on" data-tab="overview" onclick="mnavGo('overview')"><svg class="ic"><use href="#ic-grid"/></svg><span data-i18n="nav.overview">Огляд</span></button>
+  <button type="button" class="mn" data-tab="tracker" onclick="mnavGo('tracker')"><svg class="ic"><use href="#ic-receipt"/></svg><span data-i18n="nav.deals">Угоди</span></button>
+  <button type="button" class="mn" data-tab="mail" onclick="mnavGo('mail')"><svg class="ic"><use href="#ic-inbox"/></svg><span data-i18n="nav.orders">Замовлення</span></button>
+  <button type="button" class="mn" data-tab="inventory" onclick="mnavGo('inventory')"><svg class="ic"><use href="#ic-layers"/></svg><span data-i18n="nav.inventory">Інвентар</span></button>
+  <button type="button" class="mn" data-tab="stats" onclick="mnavGo('stats')"><svg class="ic"><use href="#ic-chart"/></svg><span data-i18n="nav.analytics">Аналітика</span></button>
+</nav>
 
 <div id="tab-overview" class="tc on">
   <div class="panel">
@@ -2330,10 +2372,22 @@ function _mergeChannels(){
   renderChAll();
 }
 
+function syncMnav(id){
+  document.querySelectorAll('#mnav .mn').forEach(b=>b.classList.toggle('on', b.dataset.tab===id));
+}
+function mnavGo(id){
+  const tab=[...document.querySelectorAll('.tabs .tab')].find(x=>String(x.getAttribute('onclick')||'').includes("'"+id+"'"));
+  if(!tab) return;
+  sw(id,tab);
+  if(id==='mail'){ try{ loadMailQueue(); }catch(e){} }
+  if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
+  if(id==='stats'){ try{ renderStats(); setTimeout(renderRevenueChart,80); }catch(e){} }
+}
 function sw(id,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
   el.classList.add('on'); g('tab-'+id).classList.add('on');
+  try{ syncMnav(id); }catch(e){}
   try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
   if(id==='overview'){ renderOverview(); }
   if(id==='tracker'){ setTimeout(()=>{ renderPurchases(); renderRevenueChart(); },50); }

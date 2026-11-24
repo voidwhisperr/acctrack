@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.3.1 — mobile view
+
+### Added
+- Mobile bottom navigation: Overview, Deals, Orders, Inventory, Analytics.
+- Sticky horizontal tab strip on phones; active tab stays in sync.
+- Touch-friendly controls: 40–42 px inputs and buttons, 36 px row actions.
+- Responsive forms, fee/discount panels and tables.
+- Safe-area padding for iPhone/Android.
+
+### Fixed
+- Mobile tables no longer force the whole page wider than the screen.
+
 ## v1.3.0 — audit log, 2FA, dead-stock alerts
 
 ### Added
