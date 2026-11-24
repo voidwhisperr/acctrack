@@ -1128,6 +1128,7 @@ code{
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <select id="impPlatform" style="font-size:12px"><option value="g2g">G2G</option><option value="gameflip">Gameflip</option><option value="pa">PlayerAuctions</option></select>
       <input id="impFile" type="file" accept=".csv,text/csv" onchange="importCsvFile(this)" style="font-size:11px">
+      <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="impCashflow" type="checkbox" checked> створити Hold</label>
       <button class="btn gr" id="impRun" style="display:none" onclick="runSalesImport()">Імпортувати</button>
       <span id="impInfo" style="font-size:11px;color:var(--mu)"></span>
     </div>
@@ -4082,16 +4083,31 @@ async function runSalesImport(){
   if(!_impRows.length) return;
   const plat=g('impPlatform').value;
   let added=0, skipped=0;
+  const newRecords=[];
   _impRows.forEach(function(x){
     if(x.order && purchases.some(p=>String(p.orderId||'')===x.order)){ skipped++; return; }
     const after=x.sell*(1-x.feePct)-(x.buy||0);
-    purchases.unshift({id:Date.now()+added,title:x.title,src:plat,srcName:(FEE_CFG.marketplaces||[]).find(m=>m.id===plat)?.name||plat,
+    const rec={id:Date.now()+added,title:x.title,src:plat,srcName:(FEE_CFG.marketplaces||[]).find(m=>m.id===plat)?.name||plat,
       buy:Number(x.buy||0),sell:x.sell,feePct:x.feePct,expenses:0,afterFee:after,currency:'USD',fxRate:1,
       orderId:x.order,date:x.date,platform:plat,imported:true,needsCost:!x.buy,
-      ...(x.inventoryId?{inventoryId:x.inventoryId}:{})});
+      ...(x.inventoryId?{inventoryId:x.inventoryId}:{})};
+    purchases.unshift(rec);
+    newRecords.push({id:rec.id, x, after});
     added++;
   });
   await savePL();
+  let holds=0;
+  if(g('impCashflow')?.checked){
+    for(const rec of newRecords){
+      try{
+        const r=await fetch('/api/cashflow/add',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({platform:plat,amount:Math.max(0,rec.after),status:'hold',date:rec.x.date,
+            note:rec.x.title,saleId:'pl:'+rec.id,order:rec.x.order||''})});
+        const d=await r.json().catch(()=>({}));
+        if(d.ok) holds++;
+      }catch(e){}
+    }
+  }
   for(const x of _impRows){
     if(x.inventoryId){
       try{ await fetch('/api/inventory/status',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -4100,7 +4116,7 @@ async function runSalesImport(){
   }
   try{ loadInventory().catch(()=>{}); }catch(e){}
   renderPurchases();
-  toast('✅ Імпортовано: '+added+(skipped?' · пропущено дублів: '+skipped:''));
+  toast('✅ Імпортовано: '+added+(skipped?' · пропущено дублів: '+skipped:'')+(holds?' · Hold: '+holds:''));
   _impRows=[]; g('impRun').style.display='none'; g('impInfo').textContent=''; g('impPreview').innerHTML='';
   if(g('impFile')) g('impFile').value='';
 }
@@ -6080,6 +6096,7 @@ async function reportPdf(){
       '.note{font-size:11px;color:#666;margin-top:20px;line-height:1.5}@media print{button{display:none}}</style></head><body>'+
       '<h1>Ledger — '+esc(d.month||'')+'</h1><div class="sub">'+new Date().toLocaleString()+'</div>'+
       '<table>'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(String(r[1]))+'</td></tr>').join('')+'</table>'+
+      ((d.items&&d.items.length)?('<h2 style="font-size:15px;margin:24px 0 6px">Угоди за місяць</h2><table><thead><tr><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Дата</th><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Назва</th><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Майданчик</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Продаж</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Комісія</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Собівартість</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Прибуток</th></tr></thead><tbody>'+d.items.slice(0,200).map(function(x){return '<tr><td>'+esc(x.date)+'</td><td>'+esc((x.title||'').substring(0,55))+'</td><td>'+esc(x.platform||'')+'</td><td style="text-align:right">$'+Number(x.sell||0).toFixed(2)+'</td><td style="text-align:right">$'+Number(x.fee||0).toFixed(2)+'</td><td style="text-align:right">$'+Number(x.buy||0).toFixed(2)+'</td><td style="text-align:right;font-weight:700">$'+Number(x.profit||0).toFixed(2)+'</td></tr>';}).join('')+'</tbody></table>'+((d.items.length>200)?'<div class="note">Показано перші 200 угод.</div>':'')):'')+
       '<div class="note">'+esc(t('rep.formula'))+'</div>'+
       '<button onclick="window.print()" style="margin-top:20px;padding:9px 14px">Друк / Зберегти PDF</button>'+
       '</body></html>';

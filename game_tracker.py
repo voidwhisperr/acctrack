@@ -3625,6 +3625,21 @@ def _month_report(month=""):
     profit = round(pl_profit + ed_profit, 2)
     cash = round(revenue - fees - purchases, 2)
 
+    items = []
+    for r in pl:
+        items.append({"date": str(r.get("date") or "")[:10], "title": str(r.get("title") or ""),
+                      "platform": str(r.get("srcName") or r.get("src") or ""),
+                      "sell": round(num(r.get("sell")), 2), "fee": round(num(r.get("sell")) * _fee_pct_of(r), 2),
+                      "buy": round(num(r.get("buy")), 2),
+                      "profit": round(num(r.get("afterFee")) - num(r.get("expenses")), 2),
+                      "currency": str(r.get("currency") or "USD")})
+    for r in ed:
+        items.append({"date": str(r.get("date") or "")[:10], "title": str(r.get("title") or ""),
+                      "platform": "Eldorado", "sell": round(num(r.get("price")), 2),
+                      "fee": round(num(r.get("fee")), 2), "buy": round(num(r.get("buy")), 2),
+                      "profit": round(num(r.get("profit")), 2), "currency": "USD"})
+    items.sort(key=lambda x: (x["date"], x["title"]), reverse=True)
+
     by_day = {}
     for r in pl:
         d = str(r.get("date") or "")[:10]
@@ -3643,6 +3658,7 @@ def _month_report(month=""):
                "buy": pl_buy, "fee": pl_fee, "expenses": pl_expenses, "profit": pl_profit},
         "ed": {"count": len(ed), "revenue": ed_rev, "fee": ed_fee,
                "buy": ed_buy, "profit": ed_profit},
+        "items": items[:500],
         "purchases": {"count": len(inv), "cost": purchases},
         "stock": {"in_stock_value": inv_value, "sold_total": len(sold_inv)},
         "cash": cash,
@@ -4195,7 +4211,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.9.1", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.10.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4572,7 +4588,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.9.1",
+            self._json({"ok": True, "version": "1.10.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5453,11 +5469,15 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 rec = {"id": "cf-" + str(int(time.time() * 1000)),
                        "platform": platform, "amount": amount, "status": status,
                        "date": str(body.get("date") or datetime.date.today().isoformat())[:10],
-                       "note": str(body.get("note") or "")[:200], "ts": int(time.time())}
+                       "note": str(body.get("note") or "")[:200], "ts": int(time.time()),
+                       "saleId": str(body.get("saleId") or "")[:80],
+                       "order": str(body.get("order") or "")[:80]}
                 with _WRITE_LOCK:
                     items = _read_json(CASHFLOW_FILE, []) or []
                     if not isinstance(items, list):
                         items = []
+                    if rec["saleId"] and any(str(x.get("saleId") or "") == rec["saleId"] for x in items if isinstance(x, dict)):
+                        self._json(_cashflow_data()); return
                     items.append(rec)
                     _atomic_dump(CASHFLOW_FILE, items[:5000])
                 self._json(_cashflow_data())
@@ -5864,7 +5884,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.9.1")
+    print("  ▲  AccTrack v1.10.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

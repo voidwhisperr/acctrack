@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.10.0 — auto cashflow and PDF line items
+
+- Imported sales create a linked cashflow Hold (saleId/order dedupe).
+- Cashflow entries store saleId/order; repeated imports do not duplicate holds.
+- PDF monthly report includes the deal list with date, title, platform, sale, fee, cost and profit.
+
 ## v1.9.1 — automatic cost matching on import
 
 - CSV preview matches rows to in-stock inventory by title.
