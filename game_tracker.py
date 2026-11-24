@@ -1420,7 +1420,7 @@ def _fx_usd_cny_loop():
                     st["usd_cny_ts"] = time.time()
                     with _WRITE_LOCK:
                         _atomic_dump(SETTINGS_FILE, st)
-                    print(f"  💱 FX ¥/$ = {rate:.3f}", flush=True)
+                    print("  💱 " + _cl("Курс ¥/$", "FX ¥/$", "Курс ¥/$") + f" = {rate:.3f}", flush=True)
         except Exception as e:
             print(f"  ⚠ fx: {e}", flush=True)
         time.sleep(6 * 3600)
@@ -2396,7 +2396,7 @@ def _refresh_suppliers(reason=""):
 def _refresh_suppliers_inner(reason=""):
     global _supplier_cache
     if reason:
-        print(f"\n  📦 Supplier refresh ({reason})...", flush=True)
+        print(f"\n  📦 " + _cl(f"Оновлення постачальників ({reason})...", f"Supplier refresh ({reason})...", f"Обновление поставщиков ({reason})..."), flush=True)
     _price_drops.clear()
     _new_products.clear()
     fresh, ok_keys, failed = [], set(), {}
@@ -2417,14 +2417,14 @@ def _refresh_suppliers_inner(reason=""):
     except Exception as e:
         print(f"  ⚠ Supplier cache: {e}", flush=True)
     _notify_new_products()
-    print(f"  💳 ScraperAPI today: {_scraper_state.get('used', 0)}"
+    print("  💳 " + _cl("ScraperAPI сьогодні: ", "ScraperAPI today: ", "ScraperAPI сегодня: ") + f"{_scraper_state.get('used', 0)}"
           f"/{_scraper_state.get('limit', 30)}", flush=True)
     sale = sum(1 for p in _supplier_cache if p.get("isOnSale") and not p.get("gone"))
     gone = sum(1 for p in _supplier_cache if p.get("gone"))
     _notify_price_drops()
     tail = f" | ⚠ не оновлено: {', '.join(failed)}" if failed else ""
-    print(f"  ✅ Suppliers: {len(_supplier_cache)} products | Sale: {sale}"
-          f" | gone: {gone}{tail}", flush=True)
+    print("  ✅ " + _cl("Постачальники: ", "Suppliers: ", "Поставщики: ") + f"{len(_supplier_cache)} " + _cl("товарів", "products", "товаров")
+          + " | " + _cl("знижки", "on sale", "скидки") + f": {sale} | " + _cl("зникли", "gone", "исчезли") + f": {gone}{tail}", flush=True)
     return {"count": len(_supplier_cache), "failed": failed, "sale": sale, "gone": gone}
 
 
@@ -2958,7 +2958,7 @@ def news_check(force=False):
         _news_state["last_new"] = len(found)
         _news_save()
         sent = 0 if first_run else _notify_news(found)
-        print(f"  🆕 News: checked {len(known_all)} shops, new {len(found)}"
+        print("  🆕 " + _cl("Новинки: перевірено ", "News: checked ", "Новинки: проверено ") + f"{len(known_all)} " + _cl("магазинів, нових ", "shops, new ", "магазинов, новых ") + f"{len(found)}"
               + (" (перший запуск — без алерту)" if first_run else ""), flush=True)
         return {"ok": True, "new": len(found), "notified": sent, "baseline": first_run}
     finally:
@@ -4165,6 +4165,23 @@ _LEDGER_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect x="372" y="244" width="22" height="10" rx="5" fill="#34D399"/>
 </svg>"""
 
+def _console_lang():
+    try:
+        lng = str((_read_json(SETTINGS_FILE, {}) or {}).get("lang") or "uk").lower()
+    except Exception:
+        lng = "uk"
+    return "ru" if lng.startswith("ru") else ("en" if lng.startswith("en") else "uk")
+
+
+def _cl(uk, en, ru=None):
+    lng = _console_lang()
+    if lng == "ru":
+        return ru if ru is not None else uk
+    if lng == "en":
+        return en
+    return uk
+
+
 def _app_brand():
     st = _read_json(SETTINGS_FILE, {}) or {}
     nm = (str(st.get("app_name") or "AccTrack").strip()[:32] or "AccTrack")
@@ -4438,7 +4455,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.31.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.32.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4841,7 +4858,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.31.0",
+            self._json({"ok": True, "version": "1.32.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6162,13 +6179,13 @@ def _startup_supplier_refresh(allow_network=True):
         now_ts = int(time.time())
         st = _sup_status()
         if not _sup_due() and _supplier_cache:
-            print(f"  📦 Suppliers: cache {len(_supplier_cache)} products "
+            print("  📦 " + _cl("Постачальники: кеш ", "Suppliers: cache ", "Поставщики: кэш ") + f"{len(_supplier_cache)} " + _cl("товарів", "products", "товаров") + " "
                   f"(оновлено {max(0, (now_ts - st['ts']) // 60)} хв тому, "
                   f"інтервал {int(_sup_hours())} год)", flush=True)
             return
         if not allow_network:
             return
-        print("\n  📦 Loading suppliers in background (dashboard is ready)...", flush=True)
+        print("\n  📦 " + _cl("Завантажую постачальників у фоні (дашборд уже працює)...", "Loading suppliers in background (dashboard is ready)...", "Загружаю поставщиков в фоне (дашборд уже работает)..."), flush=True)
         is_first_run = len(_supplier_seen) == 0
         _price_drops.clear()
         fresh, ok_keys = [], set()
@@ -6240,15 +6257,21 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.31.0")
-    print("  📊 Deals · Channels · Stock · Analytics · Backups")
+    print("  ▲  AccTrack v1.32.0")
+    print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
+                        "Deals · Channels · Stock · Analytics · Backups",
+                        "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
     print("=" * 60 + "\n")
 
     if AUTH_MODE == "off":
-        print("  🔓 No password — open access (set one in ⚙ → Password)"
-              + (" · заголовок Access обов'язковий" if REQUIRE_ACCESS else ""))
+        print("  🔓 " + _cl("Без пароля — відкритий доступ (задай у ⚙ → Пароль)",
+                        "No password — open access (set one in ⚙ → Password)",
+                        "Без пароля — открытый доступ (задай в ⚙ → Пароль)")
+              + (" · " + _cl("заголовок Access обов'язковий", "Access header required", "заголовок Access обязателен") if REQUIRE_ACCESS else ""))
     else:
-        print("  🔓 No password — open access (enable: ⚙ → Login password)")
+        print("  🔓 " + _cl("Без пароля — відкритий доступ (увімкни: ⚙ → Пароль входу)",
+                        "No password — open access (enable: ⚙ → Login password)",
+                        "Без пароля — открытый доступ (включи: ⚙ → Пароль входа)"))
     print()
 
     _load_file_cache()
@@ -6319,8 +6342,10 @@ def main():
     if _gmail_configured():
         print("  📧  Gmail: enabled (checking every 2 min)")
     else:
-        print("  📧  Gmail: not configured (⚙ → Gmail)")
-    print("  Ctrl+C — stop\n" + "-" * 60)
+        print("  📧  " + _cl("Gmail: не налаштовано (⚙ → Gmail)",
+                        "Gmail: not configured (⚙ → Gmail)",
+                        "Gmail: не настроен (⚙ → Gmail)"))
+    print("  " + _cl("Ctrl+C — зупинити", "Ctrl+C — stop", "Ctrl+C — остановить") + "\n" + "-" * 60)
     if os.environ.get("GT_NO_BROWSER") != "1" and sys.stdout.isatty():
         try:
             webbrowser.open(url)

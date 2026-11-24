@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.32.0 — free/paid Taobao, form labels, console language
+
+- Free Taobao page hides automation controls, data list and agent setup; paid keeps them.
+- Marketplace calculator and deal form labels localized; amount labels no longer say $ when a deal currency is chosen.
+- Console startup/status text follows the selected UI language (uk/en/ru).
+
 ## v1.31.0 — free/paid Taobao split and form labels
 
 - Free Taobao page hides automation buttons, filters, data list and agent setup; paid keeps them.
