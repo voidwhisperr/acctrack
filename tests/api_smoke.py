@@ -51,7 +51,7 @@ def check(name, cond, info=""):
 print("=== 1. ПУБЛІЧНЕ / АВТОРИЗАЦІЯ ===")
 st, d = call("/api/health", auth=False)
 check("health без пароля", st == 200 and d.get("ok"), st)
-check("версія 1.22.0", d.get("version") == "1.22.0", d)
+check("версія 1.23.0", d.get("version") == "1.23.0", d)
 st, d = call("/api/settings", auth=False)
 auth_open = (st == 200)
 check("API: режим без пароля (або 401, якщо пароль увімкнено)", st in (200, 401), st)

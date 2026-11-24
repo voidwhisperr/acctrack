@@ -773,6 +773,7 @@ code{
       <div style="display:flex;gap:8px;align-items:center">
         <span id="mailStat" style="font-size:12px;color:var(--mu)"></span>
         <button class="btn" id="orderNotifyBtn" style="padding:5px 10px;font-size:11px" onclick="enableOrderNotifications()">🔔 Сповіщення</button>
+        <button class="btn" style="padding:5px 10px;font-size:11px" onclick="createDemoOrder()">🧪 Демо</button>
         <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="orderSound" type="checkbox" checked> звук</label>
         <button class="btn" onclick="loadMailQueue(true)">↺ Оновити</button>
       </div>
@@ -6493,6 +6494,15 @@ async function loadMailQueue(force){
   }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
 }
 
+async function createDemoOrder(){
+  try{
+    const d=await fetch('/api/mail/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    await loadMailQueue(true);
+    notifyNewOrder(1);
+    toast('🧪 Демо-замовлення створено');
+  }catch(e){ toast('⚠ '+e, false); }
+}
 async function mailCookieHint(){
   const box = g('mailHint'); if(!box) return;
   try{

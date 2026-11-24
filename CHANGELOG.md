@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.23.0 — demo order
+
+- Test order button in Orders; creates a clearly labelled demo order and triggers the new-order alert.
+- Endpoint `/api/mail/demo` for testing notification flow.
+
 ## v1.22.0 — background order notifications
 
 - Browser notification on new order when the tab is in background.
