@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.14.0 — tax and cashflow in report
+
+- Configurable tax rate in the monthly report.
+- PDF shows cashflow hold/available/withdrawn, net profit tax base and estimated tax.
+- Report loads automatically when Analytics opens.
+
 ## v1.13.0 — payout rules
 
 - Configurable payout hold days per platform (G2G, Gameflip, PlayerAuctions, ZeusX, FunPay, Eldorado, other).

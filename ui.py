@@ -1097,6 +1097,7 @@ code{
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
         <div style="font-size:14px;font-weight:800">📄 Місячний звіт</div>
         <input id="repMonth" type="month" style="font-size:13px">
+        <label style="font-size:11px;color:var(--mu)">Податок % <input id="repTaxRate" type="number" min="0" max="50" step="0.1" style="width:64px" onchange="saveTaxRate()"></label>
         <button class="btn" style="font-size:12px;padding:6px 11px" onclick="loadReport()">Показати</button>
         <a class="btn" id="repCsv" style="font-size:12px;padding:6px 11px;text-decoration:none" href="#">⬇ CSV</a>
         <button class="btn" style="font-size:12px;padding:6px 11px" onclick="reportPdf()">🖨 PDF</button>
@@ -2671,7 +2672,7 @@ function mnavGo(id){
   if(!tab) return;
   sw(id,tab);
   if(id==='mail'){ try{ loadMailQueue(); }catch(e){} }
-  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); }catch(e){} }
+  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); loadReport(); }catch(e){} }
   if(id==='taobao'){ try{ loadAgentCfg(); }catch(e){} }
   if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
   if(id==='stats'){ try{ renderStats(); setTimeout(renderRevenueChart,80); }catch(e){} }
@@ -2685,7 +2686,7 @@ function sw(id,el){
   if(id==='overview'){ renderOverview(); }
   if(id==='tracker'){ setTimeout(()=>{ renderPurchases(); renderRevenueChart(); },50); }
   if(id==='channels'){ renderChAll(); setTimeout(()=>{ try{ translateAll(); }catch(e){} }, 700); }
-  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); }catch(e){} }
+  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); loadReport(); }catch(e){} }
   if(id==='taobao'){ try{ loadAgentCfg(); }catch(e){} }
   if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
 }
@@ -6116,6 +6117,7 @@ async function loadReport(){
     if(!d.ok){ box.innerHTML = '<div class="al err">⚠ ' + esc(d.error || '') + '</div>'; return; }
     if(g('repMonth') && !g('repMonth').value) g('repMonth').value = d.month;
     if(g('repCsv')) g('repCsv').href = '/api/report/export?lang=' + encodeURIComponent(LANG) + (d.month ? '&month=' + d.month : '');
+    if(g('repTaxRate') && d.tax) g('repTaxRate').value = d.tax.rate;
     const card = (k, v, c) => '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px 14px;min-width:140px">'
       + '<div style="font-size:11px;color:var(--mu)">' + k + '</div>'
       + '<div style="font-size:18px;font-weight:800;color:' + (c || 'var(--tx)') + '">' + v + '</div></div>';
@@ -6136,6 +6138,16 @@ async function loadReport(){
       + t('rep.formula')
       + '</div>';
   }catch(e){ box.innerHTML = '<div class="al err">⚠ ' + esc(String(e)) + '</div>'; }
+}
+
+async function saveTaxRate(){
+  try{
+    const v=parseFloat(g('repTaxRate')?.value||0);
+    const d=await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tax_rate:Math.max(0,Math.min(50,v))})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    toast('✅ Податок: '+v+'%');
+    loadReport();
+  }catch(e){ toast('⚠ '+e, false); }
 }
 
 async function reportPdf(){
@@ -6163,6 +6175,14 @@ async function reportPdf(){
       '.note{font-size:11px;color:#666;margin-top:20px;line-height:1.5}@media print{button{display:none}}</style></head><body>'+
       '<h1>Ledger — '+esc(d.month||'')+'</h1><div class="sub">'+new Date().toLocaleString()+'</div>'+
       '<table>'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(String(r[1]))+'</td></tr>').join('')+'</table>'+
+      '<h2 style="font-size:15px;margin:24px 0 6px">Cashflow / податок</h2><table>'+
+        '<tr><td>Hold</td><td>$'+Number((d.cashflow||{}).hold||0).toFixed(2)+'</td></tr>'+
+        '<tr><td>Available</td><td>$'+Number((d.cashflow||{}).available||0).toFixed(2)+'</td></tr>'+
+        '<tr><td>Withdrawn</td><td>$'+Number((d.cashflow||{}).withdrawn||0).toFixed(2)+'</td></tr>'+
+        '<tr><td>Податкова база (net profit)</td><td>$'+Number((d.tax||{}).base||0).toFixed(2)+'</td></tr>'+
+        '<tr><td>Ставка податку</td><td>'+Number((d.tax||{}).rate||0).toFixed(1)+'%</td></tr>'+
+        '<tr><td>Оцінка податку</td><td>$'+Number((d.tax||{}).estimate||0).toFixed(2)+'</td></tr>'+
+      '</table>'+
       ((d.items&&d.items.length)?('<h2 style="font-size:15px;margin:24px 0 6px">Угоди за місяць</h2><table><thead><tr><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Дата</th><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Назва</th><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Майданчик</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Продаж</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Комісія</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Собівартість</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Прибуток</th></tr></thead><tbody>'+d.items.slice(0,200).map(function(x){return '<tr><td>'+esc(x.date)+'</td><td>'+esc((x.title||'').substring(0,55))+'</td><td>'+esc(x.platform||'')+'</td><td style="text-align:right">$'+Number(x.sell||0).toFixed(2)+'</td><td style="text-align:right">$'+Number(x.fee||0).toFixed(2)+'</td><td style="text-align:right">$'+Number(x.buy||0).toFixed(2)+'</td><td style="text-align:right;font-weight:700">$'+Number(x.profit||0).toFixed(2)+'</td></tr>';}).join('')+'</tbody></table>'+((d.items.length>200)?'<div class="note">Показано перші 200 угод.</div>':'')):'')+
       '<div class="note">'+esc(t('rep.formula'))+'</div>'+
       '<button onclick="window.print()" style="margin-top:20px;padding:9px 14px">Друк / Зберегти PDF</button>'+

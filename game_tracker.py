@@ -3653,6 +3653,17 @@ def _month_report(month=""):
                       "fee": round(num(r.get("fee")), 2), "buy": round(num(r.get("buy")), 2),
                       "profit": round(num(r.get("profit")), 2), "currency": "USD"})
     items.sort(key=lambda x: (x["date"], x["title"]), reverse=True)
+    cf_month = [x for x in (_read_json(CASHFLOW_FILE, []) or [])
+                if isinstance(x, dict) and str(x.get("date") or "").startswith(month)]
+    cf_tot = {"hold": 0.0, "available": 0.0, "withdrawn": 0.0}
+    for x in cf_month:
+        st = str(x.get("status") or "hold")
+        if st in cf_tot:
+            cf_tot[st] += num(x.get("amount"))
+    _st = _read_json(SETTINGS_FILE, {}) or {}
+    tax_rate = float(_st.get("tax_rate") if _st.get("tax_rate") is not None else 5)
+    tax_base = round(max(0.0, profit), 2)
+    tax_est = round(tax_base * tax_rate / 100.0, 2)
 
     by_day = {}
     for r in pl:
@@ -3673,6 +3684,8 @@ def _month_report(month=""):
         "ed": {"count": len(ed), "revenue": ed_rev, "fee": ed_fee,
                "buy": ed_buy, "profit": ed_profit},
         "items": items[:500],
+        "cashflow": {k: round(v, 2) for k, v in cf_tot.items()},
+        "tax": {"rate": tax_rate, "base": tax_base, "estimate": tax_est},
         "purchases": {"count": len(inv), "cost": purchases},
         "stock": {"in_stock_value": inv_value, "sold_total": len(sold_inv)},
         "cash": cash,
@@ -4225,7 +4238,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.13.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.14.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4508,6 +4521,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "deal_x": float(st.get("deal_x") or 5),
                 "price_targets": st.get("price_targets") or [],
                 "payout_days": {**PAYOUT_DAYS_DEFAULT, **(st.get("payout_days") or {})},
+                "tax_rate": float(st.get("tax_rate") if st.get("tax_rate") is not None else 5),
                 "digest_last": str(st.get("digest_last") or ""),
                 "alerts_only_my_games": bool(st.get("alerts_only_my_games", True)),
                 "notify": {k: bool(st.get("notify_" + k, v))
@@ -4603,7 +4617,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.13.0",
+            self._json({"ok": True, "version": "1.14.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5051,6 +5065,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         st["taobao_min_cny"] = round(_fnum(body.get("taobao_min_cny"), "taobao_min_cny", 0, 10000), 2)
                     if "deal_x" in body:
                         st["deal_x"] = round(_fnum(body.get("deal_x"), "deal_x", 1, 100), 1)
+                    if "tax_rate" in body:
+                        st["tax_rate"] = round(max(0, min(50, _fnum(body.get("tax_rate"), "tax_rate", 0, 50, 5))), 2)
                     if isinstance(body.get("payout_days"), dict):
                         pd = {}
                         for k in PAYOUT_DAYS_DEFAULT:
@@ -5917,7 +5933,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.13.0")
+    print("  ▲  AccTrack v1.14.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 
