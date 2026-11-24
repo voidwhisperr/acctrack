@@ -1106,6 +1106,35 @@ code{
     <div id="anDead" style="margin-top:14px"></div>
   </div>
   <div class="panel" style="margin-bottom:14px">
+    <div class="ph">💵 CASHFLOW / PAYOUTS</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="cfCards"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+      <select id="cfPlatform" style="font-size:12px">
+        <option value="g2g">G2G</option><option value="gameflip">Gameflip</option>
+        <option value="pa">PlayerAuctions</option><option value="zeusx">ZeusX</option>
+        <option value="funpay">FunPay</option><option value="eldorado">Eldorado</option><option value="other">Інше</option>
+      </select>
+      <input id="cfAmount" type="number" min="0.01" step="0.01" placeholder="Сума $" style="width:120px">
+      <select id="cfStatus" style="font-size:12px"><option value="hold">Hold</option><option value="available">Available</option><option value="withdrawn">Withdrawn</option></select>
+      <input id="cfDate" type="date" style="width:140px">
+      <input id="cfNote" placeholder="Коментар" style="width:180px">
+      <button class="btn gr" onclick="cashflowAdd()">＋ Додати</button>
+    </div>
+    <div id="cfList"><div class="none">⏳ …</div></div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph">📥 ІМПОРТ ПРОДАЖІВ</div>
+    <div style="font-size:11.5px;color:var(--mu);margin:-4px 0 9px">CSV з G2G / Gameflip / PlayerAuctions. Колонки: date, title/item, price/amount, fee (необов’язково), order id (необов’язково). Собівартість не підтягується — додай її після імпорту.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="impPlatform" style="font-size:12px"><option value="g2g">G2G</option><option value="gameflip">Gameflip</option><option value="pa">PlayerAuctions</option></select>
+      <input id="impFile" type="file" accept=".csv,text/csv" onchange="importCsvFile(this)" style="font-size:11px">
+      <button class="btn gr" id="impRun" style="display:none" onclick="runSalesImport()">Імпортувати</button>
+      <span id="impInfo" style="font-size:11px;color:var(--mu)"></span>
+    </div>
+    <div id="impPreview" style="margin-top:9px"></div>
+  </div>
+
+  <div class="panel" style="margin-bottom:14px">
     <div class="ph">🏭 SUPPLIER ROI</div>
     <div style="font-size:11.5px;color:var(--mu);margin:-4px 0 9px">Прибуток, ROI і sell-through по постачальниках — на основі складу та прив’язаних продажів.</div>
     <div id="supRoi"><div class="none">⏳ …</div></div>
@@ -2625,7 +2654,7 @@ function mnavGo(id){
   if(!tab) return;
   sw(id,tab);
   if(id==='mail'){ try{ loadMailQueue(); }catch(e){} }
-  if(id==='stats'){ try{ loadSupplierROI(); }catch(e){} }
+  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); }catch(e){} }
   if(id==='taobao'){ try{ loadAgentCfg(); }catch(e){} }
   if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
   if(id==='stats'){ try{ renderStats(); setTimeout(renderRevenueChart,80); }catch(e){} }
@@ -2639,7 +2668,7 @@ function sw(id,el){
   if(id==='overview'){ renderOverview(); }
   if(id==='tracker'){ setTimeout(()=>{ renderPurchases(); renderRevenueChart(); },50); }
   if(id==='channels'){ renderChAll(); setTimeout(()=>{ try{ translateAll(); }catch(e){} }, 700); }
-  if(id==='stats'){ try{ loadSupplierROI(); }catch(e){} }
+  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); }catch(e){} }
   if(id==='taobao'){ try{ loadAgentCfg(); }catch(e){} }
   if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
 }
@@ -3981,6 +4010,115 @@ async function copyAgent(id){
   try{ await navigator.clipboard.writeText(txt); toast('✅ Скопійовано'); }
   catch(e){ prompt('Скопіюй:', txt); }
 }
+let _impRows=[];
+function parseCsvText(text){
+  const rows=[]; let row=[], cur='', q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){
+      if(ch==='"' && text[i+1]==='"'){ cur+='"'; i++; }
+      else if(ch==='"'){ q=false; }
+      else cur+=ch;
+    } else {
+      if(ch==='"'){ q=true; }
+      else if(ch===','){ row.push(cur); cur=''; }
+      else if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+      else if(ch!=='\r'){ cur+=ch; }
+    }
+  }
+  row.push(cur); if(row.some(x=>String(x).trim())) rows.push(row);
+  return rows;
+}
+function _num(s){ return parseFloat(String(s==null?'':s).replace(/[^0-9.,-]/g,'').replace(',', '.'))||0; }
+function _date(s){
+  const v=String(s||'').trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0,10);
+  const m=v.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2,4})/);
+  if(m){ const y=m[3].length===2?'20'+m[3]:m[3]; return y+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0'); }
+  return new Date().toISOString().slice(0,10);
+}
+async function importCsvFile(input){
+  const f=input.files&&input.files[0]; if(!f) return;
+  const text=await f.text();
+  const rows=parseCsvText(text);
+  if(rows.length<2){ toast('⚠ CSV порожній', false); return; }
+  const hdr=rows[0].map(x=>String(x).trim().toLowerCase());
+  const col=function(){ for(let i=0;i<arguments.length;i++){ const k=arguments[i]; const ix=hdr.findIndex(h=>h===k||h.includes(k)); if(ix>=0) return ix; } return -1; };
+  const ci={date:col('date','created','sale date'),title:col('title','item','product','name','description'),price:col('price','amount','total','gross'),fee:col('fee','commission'),order:col('order','id')};
+  if(ci.title<0||ci.price<0){ toast('⚠ Не знайдено колонок title/price', false); return; }
+  const plat=g('impPlatform').value;
+  const def=Number((FEE_CFG.fees||{})[plat]||0);
+  _impRows=rows.slice(1).map(function(r){
+    const sell=_num(r[ci.price]); if(!(sell>0)) return null;
+    const feeV=ci.fee>=0?_num(r[ci.fee]):sell*def;
+    const fee=Math.max(0,Math.min(sell,feeV));
+    return {date:_date(ci.date>=0?r[ci.date]:''),title:String(ci.title>=0?r[ci.title]:'Import').slice(0,200),
+            sell:sell,fee:fee,feePct:sell>0?fee/sell:0,order:ci.order>=0?String(r[ci.order]||''):'',platform:plat};
+  }).filter(Boolean).slice(0,1000);
+  if(!_impRows.length){ toast('⚠ Немає рядків з ціною', false); return; }
+  g('impRun').style.display='inline-flex';
+  g('impInfo').textContent=f.name+' · '+_impRows.length+' рядків';
+  g('impPreview').innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>Дата</th><th>Назва</th><th>Ціна</th><th>Комісія</th></tr></thead><tbody>'+
+    _impRows.slice(0,20).map(function(x){return '<tr><td>'+esc(x.date)+'</td><td>'+esc(x.title)+'</td><td>$'+x.sell.toFixed(2)+'</td><td>$'+x.fee.toFixed(2)+'</td></tr>';}).join('')+
+    '</tbody></table></div>'+( _impRows.length>20?'<div style="font-size:10px;color:var(--mu);margin-top:4px">…ще '+(_impRows.length-20)+'</div>':'');
+}
+async function runSalesImport(){
+  if(!_impRows.length) return;
+  const plat=g('impPlatform').value;
+  let added=0, skipped=0;
+  _impRows.forEach(function(x){
+    if(x.order && purchases.some(p=>String(p.orderId||'')===x.order)){ skipped++; return; }
+    const after=x.sell*(1-x.feePct);
+    purchases.unshift({id:Date.now()+added,title:x.title,src:plat,srcName:(FEE_CFG.marketplaces||[]).find(m=>m.id===plat)?.name||plat,
+      buy:0,sell:x.sell,feePct:x.feePct,expenses:0,afterFee:after,currency:'USD',fxRate:1,
+      orderId:x.order,date:x.date,platform:plat,imported:true,needsCost:true});
+    added++;
+  });
+  await savePL(); renderPurchases();
+  toast('✅ Імпортовано: '+added+(skipped?' · пропущено дублів: '+skipped:''));
+  _impRows=[]; g('impRun').style.display='none'; g('impInfo').textContent=''; g('impPreview').innerHTML='';
+  if(g('impFile')) g('impFile').value='';
+}
+const CF_NAMES={g2g:'G2G',gameflip:'Gameflip',pa:'PlayerAuctions',zeusx:'ZeusX',funpay:'FunPay',eldorado:'Eldorado',other:'Інше'};
+async function loadCashflow(){
+  const el=g('cfList'); if(!el) return;
+  try{
+    const d=await fetch('/api/cashflow').then(r=>r.json());
+    const it=d.items||[], t=d.totals||{};
+    if(g('cfCards')) g('cfCards').innerHTML=[
+      ['Hold','hold','var(--yw)'],['Available','available','var(--gr)'],['Withdrawn','withdrawn','var(--a1)'],['Total','all','var(--tx)']
+    ].map(function(a){var k=a[0],key=a[1],c=a[2];return '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:8px 12px;min-width:110px"><div style="font-size:10px;color:var(--mu)">'+k+'</div><div style="font-size:17px;font-weight:800;color:'+c+'">$'+Number(key==='all'?d.all:(t[key]||0)).toFixed(2)+'</div></div>';}).join('');
+    if(!it.length){ el.innerHTML='<div class="none">Немає записів. Додай hold/available/withdrawn.</div>'; return; }
+    var rows=it.slice().reverse().map(function(x){
+      var id=esc(x.id);
+      return '<tr><td>'+esc(x.date||'')+'</td><td>'+esc(CF_NAMES[x.platform]||x.platform||'—')+'</td><td>$'+Number(x.amount||0).toFixed(2)+'</td><td>'+esc(x.status||'hold')+'</td><td>'+esc((x.note||'').substring(0,60))+'</td><td style="white-space:nowrap">'
+        +'<button class="btn" style="padding:3px 7px;font-size:10px" onclick="cashflowSet(\''+id+'\',\'available\')">A</button> '
+        +'<button class="btn" style="padding:3px 7px;font-size:10px" onclick="cashflowSet(\''+id+'\',\'withdrawn\')">W</button> '
+        +'<button class="btn rd" style="padding:3px 7px;font-size:10px" onclick="cashflowDel(\''+id+'\')">✕</button>'
+        +'</td></tr>';
+    }).join('');
+    el.innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>Дата</th><th>Платформа</th><th>Сума</th><th>Статус</th><th>Коментар</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
+}
+async function cashflowAdd(){
+  const amount=Number(g('cfAmount')?.value||0);
+  if(!(amount>0)){ toast('⚠ '+(LANG==='en'?'Enter amount':LANG==='ru'?'Введи сумму':'Введи суму'), false); return; }
+  const body={platform:g('cfPlatform')?.value||'other',amount,status:g('cfStatus')?.value||'hold',
+    date:g('cfDate')?.value||new Date().toISOString().slice(0,10),note:g('cfNote')?.value||''};
+  try{
+    const d=await fetch('/api/cashflow/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    g('cfAmount').value=''; g('cfNote').value='';
+    await loadCashflow();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function cashflowSet(id,status){
+  try{ const d=await fetch('/api/cashflow/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}).then(r=>r.json()); if(d.ok) await loadCashflow(); }catch(e){}
+}
+async function cashflowDel(id){
+  if(!confirm(LANG==='en'?'Delete cashflow entry?':LANG==='ru'?'Удалить запись?':'Видалити запис?')) return;
+  try{ const d=await fetch('/api/cashflow/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).then(r=>r.json()); if(d.ok) await loadCashflow(); }catch(e){}
+}
 async function loadSupplierROI(){
   const el=g('supRoi'); if(!el) return;
   try{
@@ -4995,6 +5133,7 @@ function renderSupPage(){
           </div>
           <div style="display:flex;gap:6px">
             <a href="${esc(p.url)}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a>
+            <button class="btn" style="padding:6px 10px" onclick="addTargetFromSup(_supItems[${i}])" title="Цільова ціна">🎯</button>
             <button class="btn" style="padding:6px 10px;gap:5px" data-hist="${esc(p.id)}" title="Історія ціни за 30 днів"><svg class="ic"><use href="#ic-chart"/></svg>${t('cb.history')}</button>
             <button class="btn" style="padding:6px 10px;gap:5px" data-cmp="${esc(p.id)}" title="Порівняти ціну в інших магазинах"><svg class="ic"><use href="#ic-scale"/></svg>${t('cb.compare')}</button>
             <button class="btn" style="padding:6px 10px;gap:5px;white-space:nowrap" onclick="openLotModal(_supItems[${i}])" title="Калькулятор ціни лота"><svg class="ic"><use href="#ic-calc"/></svg>${t('cb.lot')}</button>
@@ -5015,7 +5154,7 @@ function renderSupPage(){
         <td>${disc}</td>
         <td>${p.gone?'<span style="color:var(--mu)">—</span>':(p.available?'<span style="color:var(--gr)">✓</span>':'<span style="color:var(--rd)">✗</span>')}</td>
         <td>${supAgeBadge(p, now, DAY)}</td>
-        <td style="white-space:nowrap;text-align:right"><div style="display:inline-flex;gap:5px;align-items:center;justify-content:flex-end"><a href="${esc(p.url)}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a><button class="btn" style="padding:6px 10px;gap:5px" data-hist="${esc(p.id)}" title="Історія ціни за 30 днів"><svg class="ic"><use href="#ic-chart"/></svg>${t('cb.history')}</button><button class="btn" style="padding:6px 10px;gap:5px" data-cmp="${esc(p.id)}" title="Порівняти ціну в інших магазинах"><svg class="ic"><use href="#ic-scale"/></svg>${t('cb.compare')}</button><button class="btn" style="padding:6px 10px;gap:5px;white-space:nowrap" onclick="openLotModal(_supItems[${i}])" title="Калькулятор ціни лота"><svg class="ic"><use href="#ic-calc"/></svg>${t('cb.lot')}</button></div></td></tr>`;
+        <td style="white-space:nowrap;text-align:right"><div style="display:inline-flex;gap:5px;align-items:center;justify-content:flex-end"><a href="${esc(p.url)}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a><button class="btn" style="padding:6px 10px" onclick="addTargetFromSup(_supItems[${i}])" title="Цільова ціна">🎯</button><button class="btn" style="padding:6px 10px;gap:5px" data-hist="${esc(p.id)}" title="Історія ціни за 30 днів"><svg class="ic"><use href="#ic-chart"/></svg>${t('cb.history')}</button><button class="btn" style="padding:6px 10px;gap:5px" data-cmp="${esc(p.id)}" title="Порівняти ціну в інших магазинах"><svg class="ic"><use href="#ic-scale"/></svg>${t('cb.compare')}</button><button class="btn" style="padding:6px 10px;gap:5px;white-space:nowrap" onclick="openLotModal(_supItems[${i}])" title="Калькулятор ціни лота"><svg class="ic"><use href="#ic-calc"/></svg>${t('cb.lot')}</button></div></td></tr>`;
     }).join('')+'</tbody></table>';
   }
   window._supItems=page;
@@ -5959,6 +6098,25 @@ async function loadAnalytics(){
     }
     loadReport();
   }catch(e){ toast('⚠ ' + e, false); }
+}
+
+async function addTargetFromSup(p){
+  if(!p) return;
+  const cur=Number(p.price||0);
+  const dv=(cur>0?cur*0.9:10).toFixed(2);
+  const v=prompt((LANG==='ru'?'Купить '+p.title+' до $':LANG==='en'?'Buy '+p.title+' up to $':'Купити '+p.title+' до $'), dv);
+  if(v===null) return;
+  const mx=parseFloat(String(v).replace(',','.'));
+  if(!Number.isFinite(mx)||mx<=0){ toast('⚠ '+(LANG==='ru'?'Неверная цена':LANG==='en'?'Invalid price':'Некоректна ціна'), false); return; }
+  try{
+    const st=await fetch('/api/settings').then(r=>r.json());
+    const rows=(st.price_targets||[]).filter(x=>String(x.q).toLowerCase()!==String(p.title||'').toLowerCase());
+    rows.push({q:String(p.title||'').slice(0,80), max:Math.round(mx*100)/100});
+    const r=await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({price_targets:rows})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||d.ok===false){ toast('⚠ '+(d.error||('HTTP '+r.status)), false); return; }
+    toast('🎯 '+(LANG==='ru'?'Цель добавлена':LANG==='en'?'Target added':'Ціль додано')+': $'+mx.toFixed(2));
+  }catch(e){ toast('⚠ '+e, false); }
 }
 
 async function savePriceTargets(){

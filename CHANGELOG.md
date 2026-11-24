@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.9.0 — sales import, cashflow, one-click targets
+
+- CSV import for G2G/Gameflip/PlayerAuctions with preview and duplicate order filtering.
+- Cashflow ledger: hold / available / withdrawn with totals and status controls.
+- One-click target price from catalog rows.
+
 ## v1.8.0 — PDF report and marketplace fees
 
 - Monthly report PDF via print dialog (no extra dependency).

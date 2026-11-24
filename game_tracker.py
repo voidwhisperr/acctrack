@@ -92,6 +92,7 @@ NEWS_STATE_FILE = str(_BASE_DIR / ".gt_sitemap.json")
 TAOBAO_FILE = str(_BASE_DIR / ".gt_taobao.json")
 INVENTORY_FILE = str(_BASE_DIR / ".gt_inventory.json")
 SETTINGS_FILE = str(_BASE_DIR / ".gt_settings.json")
+CASHFLOW_FILE = str(_BASE_DIR / ".gt_cashflow.json")
 AUDIT_FILE    = str(_BASE_DIR / ".gt_audit.json")
 TG_FILE       = str(_BASE_DIR / ".gt_tg.json")
 GMAIL_STATE_FILE = str(_BASE_DIR / ".gt_gmail_state.json")
@@ -1670,6 +1671,25 @@ def inventory_data():
             "old_count": old_days, "old_value": round(old_value, 2),
             "oldest_days": oldest,
             "sources": sorted({x.get("source") for x in items if x.get("source")})}
+
+
+def _cashflow_data():
+    items = _read_json(CASHFLOW_FILE, []) or []
+    if not isinstance(items, list):
+        items = []
+    items = [x for x in items if isinstance(x, dict)][:5000]
+    totals = {"hold": 0.0, "available": 0.0, "withdrawn": 0.0}
+    for x in items:
+        st = str(x.get("status") or "hold")
+        if st not in totals:
+            st = "hold"
+        try:
+            totals[st] += float(x.get("amount") or 0)
+        except (TypeError, ValueError):
+            pass
+    return {"ok": True, "items": items,
+            "totals": {k: round(v, 2) for k, v in totals.items()},
+            "all": round(sum(totals.values()), 2)}
 
 
 def supplier_roi():
@@ -4175,7 +4195,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.8.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.9.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4374,6 +4394,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": True, "server": f"{proto}://{host}", "token": tok})
         elif p == "/api/supplier_roi":
             self._json(supplier_roi())
+        elif p == "/api/cashflow":
+            self._json(_cashflow_data())
         elif p == "/api/analytics":
             self._json(_analytics())
         elif p == "/api/backup/export":
@@ -4550,7 +4572,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.8.0",
+            self._json({"ok": True, "version": "1.9.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5416,6 +5438,56 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             except Exception as e:
                 self._json({"ok": False, "error": str(e)}, code=500)
             return
+        if self.path == "/api/cashflow/add":
+            try:
+                try:
+                    amount = round(float(body.get("amount") or 0), 2)
+                except (TypeError, ValueError):
+                    amount = 0
+                if amount <= 0:
+                    self._json({"ok": False, "error": "amount > 0"}); return
+                platform = str(body.get("platform") or "other")[:24]
+                status = str(body.get("status") or "hold").lower()
+                if status not in ("hold", "available", "withdrawn"):
+                    status = "hold"
+                rec = {"id": "cf-" + str(int(time.time() * 1000)),
+                       "platform": platform, "amount": amount, "status": status,
+                       "date": str(body.get("date") or datetime.date.today().isoformat())[:10],
+                       "note": str(body.get("note") or "")[:200], "ts": int(time.time())}
+                with _WRITE_LOCK:
+                    items = _read_json(CASHFLOW_FILE, []) or []
+                    if not isinstance(items, list):
+                        items = []
+                    items.append(rec)
+                    _atomic_dump(CASHFLOW_FILE, items[:5000])
+                self._json(_cashflow_data())
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:160]})
+            return
+        if self.path == "/api/cashflow/status":
+            try:
+                with _WRITE_LOCK:
+                    items = _read_json(CASHFLOW_FILE, []) or []
+                    for x in items:
+                        if str(x.get("id")) == str(body.get("id")):
+                            st = str(body.get("status") or "").lower()
+                            if st in ("hold", "available", "withdrawn"):
+                                x["status"] = st
+                    _atomic_dump(CASHFLOW_FILE, items)
+                self._json(_cashflow_data())
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:160]})
+            return
+        if self.path == "/api/cashflow/delete":
+            try:
+                with _WRITE_LOCK:
+                    items = [x for x in (_read_json(CASHFLOW_FILE, []) or [])
+                             if str(x.get("id")) != str(body.get("id"))]
+                    _atomic_dump(CASHFLOW_FILE, items)
+                self._json(_cashflow_data())
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:160]})
+            return
         if self.path == "/api/inventory/add":
             try:
                 rec = _inv_clean([body])[0]
@@ -5792,7 +5864,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.8.0")
+    print("  ▲  AccTrack v1.9.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 
