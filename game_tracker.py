@@ -328,6 +328,7 @@ def _clean_pl(data):
             rid = now_ms + i
         buy  = _fnum(rec.get("buy"), f"запис #{i + 1} buy")
         sell = _fnum(rec.get("sell"), f"запис #{i + 1} sell")
+        expenses = _fnum(rec.get("expenses"), f"запис #{i + 1} expenses")
         src  = str(rec.get("src") or "other")[:32]
         date = str(rec.get("date") or "")[:10]
         if not _is_date(date):
@@ -337,7 +338,7 @@ def _clean_pl(data):
         after = round(sell * (1 - fee_pct) - buy, 6)
         out.append({
             **{k: v for k, v in rec.items() if k not in
-               ("id", "title", "src", "srcName", "buy", "sell", "afterFee", "feePct", "qty", "date", "platform")},
+               ("id", "title", "src", "srcName", "buy", "sell", "afterFee", "feePct", "expenses", "qty", "date", "platform")},
             "id": rid,
             "title": str(rec.get("title") or "")[:500],
             "src": src,
@@ -346,6 +347,7 @@ def _clean_pl(data):
             "sell": round(sell, 6),
             "feePct": round(fee_pct, 6),
             "afterFee": after,
+            "expenses": round(expenses, 6),
             "qty": int(_fnum(rec.get("qty"), "qty", 0, 1e6, 1) or 1),
             "date": date,
             "platform": str(rec.get("platform") or src)[:32],
@@ -3003,8 +3005,9 @@ def _analytics():
         except Exception:
             sell = buy = 0.0
         fee = round(sell * _fee_pct_of(r), 2)
+        exp = round(float(r.get("expenses") or 0), 2)
         add(_game_of(r.get("title")), str(r.get("date") or "")[:7] or "?",
-            sell, round(sell - buy - fee, 2))
+            sell, round(sell - buy - fee - exp, 2))
     for r in (ed if isinstance(ed, list) else []):
         try:
             price = float(r.get("price") or 0); prof = float(r.get("profit") or 0)
@@ -3231,7 +3234,8 @@ def _month_report(month=""):
     # afterFee вже = sell - fee - buy, тому комісію НЕ можна рахувати як sell - afterFee
     # (інакше в комісії опиняється закупівля, а прибуток зменшується вдвічі).
     pl_fee = round(sum(num(r.get("sell")) * _fee_pct_of(r) for r in pl), 2)
-    pl_profit = pl_after
+    pl_expenses = round(sum(num(r.get("expenses")) for r in pl), 2)
+    pl_profit = round(pl_after - pl_expenses, 2)
 
     ed_rev = round(sum(num(r.get("price")) for r in ed), 2)
     ed_fee = round(sum(num(r.get("fee")) for r in ed), 2)
@@ -3266,7 +3270,7 @@ def _month_report(month=""):
         "sales": {"pl_count": len(pl), "ed_count": len(ed), "count": len(pl) + len(ed),
                   "revenue": revenue, "fees": fees, "cogs": cogs, "profit": profit},
         "pl": {"count": len(pl), "sell": pl_sell, "after_fee": pl_after,
-               "buy": pl_buy, "fee": pl_fee, "profit": pl_profit},
+               "buy": pl_buy, "fee": pl_fee, "expenses": pl_expenses, "profit": pl_profit},
         "ed": {"count": len(ed), "revenue": ed_rev, "fee": ed_fee,
                "buy": ed_buy, "profit": ed_profit},
         "purchases": {"count": len(inv), "cost": purchases},
@@ -3760,7 +3764,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.0.4", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.1.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png")
@@ -3863,8 +3867,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         sell = float(r.get("sell") or 0)
                         buy = float(r.get("buy") or 0)
                         aft = r.get("afterFee")
-                        pr = (float(aft) if aft not in (None, "")
-                              else round(sell * (1 - _fee_pct_of(r)) - buy, 2))
+                        exp = float(r.get("expenses") or 0)
+                        pr = ((float(aft) if aft not in (None, "")
+                               else round(sell * (1 - _fee_pct_of(r)) - buy, 2)) - exp)
                     except Exception:
                         sell = buy = 0
                         pr = 0
@@ -4087,7 +4092,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.0.4",
+            self._json({"ok": True, "version": "1.1.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5198,7 +5203,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.0.4")
+    print("  ▲  AccTrack v1.1.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

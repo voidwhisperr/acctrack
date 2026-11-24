@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.1.0 — stock-linked sales and net profit
+
+### Added
+- **Sell from stock**: the 💰 button on an inventory item opens the deal form with the title and cost pre-filled.
+- After saving the deal, the inventory item is marked **sold** automatically.
+- **Other expenses** field on every deal: withdrawals, refunds, promotion, intermediaries.
+- **Net profit** = after-fee profit minus other expenses.
+- A separate **Expenses** summary card and per-deal expense row.
+- Expenses are included in analytics, monthly report, CSV and Excel exports.
+
+### Fixed
+- Totals, margin, report and exports no longer stop at the marketplace fee; they show the real net result.
+
 ## v1.0.4 — persisted ZeusX tier
 
 ### Fixed

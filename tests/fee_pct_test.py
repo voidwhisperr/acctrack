@@ -1,4 +1,4 @@
-"""Fee percentage regression tests (v1.0.1)."""
+"""Fee percentage and expenses regression tests (v1.1.0)."""
 import os
 import sys
 
@@ -30,9 +30,19 @@ def test_clean_pl_persists_fee_pct():
     assert abs(out["afterFee"] - 67.7) < 1e-9
 
 
+def test_expenses_persist():
+    out = g._clean_pl([{
+        "date": "2026-01-01", "src": "other", "sell": 100, "buy": 20,
+        "expenses": 5,
+    }])[0]
+    assert abs(out["expenses"] - 5) < 1e-9
+    assert abs(out["afterFee"] - 80) < 1e-9
+
+
 if __name__ == "__main__":
     test_default_when_nothing_known()
     test_recovers_from_after_fee()
     test_explicit_fraction_and_percent()
     test_clean_pl_persists_fee_pct()
+    test_expenses_persist()
     print("fee_pct tests: ok")
