@@ -1474,6 +1474,12 @@ code{
       <button class="btn" style="font-size:11px;padding:5px 10px" onclick="saveBackupSettings()">✓ Зберегти</button>
       <button class="btn gr" style="font-size:11px;padding:5px 10px" onclick="backupNow()">💾 Бекап зараз</button>
     </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:9px">
+      <label style="font-size:11px;display:flex;align-items:center;gap:5px"><input id="backupEncrypt" type="checkbox"> 🔒 Шифрувати автоматичні бекапи</label>
+      <input id="backupPass" type="password" placeholder="Пароль шифрування" autocomplete="new-password" style="width:190px;font-size:11px">
+      <button class="btn" style="font-size:11px;padding:4px 9px" onclick="saveBackupEncryption()">Зберегти</button>
+      <span style="font-size:10px;color:var(--mu)">Пароль зберігається в secrets; без нього бекап не відкрити.</span>
+    </div>
     <div id="backupInfo" style="font-size:11px;color:var(--mu);margin-top:7px">—</div>
     <div id="cloudInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
   </div>
@@ -3307,6 +3313,7 @@ async function loadSettings(){
     if(g('cloudDir')) g('cloudDir').value = d.cloud_dir || '';
     if(g('backupHours')) g('backupHours').value = d.backup_hours || 24;
     if(g('backupKeep')) g('backupKeep').value = d.backup_keep || 30;
+    if(g('backupEncrypt')) g('backupEncrypt').checked = !!d.backup_encrypt;
     if(g('backupInfo')) g('backupInfo').textContent = d.backup_last_ts
       ? ('Останній бекап: '+new Date(d.backup_last_ts*1000).toLocaleString(dateLocale())+' · '+(d.backup_last_status||''))
       : 'Автобекап ще не запускався';
@@ -4192,6 +4199,19 @@ async function saveBackupSettings(){
   try{
     const d=await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
     toast(d.ok?'✅ Розклад бекапів збережено':'⚠ '+(d.error||''), !!d.ok);
+    loadSettings();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function saveBackupEncryption(){
+  const en=!!g('backupEncrypt')?.checked;
+  const pw=String(g('backupPass')?.value||'');
+  if(en && !pw){ toast('⚠ Введи пароль шифрування', false); return; }
+  try{
+    const d=await fetch('/api/backup/encrypt',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({enabled:en,password:pw})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(g('backupPass')) g('backupPass').value='';
+    toast(en?'🔒 Автошифрування увімкнено':'🔓 Автошифрування вимкнено');
     loadSettings();
   }catch(e){ toast('⚠ '+e, false); }
 }

@@ -2184,7 +2184,7 @@ def _copy_cloud(files):
                 shutil.copy2(src, os.path.join(dst, name))
                 copied.append(name)
         _keep = max(1, min(365, int((_read_json(SETTINGS_FILE, {}) or {}).get("backup_keep") or 30)))
-        for prefix in ("gt_pl_", "gt_eldorado_", "gt_goal_"):
+        for prefix in ("gt_pl_", "gt_eldorado_", "gt_goal_", "gt_enc_"):
             keep = sorted(f for f in os.listdir(dst) if f.startswith(prefix))
             for old in keep[:-_keep]:
                 try: os.remove(os.path.join(dst, old))
@@ -2247,11 +2247,24 @@ def do_backup():
                 try: os.remove(os.path.join(BACKUP_DIR, old))
                 except OSError: pass
         _keepn = max(1, min(365, int((_read_json(SETTINGS_FILE, {}) or {}).get("backup_keep") or 30)))
-        for prefix in ("gt_pl", "gt_eldorado", "gt_goal"):
+        for prefix in ("gt_pl", "gt_eldorado", "gt_goal", "gt_enc"):
             keep = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith(prefix + "_"))
             for old in keep[:-_keepn]:
                 try: os.remove(os.path.join(BACKUP_DIR, old))
                 except OSError: pass
+        _st = _read_json(SETTINGS_FILE, {}) or {}
+        if _st.get("backup_encrypt"):
+            _pw = os.environ.get("GT_BACKUP_PASSWORD") or str((_read_json(SECRETS_FILE, {}) or {}).get("backup_password") or "")
+            if _pw:
+                try:
+                    _raw, _man = _build_backup_zip()
+                    _enc = _encrypt_backup(_raw, _pw)
+                    _ename = f"gt_enc_{date_str}.ledger.enc"
+                    with open(os.path.join(BACKUP_DIR, _ename), "wb") as _f:
+                        _f.write(_enc)
+                    made.append(_ename)
+                except Exception as e:
+                    print(f"  ⚠ Encrypted backup: {e}", flush=True)
         if made:
             print(f"  💾 Backup: {', '.join(made)}", flush=True)
     except Exception as e:
@@ -4253,7 +4266,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.15.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.16.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4541,6 +4554,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "backup_keep": int(st.get("backup_keep") or 30),
                 "backup_last_ts": int(st.get("backup_last_ts") or 0),
                 "backup_last_status": str(st.get("backup_last_status") or ""),
+                "backup_encrypt": bool(st.get("backup_encrypt")),
                 "digest_last": str(st.get("digest_last") or ""),
                 "alerts_only_my_games": bool(st.get("alerts_only_my_games", True)),
                 "notify": {k: bool(st.get("notify_" + k, v))
@@ -4636,7 +4650,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.15.0",
+            self._json({"ok": True, "version": "1.16.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -4965,6 +4979,25 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             name = "ledger_backup_%s.ledger.enc" % datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
             self._send(200, "application/octet-stream", enc,
                        extra={"Content-Disposition": f'attachment; filename="{name}"'})
+            return
+        if self.path == "/api/backup/encrypt":
+            try:
+                enable = bool(body.get("enabled"))
+                pw = str(body.get("password") or "")
+                with _WRITE_LOCK:
+                    st = _read_json(SETTINGS_FILE, {}) or {}
+                    st["backup_encrypt"] = enable
+                    _atomic_dump(SETTINGS_FILE, st)
+                    sec = _read_json(SECRETS_FILE, {}) or {}
+                    if enable and pw:
+                        sec["backup_password"] = pw
+                    elif not enable:
+                        sec.pop("backup_password", None)
+                    _atomic_dump(SECRETS_FILE, sec)
+                self._json({"ok": True, "enabled": enable,
+                            "has_password": bool(os.environ.get("GT_BACKUP_PASSWORD") or pw)})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:160]})
             return
         if self.path == "/api/backup/run":
             res = do_backup()
@@ -5956,7 +5989,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.15.0")
+    print("  ▲  AccTrack v1.16.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

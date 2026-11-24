@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.16.0 — encrypted automatic backups
+
+- Optional AES-GCM encrypted backup on each scheduled run.
+- Password stored in `.gt_secrets.json` (or `GT_BACKUP_PASSWORD`); never returned by API.
+- Encrypted `.ledger.enc` files are copied to the cloud folder and pruned with retention.
+
 ## v1.15.0 — scheduled cloud backups
 
 - Configurable backup interval (hours) and retention count.
