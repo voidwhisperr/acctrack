@@ -556,7 +556,7 @@ code{
   <!-- Додати запис -->
   <div class="panel">
     <div class="ph"><span data-i18n="ph.newDeal">+ НОВИЙ ПРОДАЖ</span></div>
-    <div style="font-size:10.5px;color:var(--mu);margin:-6px 0 10px">Введення та збереження — у USD. Показ сум — в обраній валюті.</div>
+    <div style="font-size:10.5px;color:var(--mu);margin:-6px 0 10px">Суми вводяться у валюті угоди. Курс — скільки одиниць валюти за 1 USD; він зберігається для історії.</div>
     <div id="invSellBanner" style="display:none;margin:0 0 10px;padding:8px 11px;border:1px solid var(--gr);border-radius:8px;background:color-mix(in srgb,var(--gr) 8%,transparent);font-size:12px;display:none;align-items:center;gap:8px">
       <span>📦 <b data-i18n="inv.sellFromStock">Продаж зі складу:</b> <span id="invSellText"></span></span>
       <button class="btn" style="margin-left:auto;padding:3px 8px;font-size:11px" onclick="clearInvSell()">✕</button>
@@ -591,19 +591,27 @@ code{
         <select id="plZeusRank" onchange="plZeusRankPick()" style="width:120px"></select>
       </div>
       <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px">ВАЛЮТА УГОДИ</div>
+        <select id="plCur" onchange="plCurPick()" style="width:115px;font-size:12px"></select>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px">КУРС / USD</div>
+        <input type="number" id="plFx" value="1" step="0.0001" min="0.000001" style="width:95px" oninput="updateFeePreview()">
+      </div>
+      <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.feePct">КОМІСІЯ %</div>
         <input type="number" id="plFeePct" value="9.5" step="0.1" min="0" max="100" style="width:82px" oninput="updateFeePreview()">
       </div>
       <div>
-        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.expenses">ІНШІ ВИТРАТИ $</div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.expenses">ІНШІ ВИТРАТИ</div>
         <input type="number" id="plExpenses" value="0" step="0.01" min="0" style="width:95px" oninput="updateFeePreview()">
       </div>
       <div>
-        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.buy">КУПИВ $</div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.buy">КУПИВ</div>
         <input type="number" id="plBuy" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
       </div>
       <div>
-        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.sell">ПРОДАВ $</div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.sell">ПРОДАВ</div>
         <input type="number" id="plSell" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
       </div>
       <div>
@@ -914,6 +922,7 @@ code{
         <option value="written_off" data-i18n="inv.off">Списані</option>
       </select>
     </div>
+    <div id="invAging" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="invOld" style="font-size:12px;margin-bottom:10px"></div>
     <div id="invList"><div class="none">⏳ Завантаження...</div></div>
   </div>
@@ -2623,12 +2632,14 @@ function updateFeePreview(){
   const exp  = parseFloat(g('plExpenses')?.value)||0;
   const after = sell*(1-fee) - buy;
   const net = after - exp;
+  const _dc = g('plCur')?.value || 'USD';
+  const _ds = dealSym(_dc) + ' ';
   const el = g('plFeePreview');
-  el.textContent = (after>=0?'+':'')+'$'+after.toFixed(2);
+  el.textContent = (after>=0?'+':'')+_ds+after.toFixed(2);
   el.style.color = after>0?'var(--gr)':after<0?'var(--rd)':'var(--mu)';
   const ne = g('plNetPreview');
   if(ne){
-    ne.textContent = (net>=0?'+':'')+'$'+net.toFixed(2);
+    ne.textContent = (net>=0?'+':'')+_ds+net.toFixed(2);
     ne.style.color = net>0?'var(--gr)':net<0?'var(--rd)':'var(--mu)';
   }
 }
@@ -2874,11 +2885,18 @@ const CURRENCIES = ['USD','EUR','GBP','UAH','PLN','CZK','TRY','CHF','CAD','AUD',
 let _cur = 'USD';
 let _currencyManual = false;
 function curSym(){ return CUR_SYM[_cur] || _cur; }
+function dealSym(c){ return c==='USD' ? 'USD' : (CUR_SYM[c] || c); }
+function dealMoney(v,c){ return dealSym(c)+' '+Number(v||0).toFixed(2); }
 function currencyOptions(sel){
   return CURRENCIES.map(c=>'<option value="'+c+'"'+(c===sel?' selected':'')+'>'+c+' '+(CUR_SYM[c]||'')+'</option>').join('');
 }
 function initCurrencySelects(){
   if(g('curSel')) g('curSel').innerHTML = currencyOptions(_cur);
+  if(g('plCur')){
+    const keep=g('plCur').value || _cur;
+    g('plCur').innerHTML = currencyOptions(keep);
+    g('plCur').value = keep;
+  }
 }
 function fmtUah(usd){
   return _rate ? curSym()+(usd*_rate).toFixed(2) : '';
@@ -2929,6 +2947,16 @@ try{
   const mo=new MutationObserver(()=>scheduleMoneyConvert());
   mo.observe(document.body,{childList:true,subtree:true,characterData:true});
 }catch(e){}
+function plCurPick(){
+  const c=g('plCur')?.value || 'USD';
+  const fx=g('plFx');
+  if(fx){
+    if(c === _cur && _rate) fx.value = Number(_rate).toFixed(4);
+    else if(c === 'USD') fx.value = '1';
+    else if(!parseFloat(fx.value)) fx.value = '';
+  }
+  updateFeePreview();
+}
 function applyCurrency(){
   restoreMoneyText();
   initCurrencySelects();
@@ -3075,6 +3103,8 @@ async function loadSettings(){
     if(d.currency) _cur = d.currency;
     _currencyManual = !!d.currency_manual;
     applyCurrency();
+    if(g('plCur')){ g('plCur').value = _cur; }
+    if(g('plFx')){ g('plFx').value = (_cur === 'USD' ? 1 : (_rate || '')); }
     if(g('rateVal')) g('rateVal').value = _rate ? _rate.toFixed(2) : '';
     if(g('rateInfo')) g('rateInfo').textContent = d.rate_ts
       ? (t('cur.updated')+' '+new Date(d.rate_ts*1000).toLocaleString(dateLocale())+' · '+(d.rate_source||''))
@@ -3585,14 +3615,18 @@ async function addPLRecord(){
   const feeRaw = parseFloat(g('plFeePct')?.value);
   const fee  = Number.isFinite(feeRaw) ? Math.max(0, Math.min(100, feeRaw))/100 : defaultFeePct(plat);
   const expenses = Math.max(0, parseFloat(g('plExpenses')?.value)||0);
+  const dealCur = (g('plCur')?.value || 'USD').toUpperCase().slice(0,3);
+  const dealFx = Math.max(0.000001, parseFloat(g('plFx')?.value) || 1);
+  const buyUsd = buy / dealFx, sellUsd = sell / dealFx, expUsd = expenses / dealFx;
   const invId = _invSellId;
 
   if(plat === 'eldorado'){
     // Eldorado веде окремий облік — пишемо туди, щоб не було дублів
     const rec = { id: Date.now(), date: g('plDate')?.value || todayLocal(),
-      title: g('plTitle')?.value.trim() || 'Eldorado', price: sell, buy,
-      fee: Math.round(sell*fee*100)/100,
-      profit: Math.round((sell - sell*fee - buy)*100)/100,
+      title: g('plTitle')?.value.trim() || 'Eldorado', price: sellUsd, buy: buyUsd,
+      fee: Math.round(sellUsd*fee*100)/100,
+      profit: Math.round((sellUsd - sellUsd*fee - buyUsd)*100)/100,
+      currency: dealCur, fxRate: dealFx, origPrice: sell, origBuy: buy,
       orderId: '', category: 'Eldorado' };
     edSales.unshift(rec);
     await saveED();
@@ -3607,15 +3641,17 @@ async function addPLRecord(){
     toast(t('deal.addedED'));
     return;
   }
-  const afterFee = sell*(1-fee) - buy;
+  const afterFee = sellUsd*(1-fee) - buyUsd;
   purchases.unshift({
     id: Date.now(),
     title: g('plTitle').value.trim(),
     src: plat,
     srcName: plat==='zeusx'?'ZeusX':plat==='funpay'?'FunPay':plat==='eldorado'?'Eldorado':t('f.other2'),
-    buy, sell, feePct: Math.round(fee*1000000)/1000000,
-    expenses: Math.round(expenses*100)/100,
+    buy: buyUsd, sell: sellUsd, feePct: Math.round(fee*1000000)/1000000,
+    expenses: Math.round(expUsd*100)/100,
     afterFee: Math.round(afterFee*10000)/10000,
+    currency: dealCur, fxRate: dealFx,
+    origBuy: buy, origSell: sell, origExpenses: expenses,
     qty: 1,
     date: g('plDate').value || todayLocal(),
     platform: plat,
@@ -3754,13 +3790,21 @@ function renderPurchases(){
           : '<button class="bub-btn" onclick="startEdit('+p.id+')" title="Редагувати">✏</button>'
             + '<button class="bub-btn del" onclick="delPurchase('+p.id+')" title="Видалити">🗑</button>')
       + '</div></div>'
-      + '<div class="bub-stats">'
-      + '<span class="bs">'+t('k.buy')+' <b>$'+(p.buy||0).toFixed(2)+'</b></span>'
-      + '<span class="bs">'+t('k.sell')+' <b>$'+(p.sell||0).toFixed(2)+'</b></span>'
-      + '<span class="bs">'+t('k.fee')+' <b class="neg">-$'+fee.toFixed(2)+'</b></span>'
-      + (exp>0 ? '<span class="bs">'+t('k.expenses')+' <b class="neg">-$'+exp.toFixed(2)+'</b></span>' : '')
-      + '<span class="bs '+(profit>=0?'pos':'negp')+'">'+t('k.net')+' <b>'+(profit>=0?'+':'')+'$'+profit.toFixed(2)+'</b></span>'
-      + '</div></div>';
+      + (()=>{
+          const dcur=p.currency||'USD';
+          const hasOrig=p.origBuy!=null || p.origSell!=null;
+          const m=v=>hasOrig ? dealMoney(v,dcur) : '$'+Number(v||0).toFixed(2);
+          const dFee=hasOrig ? fee*(Number(p.fxRate)||1) : fee;
+          const dExp=hasOrig ? Number(p.origExpenses!=null?p.origExpenses:exp*(Number(p.fxRate)||1)) : exp;
+          const dProfit=hasOrig ? ((Number(p.afterFee)||0)-exp)*(Number(p.fxRate)||1) : profit;
+          return '<div class="bub-stats">'
+            + '<span class="bs">'+t('k.buy')+' <b>'+m(hasOrig?p.origBuy:p.buy)+'</b></span>'
+            + '<span class="bs">'+t('k.sell')+' <b>'+m(hasOrig?p.origSell:p.sell)+'</b></span>'
+            + '<span class="bs">'+t('k.fee')+' <b class="neg">-'+m(dFee)+'</b></span>'
+            + (dExp>0 ? '<span class="bs">'+t('k.expenses')+' <b class="neg">-'+m(dExp)+'</b></span>' : '')
+            + '<span class="bs '+(dProfit>=0?'pos':'negp')+'">'+t('k.net')+' <b>'+(dProfit>=0?'+':'')+m(dProfit)+'</b></span>'
+            + '</div></div>';
+        })()
   }).join('') + '</div>';
 
   // Pagination
@@ -4004,6 +4048,8 @@ async function saveEdit(id){
   p.feePct   = Math.round(fee*1000000)/1000000;
   p.expenses = Math.round(expenses*100)/100;
   p.afterFee = Math.round((sell*(1-fee)-buy)*10000)/10000;
+  p.currency = 'USD'; p.fxRate = 1;
+  delete p.origBuy; delete p.origSell; delete p.origExpenses;
   _editId    = null;
   await savePL(); renderPurchases();
   toast(t('deal.updated'));
@@ -5479,6 +5525,20 @@ async function loadInventory(){
       card(_L.b, '$' + Number(d.frozen || 0).toFixed(2), 'var(--yw)') +
       card(_L.c, d.sold || 0, 'var(--gr)') +
       card(_L.d, '$' + Number(d.cost_total || 0).toFixed(2));
+    if(g('invAging')){
+      const ag=d.aging||{};
+      const _A={uk:{a:'7+ днів',b:'30+ днів',c:'60+ днів',d:'90+ днів',e:'Sell-through',f:'Сер. днів продажу'},
+                en:{a:'7+ days',b:'30+ days',c:'60+ days',d:'90+ days',e:'Sell-through',f:'Avg days to sell'},
+                ru:{a:'7+ дней',b:'30+ дней',c:'60+ дней',d:'90+ дней',e:'Sell-through',f:'Ср. дней продажи'}}[LANG] || {a:'7+ days',b:'30+ days',c:'60+ days',d:'90+ days',e:'Sell-through',f:'Avg days to sell'};
+      const cell=(k,v,c)=>'<div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:8px 11px;min-width:105px"><div style="font-size:10px;color:var(--mu)">'+k+'</div><div style="font-size:15px;font-weight:800;color:'+(c||'var(--tx)')+'">'+v+'</div></div>';
+      g('invAging').innerHTML =
+        cell(_A.a, (ag['7']?.count||0)+' · $'+Number(ag['7']?.value||0).toFixed(2), 'var(--yw)') +
+        cell(_A.b, (ag['30']?.count||0)+' · $'+Number(ag['30']?.value||0).toFixed(2), 'var(--yw)') +
+        cell(_A.c, (ag['60']?.count||0)+' · $'+Number(ag['60']?.value||0).toFixed(2), 'var(--rd)') +
+        cell(_A.d, (ag['90']?.count||0)+' · $'+Number(ag['90']?.value||0).toFixed(2), 'var(--rd)') +
+        cell(_A.e, Number(d.sell_through||0).toFixed(1)+'%', 'var(--gr)') +
+        cell(_A.f, d.avg_sold_days==null?'—':d.avg_sold_days, 'var(--mu)');
+    }
     if(g('invOld')){
       if((d.old_count || 0) > 0){
         const _oldTxt = LANG==='ru'?'(куплены 30+ дней назад)':LANG==='en'?'(bought 30+ days ago)':'(куплені 30+ днів тому)';

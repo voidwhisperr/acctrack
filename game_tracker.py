@@ -361,6 +361,10 @@ def _clean_pl(data):
         buy  = _fnum(rec.get("buy"), f"запис #{i + 1} buy")
         sell = _fnum(rec.get("sell"), f"запис #{i + 1} sell")
         expenses = _fnum(rec.get("expenses"), f"запис #{i + 1} expenses")
+        currency = str(rec.get("currency") or "USD").upper()[:3]
+        if not currency.isalpha():
+            currency = "USD"
+        fx_rate = _fnum(rec.get("fxRate"), f"запис #{i + 1} fxRate", 0.000001, 1e6, 1) or 1
         src  = str(rec.get("src") or "other")[:32]
         date = str(rec.get("date") or "")[:10]
         if not _is_date(date):
@@ -380,6 +384,8 @@ def _clean_pl(data):
             "feePct": round(fee_pct, 6),
             "afterFee": after,
             "expenses": round(expenses, 6),
+            "currency": currency,
+            "fxRate": round(fx_rate, 6),
             "qty": int(_fnum(rec.get("qty"), "qty", 0, 1e6, 1) or 1),
             "date": date,
             "platform": str(rec.get("platform") or src)[:32],
@@ -1624,6 +1630,8 @@ def inventory_data():
     # «мертвий» склад: куплено давно, досі не продано
     today = datetime.date.today()
     old_days, old_value, oldest = 0, 0.0, 0
+    buckets = {7: {"count": 0, "value": 0.0}, 30: {"count": 0, "value": 0.0},
+               60: {"count": 0, "value": 0.0}, 90: {"count": 0, "value": 0.0}}
     for x in stock:
         try:
             d0 = datetime.date.fromisoformat(str(x.get("date") or "")[:10])
@@ -1631,12 +1639,32 @@ def inventory_data():
             continue
         age = (today - d0).days
         oldest = max(oldest, age)
+        cost = float(x.get("cost") or 0)
+        for days in (7, 30, 60, 90):
+            if age >= days:
+                buckets[days]["count"] += 1
+                buckets[days]["value"] += cost
         if age >= 30:
             old_days += 1
-            old_value += float(x.get("cost") or 0)
+            old_value += cost
+    sold_cost = round(sum(float(x.get("cost") or 0) for x in sold), 2)
+    sold_days = []
+    for x in sold:
+        try:
+            ts = float(x.get("sold_at") or 0)
+            d0 = datetime.date.fromisoformat(str(x.get("date") or "")[:10])
+            if ts:
+                sold_days.append(max(0, (datetime.date.fromtimestamp(ts) - d0).days))
+        except Exception:
+            pass
     return {"ok": True, "items": items, "count": len(items),
             "in_stock": len(stock), "sold": len(sold),
             "cost_total": total_cost, "frozen": frozen,
+            "sold_cost": sold_cost,
+            "sell_through": round(len(sold) * 100.0 / max(1, len(sold) + len(stock)), 1),
+            "avg_sold_days": round(sum(sold_days) / len(sold_days), 1) if sold_days else None,
+            "aging": {str(k): {"count": v["count"], "value": round(v["value"], 2)}
+                      for k, v in buckets.items()},
             "old_count": old_days, "old_value": round(old_value, 2),
             "oldest_days": oldest,
             "sources": sorted({x.get("source") for x in items if x.get("source")})}
@@ -4033,7 +4061,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.4.7", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.5.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4392,7 +4420,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.4.7",
+            self._json({"ok": True, "version": "1.5.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5266,6 +5294,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._json({"ok": False, "error": "запис не знайдено"}, code=404)
                 return
             item["status"] = status
+            if status == "sold" and not item.get("sold_at"):
+                item["sold_at"] = int(time.time())
             if body.get("sale_id"):
                 item["sale_id"] = body.get("sale_id")
             _inv_save()
@@ -5615,7 +5645,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.4.7")
+    print("  ▲  Ledger v1.5.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

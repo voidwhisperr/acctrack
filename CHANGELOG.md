@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.5.0 — deal currency and stock aging
+
+- Each deal now has its own currency and historical USD rate.
+- Amounts are entered in the deal currency; storage/reporting normalize to USD.
+- Deal rows show the original currency and amount.
+- Inventory aging buckets: 7/30/60/90 days, frozen value, sell-through and average days to sell.
+- Sold inventory records `sold_at`.
+
 ## v1.4.7 — currency hints
 
 - Onboarding says both language and currency can be changed later.
