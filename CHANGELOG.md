@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.30.0 — human Taobao copy
+
+- Rewritten Taobao hero and benefit copy in UA/EN/RU.
+- Demo lot labels and badges localized.
+- Demo stays in USD and is excluded from display conversion.
+
 ## v1.29.0 — demo currency and brand polish
 
 - Taobao demo lots stay in USD and are excluded from the display-currency converter.

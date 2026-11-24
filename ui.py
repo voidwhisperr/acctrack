@@ -873,25 +873,25 @@ code{
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
         <div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:9px 11px">
-          <div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:12px">Genshin AR60</b><span style="font-size:9px;color:var(--gr);border:1px solid color-mix(in srgb,var(--gr) 40%,var(--brd));border-radius:5px;padding:1px 5px">HOT</span></div>
+          <div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:12px">Genshin AR60</b><span style="font-size:9px;color:var(--gr);border:1px solid color-mix(in srgb,var(--gr) 40%,var(--brd));border-radius:5px;padding:1px 5px"> <span data-i18n="taobao.hot">HOT</span></span></div>
           <div style="font-size:10px;color:var(--mu);margin:3px 0 6px">EU · 5★ · e-mail</div>
-          <div style="display:flex;justify-content:space-between;font-size:11px"><span>Купити</span><b>¥128 <span style="color:var(--mu)">≈$17.8</span></b></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span>Продати</span><b>$39</b></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span>Маржа</span><b>+$21.2 · 54%</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px"><span data-i18n="taobao.buy">Купити</span><b>¥128 <span style="color:var(--mu)">≈$17.8</span></b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span data-i18n="taobao.sell">Продати</span><b>$39</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span data-i18n="taobao.margin">Маржа</span><b>+$21.2 · 54%</b></div>
         </div>
         <div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:9px 11px">
-          <div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:12px">Honkai: Star Rail</b><span style="font-size:9px;color:var(--yw);border:1px solid color-mix(in srgb,var(--yw) 40%,var(--brd));border-radius:5px;padding:1px 5px">NEW</span></div>
+          <div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:12px">Honkai: Star Rail</b><span style="font-size:9px;color:var(--yw);border:1px solid color-mix(in srgb,var(--yw) 40%,var(--brd));border-radius:5px;padding:1px 5px"> <span data-i18n="taobao.new">NEW</span></span></div>
           <div style="font-size:10px;color:var(--mu);margin:3px 0 6px">Global · starter · 5★</div>
-          <div style="display:flex;justify-content:space-between;font-size:11px"><span>Купити</span><b>¥80 <span style="color:var(--mu)">≈$11.1</span></b></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span>Продати</span><b>$29</b></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span>Маржа</span><b>+$14.9 · 51%</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px"><span data-i18n="taobao.buy">Купити</span><b>¥80 <span style="color:var(--mu)">≈$11.1</span></b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span data-i18n="taobao.sell">Продати</span><b>$29</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span data-i18n="taobao.margin">Маржа</span><b>+$14.9 · 51%</b></div>
         </div>
         <div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:9px 11px">
-          <div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:12px">Wuthering Waves</b><span style="font-size:9px;color:var(--a1);border:1px solid color-mix(in srgb,var(--a1) 40%,var(--brd));border-radius:5px;padding:1px 5px">VALUE</span></div>
+          <div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:12px">Wuthering Waves</b><span style="font-size:9px;color:var(--a1);border:1px solid color-mix(in srgb,var(--a1) 40%,var(--brd));border-radius:5px;padding:1px 5px"> <span data-i18n="taobao.value">VALUE</span></span></div>
           <div style="font-size:10px;color:var(--mu);margin:3px 0 6px">Asia · 2×5★ · linked</div>
-          <div style="display:flex;justify-content:space-between;font-size:11px"><span>Купити</span><b>¥245 <span style="color:var(--mu)">≈$34.0</span></b></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span>Продати</span><b>$59</b></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span>Маржа</span><b>+$19.1 · 32%</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px"><span data-i18n="taobao.buy">Купити</span><b>¥245 <span style="color:var(--mu)">≈$34.0</span></b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span data-i18n="taobao.sell">Продати</span><b>$59</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px;color:var(--gr)"><span data-i18n="taobao.margin">Маржа</span><b>+$19.1 · 32%</b></div>
         </div>
       </div>
       <div style="font-size:10px;color:var(--mu);margin-top:7px" data-i18n="taobao.demoNote">Це демонстраційний приклад у USD. Реальні лоти, ціни й маржа з’являться після запуску агента.</div>
@@ -2352,31 +2352,37 @@ Object.assign(I18N.uk, {'cur.auto':'Курс оновлюється автома
 Object.assign(I18N.en, {'cur.auto':'The rate refreshes automatically every 6 hours. The ↻ button refreshes it now.','cur.manualHint':'You can choose any currency manually. After that, changing the language will not change the currency.'});
 Object.assign(I18N.ru, {'cur.auto':'Курс обновляется автоматически раз в 6 часов. Кнопка ↻ — принудительное обновление.','cur.manualHint':'Можно выбрать любую валюту вручную. После этого смена языка не будет менять валюту.'});
 Object.assign(I18N.uk, {
-  'tb.heroBadge':'АВТОМАТИЗАЦІЯ TAOBAO','tb.heroTitle':'Купуйте акаунти з Таобао дешевше — без ручного пошуку',
-  'tb.heroSub':'Ledger щогодини збирає лоти, переводить юані в долари, показує потенційну маржу й підсвічує вигідні. Ви купуєте тільки те, що реально продається.',
-  'tb.stat1':'Економія часу','tb.stat1u':'год/день','tb.stat2':'Ціни','tb.stat3':'Оновлення','tb.stat3v':'у фоні','tb.stat4':'Маржа','tb.stat4v':'одразу',
-  'tb.ben1t':'Автоматичний збір','tb.ben1d':'Агент сам відкриває Таобао, оновлює лоти й чекає, поки ви пройдете капчу.',
-  'tb.ben2t':'Маржа замість вгадування','tb.ben2d':'Ціна в юанях, орієнтовний долар, ваша ціна продажу та потенційний прибуток — в одному рядку.',
-  'tb.ben3t':'Один клік до угоди','tb.ben3d':'Знайшли вигідний лот — додайте його в P&L, і він одразу стане частиною вашого обліку.',
-  'tb.how':'Як працює агент і що потрібно'
+  'tb.heroBadge':'АВТОМАТИЗАЦІЯ TAOBAO','tb.heroTitle':'Вигідні акаунти з Taobao — до того, як їх розкуплять',
+  'tb.heroSub':'AccTrack сам збирає лоти, показує ціну в юанях і доларах та одразу рахує маржу. Вам залишається вибрати найкращий лот і купити.',
+  'tb.stat1':'Економія часу','tb.stat1u':'год/день','tb.stat2':'Ціни','tb.stat3':'Оновлення','tb.stat3v':'у фоні','tb.stat4':'Маржа','tb.stat4v':'відразу',
+  'tb.ben1t':'Збір на автопілоті','tb.ben1d':'Агент відкриває Taobao, оновлює лоти й чекає, поки ви пройдете капчу. Без ручного копіювання.',
+  'tb.ben2t':'Маржа видна одразу','tb.ben2d':'Ціна в юанях, орієнтовний долар, ваша ціна продажу й прибуток — в одному рядку.',
+  'tb.ben3t':'Від лоту до угоди — один клік','tb.ben3d':'Сподобався лот? Додайте його в P&L, і він одразу потрапить в облік.',
+  'tb.how':'Як працює агент і що потрібно',
+  'taobao.demoTitle':'ЯК ЦЕ ВИГЛЯДАЄ В РОБОТІ','taobao.demoBadge':'ДЕМО-ПРИКЛАД','taobao.demoNote':'Демо-приклад у USD: реальні лоти, ціни й маржа з’являться після запуску агента.',
+  'taobao.buy':'Купити','taobao.sell':'Продати','taobao.margin':'Маржа','taobao.hot':'ТОП','taobao.new':'НОВЕ','taobao.value':'ВИГІДНО'
 });
 Object.assign(I18N.en, {
-  'tb.heroBadge':'TAOBAO AUTOMATION','tb.heroTitle':'Buy Taobao accounts cheaper — without manual searching',
-  'tb.heroSub':'Ledger collects lots hourly, converts yuan to dollars, shows potential margin and highlights the best deals. You buy only what actually sells.',
+  'tb.heroBadge':'TAOBAO AUTOMATION','tb.heroTitle':'Find underpriced Taobao accounts before they’re gone',
+  'tb.heroSub':'AccTrack collects lots for you, shows yuan and dollar prices, and calculates margin on the spot. All you do is pick the best lot and buy.',
   'tb.stat1':'Time saved','tb.stat1u':'h/day','tb.stat2':'Prices','tb.stat3':'Refresh','tb.stat3v':'in background','tb.stat4':'Margin','tb.stat4v':'instantly',
-  'tb.ben1t':'Automatic collection','tb.ben1d':'The agent opens Taobao, refreshes lots and waits while you pass the captcha.',
-  'tb.ben2t':'Margin, not guessing','tb.ben2d':'Yuan price, estimated dollars, your sale price and potential profit in one row.',
-  'tb.ben3t':'One click to a deal','tb.ben3d':'Found a good lot — add it to P&L and it becomes part of your ledger.',
-  'tb.how':'How the agent works and what is needed'
+  'tb.ben1t':'Collection on autopilot','tb.ben1d':'The agent opens Taobao, refreshes lots and waits while you solve the captcha. No manual copying.',
+  'tb.ben2t':'Margin at a glance','tb.ben2d':'Yuan price, estimated dollars, your sale price and profit — all in one row.',
+  'tb.ben3t':'From lot to deal in one click','tb.ben3d':'Like a lot? Add it to P&L and it becomes part of your ledger.',
+  'tb.how':'How the agent works and what you need',
+  'taobao.demoTitle':'WHAT IT LOOKS LIKE IN USE','taobao.demoBadge':'DEMO','taobao.demoNote':'Demo example in USD. Real lots, prices and margin appear once the agent starts.',
+  'taobao.buy':'Buy','taobao.sell':'Sell','taobao.margin':'Margin','taobao.hot':'HOT','taobao.new':'NEW','taobao.value':'VALUE'
 });
 Object.assign(I18N.ru, {
-  'tb.heroBadge':'АВТОМАТИЗАЦИЯ TAOBAO','tb.heroTitle':'Покупайте аккаунты с Taobao дешевле — без ручного поиска',
-  'tb.heroSub':'Ledger каждый час собирает лоты, переводит юани в доллары, показывает потенциальную маржу и подсвечивает выгодные. Вы покупаете только то, что реально продаётся.',
+  'tb.heroBadge':'АВТОМАТИЗАЦИЯ TAOBAO','tb.heroTitle':'Выгодные аккаунты с Taobao — раньше, чем их разберут',
+  'tb.heroSub':'AccTrack сам собирает лоты, показывает цену в юанях и долларах и сразу считает маржу. Вам остаётся выбрать лучший лот и купить.',
   'tb.stat1':'Экономия времени','tb.stat1u':'ч/день','tb.stat2':'Цены','tb.stat3':'Обновление','tb.stat3v':'в фоне','tb.stat4':'Маржа','tb.stat4v':'сразу',
-  'tb.ben1t':'Автоматический сбор','tb.ben1d':'Агент сам открывает Taobao, обновляет лоты и ждёт, пока вы пройдёте капчу.',
-  'tb.ben2t':'Маржа вместо угадывания','tb.ben2d':'Цена в юанях, примерный доллар, ваша цена продажи и потенциальная прибыль — в одной строке.',
-  'tb.ben3t':'Один клик до сделки','tb.ben3d':'Нашли выгодный лот — добавьте его в P&L, и он сразу станет частью учёта.',
-  'tb.how':'Как работает агент и что нужно'
+  'tb.ben1t':'Сбор на автопилоте','tb.ben1d':'Агент открывает Taobao, обновляет лоты и ждёт, пока вы пройдёте капчу. Без ручного копирования.',
+  'tb.ben2t':'Маржа видна сразу','tb.ben2d':'Цена в юанях, примерный доллар, ваша цена продажи и прибыль — в одной строке.',
+  'tb.ben3t':'От лота до сделки — один клик','tb.ben3d':'Понравился лот? Добавьте его в P&L, и он сразу попадёт в учёт.',
+  'tb.how':'Как работает агент и что нужно',
+  'taobao.demoTitle':'КАК ЭТО ВЫГЛЯДИТ В РАБОТЕ','taobao.demoBadge':'ДЕМО-ПРИМЕР','taobao.demoNote':'Демо-пример в USD: реальные лоты, цены и маржа появятся после запуска агента.',
+  'taobao.buy':'Купить','taobao.sell':'Продать','taobao.margin':'Маржа','taobao.hot':'ТОП','taobao.new':'НОВОЕ','taobao.value':'ВЫГОДНО'
 });
 Object.assign(I18N.uk, {
   'app.title':'ЗАСТОСУНОК','app.desc':'Встанови Ledger як застосунок на телефон або комп’ютер: іконка на робочому столі, повноекранний режим, швидший запуск.','app.install':'Встановити Ledger','app.hint':'Android/Chrome: кнопка вище або меню ⋮ → «Встановити застосунок». iPhone/Safari: «Поділитися» → «На екран Домівки».',
@@ -2403,7 +2409,7 @@ Object.assign(I18N.uk, {
   'imp.createHold':'створити Hold','imp.import':'Імпортувати','imp.emptyCsv':'CSV порожній','imp.noColumns':'Не знайдено колонок title/price',
   'imp.noRows':'Немає рядків з ціною','imp.foundCost':'знайдено собівартість','imp.imported':'Імпортовано','imp.skipped':'пропущено дублів',
   'imp.price':'Ціна','imp.fee':'Комісія','imp.cost':'Собівартість','imp.stock':'Склад','imp.titleCol':'Дата','imp.name':'Назва',
-  'taobao.demoTitle':'ЯК ЦЕ ВИГЛЯДАЄ В РОБОТІ','taobao.demoBadge':'ДЕМО-ПРИКЛАД','taobao.demoNote':'Це демонстраційний приклад у USD. Реальні лоти, ціни й маржа з’являться після запуску агента.',
+  'taobao.demoTitle':'ЯК ЦЕ ВИГЛЯДАЄ В РОБОТІ','taobao.demoBadge':'ДЕМО-ПРИКЛАД','taobao.demoNote':'Демо-приклад у USD: реальні лоти, ціни й маржа з’являться після запуску агента.',
   'roi.title':'ROI ПОСТАЧАЛЬНИКІВ','roi.hint':'Прибуток, ROI і sell-through по постачальниках — на основі складу та прив’язаних продажів.',
   'roi.empty':'Немає даних: додай товар на склад із постачальником.','roi.supplier':'Постачальник','roi.items':'Товари','roi.sold':'Продано',
   'roi.stock':'Склад','roi.cost':'Витрати','roi.revenue':'Виручка','roi.profit':'Прибуток','roi.roi':'ROI','roi.st':'ST%','roi.days':'Днів',
@@ -2425,7 +2431,7 @@ Object.assign(I18N.en, {
   'imp.createHold':'create Hold','imp.import':'Import','imp.emptyCsv':'CSV is empty','imp.noColumns':'No title/price columns found',
   'imp.noRows':'No rows with a price','imp.foundCost':'cost matched','imp.imported':'Imported','imp.skipped':'duplicates skipped',
   'imp.price':'Price','imp.fee':'Fee','imp.cost':'Cost','imp.stock':'Stock','imp.titleCol':'Date','imp.name':'Name',
-  'taobao.demoTitle':'WHAT IT LOOKS LIKE IN USE','taobao.demoBadge':'DEMO','taobao.demoNote':'This is a demo example in USD. Real lots, prices and margin appear after the agent starts.',
+  'taobao.demoTitle':'WHAT IT LOOKS LIKE IN USE','taobao.demoBadge':'DEMO','taobao.demoNote':'Demo example in USD. Real lots, prices and margin appear once the agent starts.',
   'roi.title':'SUPPLIER ROI','roi.hint':'Profit, ROI and sell-through by supplier, based on stock and linked sales.',
   'roi.empty':'No data: add stock with a supplier.','roi.supplier':'Supplier','roi.items':'Items','roi.sold':'Sold',
   'roi.stock':'Stock','roi.cost':'Cost','roi.revenue':'Revenue','roi.profit':'Profit','roi.roi':'ROI','roi.st':'ST%','roi.days':'Days',
@@ -2447,7 +2453,7 @@ Object.assign(I18N.ru, {
   'imp.createHold':'создать Hold','imp.import':'Импортировать','imp.emptyCsv':'CSV пустой','imp.noColumns':'Не найдены колонки title/price',
   'imp.noRows':'Нет строк с ценой','imp.foundCost':'найдена себестоимость','imp.imported':'Импортировано','imp.skipped':'пропущено дублей',
   'imp.price':'Цена','imp.fee':'Комиссия','imp.cost':'Себестоимость','imp.stock':'Склад','imp.titleCol':'Дата','imp.name':'Название',
-  'taobao.demoTitle':'КАК ЭТО ВЫГЛЯДИТ В РАБОТЕ','taobao.demoBadge':'ДЕМО-ПРИМЕР','taobao.demoNote':'Это демонстрационный пример в USD. Реальные лоты, цены и маржа появятся после запуска агента.',
+  'taobao.demoTitle':'КАК ЭТО ВЫГЛЯДИТ В РАБОТЕ','taobao.demoBadge':'ДЕМО-ПРИМЕР','taobao.demoNote':'Демо-пример в USD: реальные лоты, цены и маржа появятся после запуска агента.',
   'roi.title':'ROI ПОСТАВЩИКОВ','roi.hint':'Прибыль, ROI и sell-through по поставщикам — на основе склада и связанных продаж.',
   'roi.empty':'Нет данных: добавь товар на склад с поставщиком.','roi.supplier':'Поставщик','roi.items':'Товары','roi.sold':'Продано',
   'roi.stock':'Склад','roi.cost':'Затраты','roi.revenue':'Выручка','roi.profit':'Прибыль','roi.roi':'ROI','roi.st':'ST%','roi.days':'Дней',
