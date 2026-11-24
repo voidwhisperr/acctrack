@@ -3760,7 +3760,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.0.3", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.0.4", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png")
@@ -4006,6 +4006,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "lang": str(st.get("lang") or "en")[:2],
                 "onboarded": bool(st.get("onboarded")),
                 "app_name": str(st.get("app_name") or "AccTrack")[:32],
+                "zeusx_tier": str(st.get("zeusx_tier") or "iron")[:16],
                 "auth_enabled": AUTH_MODE != "off",
                 "sup_hours": float(st.get("sup_hours") or _sup_hours()),
                 "news_hours": float(st.get("news_hours") or 1),
@@ -4086,7 +4087,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.0.3",
+            self._json({"ok": True, "version": "1.0.4",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -4418,6 +4419,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                             st["currency"] = _c
                     if "app_name" in body:
                         st["app_name"] = (str(body.get("app_name") or "").strip()[:32] or "AccTrack")
+                    if "zeusx_tier" in body:
+                        _zt = str(body.get("zeusx_tier") or "iron").lower()[:16]
+                        st["zeusx_tier"] = _zt if _zt in {t["id"] for t in ZEUSX_TIERS} else "iron"
                     if "lang" in body:
                         _l = str(body.get("lang")).lower()
                         st["lang"] = "en" if _l.startswith("en") else ("ru" if _l.startswith("ru") else "uk")
@@ -5194,7 +5198,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.0.3")
+    print("  ▲  AccTrack v1.0.4")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

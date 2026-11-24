@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.4 — persisted ZeusX tier
+
+### Fixed
+- The selected ZeusX seller tier is now saved and restored after a page refresh.
+- It is stored in `gt_settings.json` as `zeusx_tier` and mirrored in localStorage for instant restore.
+- Gold, Silver, Platinum and Vibranium no longer fall back to Iron 10% after reload.
+- The custom fee field still overrides the tier preset for a specific deal.
+
 ## v1.0.3 — exact ZeusX tier table
 
 ### Changed

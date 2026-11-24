@@ -2258,6 +2258,7 @@ function toast(msg,ok=true){
 // Встановлюємо сьогоднішню дату в формі
 ;(()=>{ const d=g('plDate'); if(d) d.value=todayLocal(); })();
 
+let _zeusxTier = (()=>{ try{ return localStorage.getItem('gt_zeusx_tier') || 'iron'; }catch(e){ return 'iron'; } })();
 function defaultFeePct(src){
   return src==='eldorado' ? ED_FEE : (FEES[src]||0);
 }
@@ -2272,12 +2273,27 @@ function fillZeusRanks(){
   const sel=g('plZeusRank'); if(!sel) return;
   sel.innerHTML=zeusxTiers().map(t=>'<option value="'+t.id+'" title="'+esc(t.criteria||'')+'">'+t.name+' · '+(t.fee*100).toFixed(0)+'%</option>').join('');
 }
-function plZeusRankPick(){
+function applyZeusTier(id, save){
+  const tiers=zeusxTiers();
+  const t=tiers.find(x=>x.id===id) || tiers[0];
+  _zeusxTier=t.id;
+  fillZeusRanks();
   const sel=g('plZeusRank'), fp=g('plFeePct');
-  if(!sel || !fp) return;
-  const t=zeusxTiers().find(x=>x.id===sel.value) || zeusxTiers()[0];
-  fp.value=(t.fee*100).toFixed(1).replace(/\.0$/,'');
+  if(sel) sel.value=t.id;
+  if(fp) fp.value=(t.fee*100).toFixed(1).replace(/\.0$/,'');
+  try{ localStorage.setItem('gt_zeusx_tier', t.id); }catch(e){}
+  if(save){
+    try{
+      fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({zeusx_tier:t.id})}).catch(()=>{});
+    }catch(e){}
+  }
   updateFeePreview();
+}
+function plZeusRankPick(){
+  const sel=g('plZeusRank');
+  if(!sel) return;
+  applyZeusTier(sel.value, true);
 }
 function feePctOf(p){
   if(!p) return 0;
@@ -2570,6 +2586,11 @@ async function loadSettings(){
     if(g('tgChat')) g('tgChat').value = tg.chat_id||'';
     if(typeof d.onboarded !== 'undefined') _onboarded = !!d.onboarded;
     if(d.app_name){ window._appName = d.app_name; try{ localStorage.setItem('gt_appname', d.app_name); }catch(e){} applyAppName(); }
+    if(d.zeusx_tier){
+      _zeusxTier = String(d.zeusx_tier);
+      try{ localStorage.setItem('gt_zeusx_tier', _zeusxTier); }catch(e){}
+      if(g('plPlatform')?.value === 'zeusx'){ try{ applyZeusTier(_zeusxTier, false); }catch(e){} }
+    }
   if(d.lang && d.lang !== LANG){ LANG = d.lang; try{ localStorage.setItem('gt_lang', LANG); }catch(e){} }
   applyLang();
   if(g('tgEnabled')) g('tgEnabled').checked = !!tg.enabled;
@@ -2954,8 +2975,8 @@ function plPlatPick(val){
   if(zw) zw.style.display = val==='zeusx' ? '' : 'none';
   if(val==='zeusx'){
     fillZeusRanks();
+    const tier=zeusxTiers().find(x=>x.id===_zeusxTier) || zeusxTiers()[0];
     const sel=g('plZeusRank');
-    const tier=zeusxTiers()[0];
     if(sel) sel.value=tier.id;
     if(fp) fp.value=(tier.fee*100).toFixed(1).replace(/\.0$/,'');
   } else if(fp){
