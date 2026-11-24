@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.4 — readable schedule settings
+
+- Each schedule field now explains what it controls and what a safe value means.
+- Added recommended defaults and units.
+- Translated UA/EN/RU.
+
 ## v1.4.3 — audit log localization
 
 - Action log headers, event names and empty state now follow UA/EN/RU.

@@ -975,14 +975,38 @@ code{
       <div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--mu);margin-bottom:6px">ПО МІСЯЦЯХ</div><div id="anMonths"></div></div>
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
-      <div style="font-size:13px;font-weight:800;margin-bottom:10px">⚙️ Розклад і ліміти</div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-        <label style="font-size:12px;color:var(--mu)">Оновлення бази, год<br><input id="stSupHours" type="number" min="1" max="48" step="1" style="width:90px;margin-top:4px"></label>
-        <label style="font-size:12px;color:var(--mu)">Новинки, год<br><input id="stNewsHours" type="number" min="0.25" max="24" step="0.25" style="width:90px;margin-top:4px"></label>
-        <label style="font-size:12px;color:var(--mu)">Кредитів/день<br><input id="stScraperLimit" type="number" min="1" max="5000" step="1" style="width:90px;margin-top:4px"></label>
-        <label style="font-size:12px;color:var(--mu)">Дайджест, год<br><input id="stDigestHour" type="number" min="0" max="23" step="1" style="width:80px;margin-top:4px"></label>
-        <label style="font-size:12px;color:var(--mu)">Алерт Taobao, ×<br><input id="stDealX" type="number" min="1" max="100" step="0.5" style="width:80px;margin-top:4px"></label>
-        <button class="btn" style="font-size:12px;padding:6px 12px" onclick="saveSchedule()">💾 Зберегти</button>
+      <div style="font-size:14px;font-weight:800;margin-bottom:4px">⚙️ <span data-i18n="sched.title">Розклад і ліміти</span></div>
+      <div style="font-size:12px;color:var(--mu);line-height:1.55;margin-bottom:12px" data-i18n="sched.intro">Це автоматичні інтервали Ledger: як часто оновлювати ціни, шукати новинки та коли надсилати звіт. Менший інтервал = свіжіші дані, але більше запитів і кредитів.</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:10px">
+        <label style="display:block;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 11px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="sched.sup.label">Оновлення каталогу</div>
+          <div style="font-size:10.5px;color:var(--mu);line-height:1.45;margin-bottom:6px" data-i18n="sched.sup.desc">Як часто перевіряти ціни та наявність у постачальників. 6 год = 4 рази на добу.</div>
+          <div style="display:flex;align-items:center;gap:5px"><input id="stSupHours" type="number" min="1" max="48" step="1" style="width:80px"><span style="font-size:11px;color:var(--mu)" data-i18n="sched.hours">год</span></div>
+        </label>
+        <label style="display:block;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 11px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="sched.news.label">Пошук новинок</div>
+          <div style="font-size:10.5px;color:var(--mu);line-height:1.45;margin-bottom:6px" data-i18n="sched.news.desc">Як часто шукати нові товари та зміни на сайтах. 1 год = щогодини.</div>
+          <div style="display:flex;align-items:center;gap:5px"><input id="stNewsHours" type="number" min="0.25" max="24" step="0.25" style="width:80px"><span style="font-size:11px;color:var(--mu)" data-i18n="sched.hours">год</span></div>
+        </label>
+        <label style="display:block;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 11px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="sched.credits.label">Ліміт кредитів</div>
+          <div style="font-size:10.5px;color:var(--mu);line-height:1.45;margin-bottom:6px" data-i18n="sched.credits.desc">Скільки кредитів ScraperAPI можна витратити за добу. Не користуєшся — не змінюй.</div>
+          <div style="display:flex;align-items:center;gap:5px"><input id="stScraperLimit" type="number" min="1" max="5000" step="1" style="width:80px"><span style="font-size:11px;color:var(--mu)" data-i18n="sched.credits.unit">кр./день</span></div>
+        </label>
+        <label style="display:block;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 11px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="sched.digest.label">Час дайджесту</div>
+          <div style="font-size:10.5px;color:var(--mu);line-height:1.45;margin-bottom:6px" data-i18n="sched.digest.desc">Година, коли надсилати підсумок дня в Telegram (0–23).</div>
+          <div style="display:flex;align-items:center;gap:5px"><input id="stDigestHour" type="number" min="0" max="23" step="1" style="width:80px"><span style="font-size:11px;color:var(--mu)" data-i18n="sched.hour">год</span></div>
+        </label>
+        <label style="display:block;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 11px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="sched.deal.label">Поріг вигідного лоту</div>
+          <div style="font-size:10.5px;color:var(--mu);line-height:1.45;margin-bottom:6px" data-i18n="sched.deal.desc">У скільки разів ціна має бути нижчою за твою, щоб прийшов алерт. 5× = ціна ≤ 20% твоєї.</div>
+          <div style="display:flex;align-items:center;gap:5px"><input id="stDealX" type="number" min="1" max="100" step="0.5" style="width:80px"><span style="font-size:11px;color:var(--mu)">×</span></div>
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+        <button class="btn" style="font-size:12px;padding:6px 12px" onclick="saveSchedule()">💾 <span data-i18n="sched.save">Зберегти розклад</span></button>
+        <span style="font-size:10.5px;color:var(--mu)" data-i18n="sched.hint">Не впевнений? Залиш значення як є — це безпечні дефолти.</span>
       </div>
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
@@ -2124,6 +2148,34 @@ Object.assign(I18N.ru, {
   'aud.e.auth_login':'Вход','aud.e.auth_logout_all':'Выход со всех устройств',
   'aud.e.2fa_setup':'2FA секрет','aud.e.2fa_enabled':'2FA включена','aud.e.2fa_disabled':'2FA отключена',
   'aud.e.2fa_recovery':'Recovery-коды'
+});
+
+Object.assign(I18N.uk, {
+  'sched.title':'Розклад і ліміти','sched.intro':'Це автоматичні інтервали Ledger: як часто оновлювати ціни, шукати новинки та коли надсилати звіт. Менший інтервал = свіжіші дані, але більше запитів і кредитів.',
+  'sched.sup.label':'Оновлення каталогу','sched.sup.desc':'Як часто перевіряти ціни та наявність у постачальників. 6 год = 4 рази на добу.',
+  'sched.news.label':'Пошук новинок','sched.news.desc':'Як часто шукати нові товари та зміни на сайтах. 1 год = щогодини.',
+  'sched.credits.label':'Ліміт кредитів','sched.credits.desc':'Скільки кредитів ScraperAPI можна витратити за добу. Не користуєшся — не змінюй.',
+  'sched.credits.unit':'кр./день','sched.digest.label':'Час дайджесту','sched.digest.desc':'Година, коли надсилати підсумок дня в Telegram (0–23).',
+  'sched.deal.label':'Поріг вигідного лоту','sched.deal.desc':'У скільки разів ціна має бути нижчою за твою, щоб прийшов алерт. 5× = ціна ≤ 20% твоєї.',
+  'sched.hours':'год','sched.hour':'год','sched.save':'Зберегти розклад','sched.hint':'Не впевнений? Залиш значення як є — це безпечні дефолти.'
+});
+Object.assign(I18N.en, {
+  'sched.title':'Schedule & limits','sched.intro':'These are automatic intervals: how often Ledger refreshes prices, looks for new items and when it sends the digest. Lower interval = fresher data, but more requests and credits.',
+  'sched.sup.label':'Catalog refresh','sched.sup.desc':'How often to check supplier prices and availability. 6 h = 4 times a day.',
+  'sched.news.label':'New items scan','sched.news.desc':'How often to look for new products and site changes. 1 h = hourly.',
+  'sched.credits.label':'Credit limit','sched.credits.desc':'ScraperAPI credits allowed per day. If you do not use it, leave unchanged.',
+  'sched.credits.unit':'credits/day','sched.digest.label':'Digest time','sched.digest.desc':'Hour when the daily summary is sent to Telegram (0–23).',
+  'sched.deal.label':'Good-deal threshold','sched.deal.desc':'How many times cheaper than your price a lot must be to trigger an alert. 5× = price ≤ 20% of yours.',
+  'sched.hours':'h','sched.hour':'h','sched.save':'Save schedule','sched.hint':'Not sure? Leave the defaults — they are safe.'
+});
+Object.assign(I18N.ru, {
+  'sched.title':'Расписание и лимиты','sched.intro':'Это автоматические интервалы Ledger: как часто обновлять цены, искать новинки и когда отправлять отчёт. Меньше интервал — свежее данные, но больше запросов и кредитов.',
+  'sched.sup.label':'Обновление каталога','sched.sup.desc':'Как часто проверять цены и наличие у поставщиков. 6 ч = 4 раза в сутки.',
+  'sched.news.label':'Поиск новинок','sched.news.desc':'Как часто искать новые товары и изменения на сайтах. 1 ч = каждый час.',
+  'sched.credits.label':'Лимит кредитов','sched.credits.desc':'Сколько кредитов ScraperAPI можно потратить за сутки. Не пользуешься — не меняй.',
+  'sched.credits.unit':'кр./день','sched.digest.label':'Время дайджеста','sched.digest.desc':'Час, когда отправлять итоги дня в Telegram (0–23).',
+  'sched.deal.label':'Порог выгодного лота','sched.deal.desc':'Во сколько раз цена должна быть ниже твоей, чтобы пришёл алерт. 5× = цена ≤ 20% твоей.',
+  'sched.hours':'ч','sched.hour':'ч','sched.save':'Сохранить расписание','sched.hint':'Не уверен? Оставь значения как есть — это безопасные дефолты.'
 });
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
