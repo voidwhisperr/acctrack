@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.27.0 — localization and alert cleanup
+
+- Three-language labels for cashflow, import, supplier ROI, report, order banner and buttons.
+- Dynamic tables re-render on language change.
+- Opening Orders clears the alert banner and favicon/title animation.
+
 ## v1.26.0 — animated tab and custom app name
 
 - All favicon links switch to the pulsing alert icon (32/svg/192).

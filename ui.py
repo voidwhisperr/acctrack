@@ -479,7 +479,7 @@ code{
     <button class="btn" onclick="location.reload()" title="Оновити сторінку" style="padding:7px 12px">↺</button>
   </div>
 </header>
-<div id="orderBanner"><span style="font-size:17px">🔔</span><b id="orderBannerText">Нове замовлення</b><button class="btn gr" style="padding:5px 10px;font-size:11px" onclick="goOrders()">Відкрити</button></div>
+<div id="orderBanner"><span style="font-size:17px">🔔</span><b id="orderBannerText" data-i18n="order.new">Нове замовлення</b><button class="btn gr" style="padding:5px 10px;font-size:11px" onclick="goOrders()" data-i18n="order.open">Відкрити</button></div>
 
 <div id="onb" class="onb" style="display:none">
   <div class="onb-card">
@@ -772,19 +772,18 @@ code{
 <div id="tab-mail" class="tc">
   <div class="panel">
     <div class="ph"><span data-i18n="ph.orders">ЗАМОВЛЕННЯ З ПОШТИ</span>
-      <button class="btn" style="font-size:12px;padding:5px 11px" onclick="clearMailQueue()">🗑 Очистити всі</button>
+      <button class="btn" style="font-size:12px;padding:5px 11px" onclick="clearMailQueue()">🗑 <span data-i18n="order.clear">Очистити всі</span></button>
       <div style="display:flex;gap:8px;align-items:center">
         <span id="mailStat" style="font-size:12px;color:var(--mu)"></span>
-        <button class="btn" id="orderNotifyBtn" style="padding:5px 10px;font-size:11px" onclick="enableOrderNotifications()">🔔 Сповіщення</button>
-        <button class="btn" style="padding:5px 10px;font-size:11px" onclick="playOrderSound()" title="Перевірити звук">🔊</button>
-        <button class="btn" style="padding:5px 10px;font-size:11px" onclick="createDemoOrder()">🧪 Демо</button>
-        <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="orderSound" type="checkbox" checked> звук</label>
-        <button class="btn" onclick="loadMailQueue(true)">↺ Оновити</button>
+        <button class="btn" id="orderNotifyBtn" style="padding:5px 10px;font-size:11px" onclick="enableOrderNotifications()">🔔 <span data-i18n="order.notify">Сповіщення</span></button>
+        <button class="btn" style="padding:5px 10px;font-size:11px" onclick="playOrderSound()" title="Test sound">🔊</button>
+        <button class="btn" style="padding:5px 10px;font-size:11px" onclick="createDemoOrder()">🧪 <span data-i18n="order.demo">Демо</span></button>
+        <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="orderSound" type="checkbox" checked> <span data-i18n="order.sound">звук</span></label>
+        <button class="btn" onclick="loadMailQueue(true)">↺ <span data-i18n="an.refresh">Оновити</span></button>
       </div>
     </div>
     <div style="font-size:13px;color:var(--mu);margin-bottom:14px">
-      Листи від FunPay / ZeusX / Eldorado, які трекер уже розпізнав. Нічого не додається
-      автоматично: перенесіть одним кліком у ELDORADO або P&amp;L, або проігноруйте.
+      <span data-i18n="mail.desc">Листи від FunPay / ZeusX / Eldorado, які трекер уже розпізнав. Нічого не додається автоматично: перенесіть одним кліком у ELDORADO або P&amp;L, або проігноруйте.</span>
     </div>
     <div id="mailHint"></div>
     <div id="mailList"><div class="none">⏳ Завантаження...</div></div>
@@ -1020,16 +1019,16 @@ code{
 <!-- 📊 СТАТИСТИКА ПО ІГРАХ -->
 <div id="tab-stats" class="tc">
   <div class="panel" style="margin-bottom:14px">
-    <div class="ph" style="margin-bottom:12px">📊 ЗВЕДЕНО — ВСІ ЦИФРИ В ОДНОМУ МІСЦІ</div>
+    <div class="ph" style="margin-bottom:12px">📊 <span data-i18n="an.mergedTitle">ЗВЕДЕНО — ВСІ ЦИФРИ В ОДНОМУ МІСЦІ</span></div>
 
-    <div style="font-size:11px;letter-spacing:1px;color:var(--mu);margin-bottom:6px">🛒 P&amp;L + 🟡 ELDORADO — разом</div>
+    <div style="font-size:11px;letter-spacing:1px;color:var(--mu);margin-bottom:6px">🛒 <span data-i18n="an.merged">P&amp;L + ELDORADO — разом</span></div>
     <div class="stats" id="plStats">
-      <div class="sc cg"><div class="sl">ПРИБУТОК</div><div class="sv" id="plProfit">$0</div></div>
-      <div class="sc c1"><div class="sl">ВИРУЧКА</div><div class="sv" id="plRevenue">$0</div></div>
-      <div class="sc c2"><div class="sl">ВКЛАДЕНО</div><div class="sv" id="plCost">$0</div></div>
-      <div class="sc c3"><div class="sl">МАРЖА</div><div class="sv" id="plMargin">0%</div></div>
-      <div class="sc c4"><div class="sl">УГОД</div><div class="sv" id="plCount">0</div></div>
-      <div class="sc c5"><div class="sl">КОМІСІЇ</div><div class="sv" id="plFees">$0</div></div>
+      <div class="sc cg"><div class="sl" data-i18n="pl.profit">ПРИБУТОК</div><div class="sv" id="plProfit">$0</div></div>
+      <div class="sc c1"><div class="sl" data-i18n="pl.revenue">ВИРУЧКА</div><div class="sv" id="plRevenue">$0</div></div>
+      <div class="sc c2"><div class="sl" data-i18n="pl.cost">ВКЛАДЕНО</div><div class="sv" id="plCost">$0</div></div>
+      <div class="sc c3"><div class="sl" data-i18n="pl.margin">МАРЖА</div><div class="sv" id="plMargin">0%</div></div>
+      <div class="sc c4"><div class="sl" data-i18n="pl.deals">УГОД</div><div class="sv" id="plCount">0</div></div>
+      <div class="sc c5"><div class="sl" data-i18n="pl.fees">КОМІСІЇ</div><div class="sv" id="plFees">$0</div></div>
       <div class="sc c4"><div class="sl" data-i18n="pl.expenses">ВИТРАТИ</div><div class="sv" id="plExpenses">$0</div></div>
     </div>
 
@@ -1037,24 +1036,24 @@ code{
 
     <div style="border-top:1px dashed var(--brd);margin:16px 0 12px"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--mu)">📊 ВИТОРГ ПО ДНЯХ (30 днів)</div>
-      <button class="btn" onclick="renderRevenueChart()" style="font-size:10px;padding:3px 10px">↺ Оновити</button>
+      <div style="font-size:12px;font-weight:700;color:var(--mu)">📊 <span data-i18n="an.revenueDays">ВИТОРГ ПО ДНЯХ (30 днів)</span></div>
+      <button class="btn" onclick="renderRevenueChart()" style="font-size:10px;padding:3px 10px">↺ <span data-i18n="an.refresh">Оновити</span></button>
     </div>
     <div style="height:200px;position:relative">
       <canvas id="revenueChart"></canvas>
     </div>
   </div>
   <div class="panel" style="margin-bottom:14px">
-    <div class="ph" style="margin-bottom:12px">📈 АНАЛІТИКА</div>
+    <div class="ph" style="margin-bottom:12px">📈 <span data-i18n="an.gamesTitle">АНАЛІТИКА</span></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
       <a class="btn" href="/api/export/csv?what=pl" style="font-size:12px;padding:6px 11px;text-decoration:none">⬇ P&L у CSV</a>
       <a class="btn" href="/api/export/csv?what=ed" style="font-size:12px;padding:6px 11px;text-decoration:none">⬇ ELDORADO у CSV</a>
-      <button class="btn" style="font-size:12px;padding:6px 11px" onclick="loadAnalytics()">↻ Оновити</button>
+      <button class="btn" style="font-size:12px;padding:6px 11px" onclick="loadAnalytics()">↻ <span data-i18n="an.refresh">Оновити</span></button>
     </div>
     <div id="anSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"></div>
     <div style="display:flex;gap:16px;flex-wrap:wrap">
-      <div style="flex:1;min-width:300px"><div style="font-size:12px;color:var(--mu);margin-bottom:6px">ПО ІГРАХ</div><div id="anGames"></div></div>
-      <div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--mu);margin-bottom:6px">ПО МІСЯЦЯХ</div><div id="anMonths"></div></div>
+      <div style="flex:1;min-width:300px"><div style="font-size:12px;color:var(--mu);margin-bottom:6px" data-i18n="an.byGames">ПО ІГРАХ</div><div id="anGames"></div></div>
+      <div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--mu);margin-bottom:6px" data-i18n="an.byMonths">ПО МІСЯЦЯХ</div><div id="anMonths"></div></div>
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
       <div style="font-size:14px;font-weight:800;margin-bottom:4px">⚙️ <span data-i18n="sched.title">Розклад і ліміти</span></div>
@@ -1102,36 +1101,36 @@ code{
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
-        <div style="font-size:14px;font-weight:800">📄 Місячний звіт</div>
+        <div style="font-size:14px;font-weight:800">📄 <span data-i18n="rep.title">Місячний звіт</span></div>
         <input id="repMonth" type="month" style="font-size:13px">
-        <label style="font-size:11px;color:var(--mu)">Податок % <input id="repTaxRate" type="number" min="0" max="50" step="0.1" style="width:64px" onchange="saveTaxRate()"></label>
-        <button class="btn" style="font-size:12px;padding:6px 11px" onclick="loadReport()">Показати</button>
+        <label style="font-size:11px;color:var(--mu)"><span data-i18n="rep.tax">Податок %</span> <input id="repTaxRate" type="number" min="0" max="50" step="0.1" style="width:64px" onchange="saveTaxRate()"></label>
+        <button class="btn" style="font-size:12px;padding:6px 11px" onclick="loadReport()" data-i18n="rep.show">Показати</button>
         <a class="btn" id="repCsv" style="font-size:12px;padding:6px 11px;text-decoration:none" href="#">⬇ CSV</a>
         <button class="btn" style="font-size:12px;padding:6px 11px" onclick="reportPdf()">🖨 PDF</button>
       </div>
-      <div id="repBox"><div class="none">Виберіть місяць</div></div>
+      <div id="repBox"><div class="none" data-i18n="rep.choose">Виберіть місяць</div></div>
     </div>
     <div id="anDead" style="margin-top:14px"></div>
   </div>
   <div class="panel" style="margin-bottom:14px">
-    <div class="ph">💵 CASHFLOW / PAYOUTS</div>
+    <div class="ph">💵 <span data-i18n="cf.title">CASHFLOW / PAYOUTS</span></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="cfCards"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
       <select id="cfPlatform" style="font-size:12px">
         <option value="g2g">G2G</option><option value="gameflip">Gameflip</option>
         <option value="pa">PlayerAuctions</option><option value="zeusx">ZeusX</option>
-        <option value="funpay">FunPay</option><option value="eldorado">Eldorado</option><option value="other">Інше</option>
+        <option value="funpay">FunPay</option><option value="eldorado">Eldorado</option><option value="other" data-i18n="f.other">Інше</option>
       </select>
-      <input id="cfAmount" type="number" min="0.01" step="0.01" placeholder="Сума $" style="width:120px">
-      <select id="cfStatus" style="font-size:12px"><option value="hold">Hold</option><option value="available">Available</option><option value="withdrawn">Withdrawn</option></select>
+      <input id="cfAmount" type="number" min="0.01" step="0.01" placeholder="Сума $" data-i18n-ph="cf.amount" style="width:120px">
+      <select id="cfStatus" style="font-size:12px"><option value="hold">Hold</option><option value="available" data-i18n="cf.available">Available</option><option value="withdrawn" data-i18n="cf.withdrawn">Withdrawn</option></select>
       <input id="cfDate" type="date" style="width:140px">
       <input id="cfAvailable" type="date" title="Доступно з (Hold → Available)" style="width:140px">
-      <input id="cfNote" placeholder="Коментар" style="width:150px">
-      <button class="btn gr" onclick="cashflowAdd()">＋ Додати</button>
-      <label class="btn" style="font-size:11px;cursor:pointer">⬆ Payout CSV<input id="cfImport" type="file" accept=".csv,text/csv" onchange="importCashflowCsv(this)" style="display:none"></label>
+      <input id="cfNote" placeholder="Коментар" data-i18n-ph="cf.note" style="width:150px">
+      <button class="btn gr" onclick="cashflowAdd()">＋ <span data-i18n="cf.add">Додати</span></button>
+      <label class="btn" style="font-size:11px;cursor:pointer">⬆ <span data-i18n="cf.payoutCsv">Payout CSV</span><input id="cfImport" type="file" accept=".csv,text/csv" onchange="importCashflowCsv(this)" style="display:none"></label>
     </div>
     <details style="margin-bottom:10px;font-size:11px;color:var(--mu)">
-      <summary style="cursor:pointer;font-weight:700">⚙ Правила payout (днів до Available)</summary>
+      <summary style="cursor:pointer;font-weight:700">⚙ <span data-i18n="cf.rules">Правила payout (днів до Available)</span></summary>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:7px" id="pdRules">
         <label>G2G <input id="pd_g2g" type="number" min="0" max="90" style="width:56px"></label>
         <label>Gameflip <input id="pd_gameflip" type="number" min="0" max="90" style="width:56px"></label>
@@ -1139,29 +1138,29 @@ code{
         <label>ZeusX <input id="pd_zeusx" type="number" min="0" max="90" style="width:56px"></label>
         <label>FunPay <input id="pd_funpay" type="number" min="0" max="90" style="width:56px"></label>
         <label>Eldorado <input id="pd_eldorado" type="number" min="0" max="90" style="width:56px"></label>
-        <label>Інше <input id="pd_other" type="number" min="0" max="90" style="width:56px"></label>
-        <button class="btn" style="font-size:11px;padding:4px 9px" onclick="savePayoutRules()">Зберегти</button>
-        <span>Дата в полі «Доступно з» має пріоритет.</span>
+        <label><span data-i18n="f.other">Інше</span> <input id="pd_other" type="number" min="0" max="90" style="width:56px"></label>
+        <button class="btn" style="font-size:11px;padding:4px 9px" onclick="savePayoutRules()" data-i18n="cf.save">Зберегти</button>
+        <span data-i18n="cf.priority">Дата в полі «Доступно з» має пріоритет.</span>
       </div>
     </details>
     <div id="cfList"><div class="none">⏳ …</div></div>
   </div>
   <div class="panel" style="margin-bottom:14px">
-    <div class="ph">📥 ІМПОРТ ПРОДАЖІВ</div>
-    <div style="font-size:11.5px;color:var(--mu);margin:-4px 0 9px">CSV з G2G / Gameflip / PlayerAuctions. Колонки: date, title/item, price/amount, fee (необов’язково), order id (необов’язково). Собівартість не підтягується — додай її після імпорту.</div>
+    <div class="ph">📥 <span data-i18n="imp.title">ІМПОРТ ПРОДАЖІВ</span></div>
+    <div style="font-size:11.5px;color:var(--mu);margin:-4px 0 9px" data-i18n="imp.hint">CSV з G2G / Gameflip / PlayerAuctions. Колонки: date, title/item, price/amount, fee (необов’язково), order id (необов’язково). Собівартість підтягується зі складу, якщо є збіг.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <select id="impPlatform" style="font-size:12px"><option value="g2g">G2G</option><option value="gameflip">Gameflip</option><option value="pa">PlayerAuctions</option></select>
       <input id="impFile" type="file" accept=".csv,text/csv" onchange="importCsvFile(this)" style="font-size:11px">
-      <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="impCashflow" type="checkbox" checked> створити Hold</label>
-      <button class="btn gr" id="impRun" style="display:none" onclick="runSalesImport()">Імпортувати</button>
+      <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="impCashflow" type="checkbox" checked> <span data-i18n="imp.createHold">створити Hold</span></label>
+      <button class="btn gr" id="impRun" style="display:none" onclick="runSalesImport()" data-i18n="imp.import">Імпортувати</button>
       <span id="impInfo" style="font-size:11px;color:var(--mu)"></span>
     </div>
     <div id="impPreview" style="margin-top:9px"></div>
   </div>
 
   <div class="panel" style="margin-bottom:14px">
-    <div class="ph">🏭 SUPPLIER ROI</div>
-    <div style="font-size:11.5px;color:var(--mu);margin:-4px 0 9px">Прибуток, ROI і sell-through по постачальниках — на основі складу та прив’язаних продажів.</div>
+    <div class="ph">🏭 <span data-i18n="roi.title">SUPPLIER ROI</span></div>
+    <div style="font-size:11.5px;color:var(--mu);margin:-4px 0 9px" data-i18n="roi.hint">Прибуток, ROI і sell-through по постачальниках — на основі складу та прив’язаних продажів.</div>
     <div id="supRoi"><div class="none">⏳ …</div></div>
   </div>
   <div class="panel">
@@ -2391,6 +2390,69 @@ Object.assign(I18N.ru, {
   'app.title':'ПРИЛОЖЕНИЕ','app.desc':'Установи Ledger как приложение на телефон или компьютер: иконка на рабочем столе, полноэкранный режим, быстрый запуск.','app.install':'Установить Ledger','app.hint':'Android/Chrome: кнопка выше или меню ⋮ → «Установить приложение». iPhone/Safari: «Поделиться» → «На экран Домой».',
   'target.title':'ЦЕЛЕВЫЕ ЦЕНЫ','target.hint':'Напиши название игры/лота и максимальную цену в долларах. Ledger проверяет кеш поставщиков и отправляет Telegram-алерт, когда цена достигает порога. Одна строка = одна цель.','target.save':'Сохранить цели','target.needPrice':'Нужно включить Telegram-уведомления «Падение цен».'
 });
+Object.assign(I18N.uk, {
+  'an.mergedTitle':'ЗВЕДЕНО — ВСІ ЦИФРИ В ОДНОМУ МІСЦІ','an.merged':'P&L + ELDORADO — разом',
+  'an.revenueDays':'ВИТОРГ ПО ДНЯХ (30 днів)','an.gamesTitle':'АНАЛІТИКА','an.byGames':'ПО ІГРАХ','an.byMonths':'ПО МІСЯЦЯХ','an.refresh':'Оновити',
+  'pl.profit':'ПРИБУТОК','pl.revenue':'ВИРУЧКА','pl.cost':'ВКЛАДЕНО','pl.margin':'МАРЖА','pl.deals':'УГОД','pl.fees':'КОМІСІЇ',
+  'cf.title':'CASHFLOW / ВИПЛАТИ','cf.hold':'Hold','cf.available':'Доступно','cf.withdrawn':'Виведено','cf.total':'Всього',
+  'cf.date':'Дата','cf.platform':'Платформа','cf.amount':'Сума','cf.status':'Статус','cf.availableDate':'Доступно з','cf.note':'Коментар',
+  'cf.add':'Додати','cf.payoutCsv':'Payout CSV','cf.empty':'Немає записів. Додай Hold, Available або Withdrawn.',
+  'cf.rules':'Правила payout (днів до Available)','cf.priority':'Дата в полі «Доступно з» має пріоритет.','cf.save':'Зберегти',
+  'cf.deleteConfirm':'Видалити запис?','cf.amountRequired':'Введи суму','cf.invalidPrice':'Некоректна ціна',
+  'imp.title':'ІМПОРТ ПРОДАЖІВ','imp.hint':'CSV з G2G / Gameflip / PlayerAuctions. Колонки: date, title/item, price/amount, fee (необов’язково), order id (необов’язково). Собівартість підтягується зі складу, якщо є збіг.',
+  'imp.createHold':'створити Hold','imp.import':'Імпортувати','imp.emptyCsv':'CSV порожній','imp.noColumns':'Не знайдено колонок title/price',
+  'imp.noRows':'Немає рядків з ціною','imp.foundCost':'знайдено собівартість','imp.imported':'Імпортовано','imp.skipped':'пропущено дублів',
+  'imp.price':'Ціна','imp.fee':'Комісія','imp.cost':'Собівартість','imp.stock':'Склад','imp.titleCol':'Дата','imp.name':'Назва',
+  'roi.title':'ROI ПОСТАЧАЛЬНИКІВ','roi.hint':'Прибуток, ROI і sell-through по постачальниках — на основі складу та прив’язаних продажів.',
+  'roi.empty':'Немає даних: додай товар на склад із постачальником.','roi.supplier':'Постачальник','roi.items':'Товари','roi.sold':'Продано',
+  'roi.stock':'Склад','roi.cost':'Витрати','roi.revenue':'Виручка','roi.profit':'Прибуток','roi.roi':'ROI','roi.st':'ST%','roi.days':'Днів',
+  'order.new':'Нове замовлення','order.open':'Відкрити','order.notify':'Сповіщення','order.clear':'Очистити всі','mail.desc':'Листи від FunPay / ZeusX / Eldorado, які трекер уже розпізнав. Нічого не додається автоматично: перенесіть одним кліком у ELDORADO або P&L, або проігноруйте.','order.enabled':'Увімкнено','order.blocked':'Заблоковано',
+  'order.demo':'Демо','order.sound':'звук','order.testSound':'Перевірити звук','order.permissionDenied':'Сповіщення не дозволено',
+  'order.granted':'Сповіщення увімкнено','order.demoCreated':'Демо-замовлення створено',
+  'rep.title':'Місячний звіт','rep.tax':'Податок %','rep.show':'Показати','rep.choose':'Виберіть місяць','rep.deals':'Угоди за місяць','rep.cashTax':'Cashflow / податок','rep.taxBase':'Податкова база (net profit)','rep.taxRate':'Ставка податку','rep.taxEst':'Оцінка податку'
+});
+Object.assign(I18N.en, {
+  'an.mergedTitle':'COMBINED — ALL NUMBERS IN ONE PLACE','an.merged':'P&L + ELDORADO — combined',
+  'an.revenueDays':'REVENUE BY DAY (30 days)','an.gamesTitle':'ANALYTICS','an.byGames':'BY GAME','an.byMonths':'BY MONTH','an.refresh':'Refresh',
+  'pl.profit':'PROFIT','pl.revenue':'REVENUE','pl.cost':'INVESTED','pl.margin':'MARGIN','pl.deals':'DEALS','pl.fees':'FEES',
+  'cf.title':'CASHFLOW / PAYOUTS','cf.hold':'Hold','cf.available':'Available','cf.withdrawn':'Withdrawn','cf.total':'Total',
+  'cf.date':'Date','cf.platform':'Platform','cf.amount':'Amount','cf.status':'Status','cf.availableDate':'Available from','cf.note':'Note',
+  'cf.add':'Add','cf.payoutCsv':'Payout CSV','cf.empty':'No entries. Add Hold, Available or Withdrawn.',
+  'cf.rules':'Payout rules (days to Available)','cf.priority':'The date in "Available from" overrides the rule.','cf.save':'Save',
+  'cf.deleteConfirm':'Delete this entry?','cf.amountRequired':'Enter an amount','cf.invalidPrice':'Invalid price',
+  'imp.title':'SALES IMPORT','imp.hint':'CSV from G2G / Gameflip / PlayerAuctions. Columns: date, title/item, price/amount, fee (optional), order id (optional). Cost is matched from stock when possible.',
+  'imp.createHold':'create Hold','imp.import':'Import','imp.emptyCsv':'CSV is empty','imp.noColumns':'No title/price columns found',
+  'imp.noRows':'No rows with a price','imp.foundCost':'cost matched','imp.imported':'Imported','imp.skipped':'duplicates skipped',
+  'imp.price':'Price','imp.fee':'Fee','imp.cost':'Cost','imp.stock':'Stock','imp.titleCol':'Date','imp.name':'Name',
+  'roi.title':'SUPPLIER ROI','roi.hint':'Profit, ROI and sell-through by supplier, based on stock and linked sales.',
+  'roi.empty':'No data: add stock with a supplier.','roi.supplier':'Supplier','roi.items':'Items','roi.sold':'Sold',
+  'roi.stock':'Stock','roi.cost':'Cost','roi.revenue':'Revenue','roi.profit':'Profit','roi.roi':'ROI','roi.st':'ST%','roi.days':'Days',
+  'order.new':'New order','order.open':'Open','order.notify':'Notifications','order.clear':'Clear all','mail.desc':'Emails from FunPay / ZeusX / Eldorado that the tracker recognized. Nothing is added automatically: move one to ELDORADO or P&L, or ignore it.','order.enabled':'Enabled','order.blocked':'Blocked',
+  'order.demo':'Demo','order.sound':'sound','order.testSound':'Test sound','order.permissionDenied':'Notifications not allowed',
+  'order.granted':'Notifications enabled','order.demoCreated':'Demo order created',
+  'rep.title':'Monthly report','rep.tax':'Tax %','rep.show':'Show','rep.choose':'Choose a month','rep.deals':'Deals this month','rep.cashTax':'Cashflow / tax','rep.taxBase':'Tax base (net profit)','rep.taxRate':'Tax rate','rep.taxEst':'Estimated tax'
+});
+Object.assign(I18N.ru, {
+  'an.mergedTitle':'СВЕДЕНО — ВСЕ ЦИФРЫ В ОДНОМ МЕСТЕ','an.merged':'P&L + ELDORADO — вместе',
+  'an.revenueDays':'ВЫРУЧКА ПО ДНЯМ (30 дней)','an.gamesTitle':'АНАЛИТИКА','an.byGames':'ПО ИГРАМ','an.byMonths':'ПО МЕСЯЦАМ','an.refresh':'Обновить',
+  'pl.profit':'ПРИБЫЛЬ','pl.revenue':'ВЫРУЧКА','pl.cost':'ВЛОЖЕНО','pl.margin':'МАРЖА','pl.deals':'СДЕЛОК','pl.fees':'КОМИССИИ',
+  'cf.title':'CASHFLOW / ВЫПЛАТЫ','cf.hold':'Hold','cf.available':'Доступно','cf.withdrawn':'Выведено','cf.total':'Всего',
+  'cf.date':'Дата','cf.platform':'Платформа','cf.amount':'Сумма','cf.status':'Статус','cf.availableDate':'Доступно с','cf.note':'Комментарий',
+  'cf.add':'Добавить','cf.payoutCsv':'Payout CSV','cf.empty':'Нет записей. Добавь Hold, Available или Withdrawn.',
+  'cf.rules':'Правила payout (дней до Available)','cf.priority':'Дата в поле «Доступно с» имеет приоритет.','cf.save':'Сохранить',
+  'cf.deleteConfirm':'Удалить запись?','cf.amountRequired':'Введи сумму','cf.invalidPrice':'Неверная цена',
+  'imp.title':'ИМПОРТ ПРОДАЖ','imp.hint':'CSV из G2G / Gameflip / PlayerAuctions. Колонки: date, title/item, price/amount, fee (необязательно), order id (необязательно). Себестоимость подтягивается со склада при совпадении.',
+  'imp.createHold':'создать Hold','imp.import':'Импортировать','imp.emptyCsv':'CSV пустой','imp.noColumns':'Не найдены колонки title/price',
+  'imp.noRows':'Нет строк с ценой','imp.foundCost':'найдена себестоимость','imp.imported':'Импортировано','imp.skipped':'пропущено дублей',
+  'imp.price':'Цена','imp.fee':'Комиссия','imp.cost':'Себестоимость','imp.stock':'Склад','imp.titleCol':'Дата','imp.name':'Название',
+  'roi.title':'ROI ПОСТАВЩИКОВ','roi.hint':'Прибыль, ROI и sell-through по поставщикам — на основе склада и связанных продаж.',
+  'roi.empty':'Нет данных: добавь товар на склад с поставщиком.','roi.supplier':'Поставщик','roi.items':'Товары','roi.sold':'Продано',
+  'roi.stock':'Склад','roi.cost':'Затраты','roi.revenue':'Выручка','roi.profit':'Прибыль','roi.roi':'ROI','roi.st':'ST%','roi.days':'Дней',
+  'order.new':'Новый заказ','order.open':'Открыть','order.notify':'Уведомления','order.clear':'Очистить все','mail.desc':'Письма от FunPay / ZeusX / Eldorado, которые трекер распознал. Ничего не добавляется автоматически: перенесите одним кликом в ELDORADO или P&L, либо проигнорируйте.','order.enabled':'Включено','order.blocked':'Заблокировано',
+  'order.demo':'Демо','order.sound':'звук','order.testSound':'Проверить звук','order.permissionDenied':'Уведомления не разрешены',
+  'order.granted':'Уведомления включены','order.demoCreated':'Демо-заказ создан',
+  'rep.title':'Месячный отчёт','rep.tax':'Налог %','rep.show':'Показать','rep.choose':'Выберите месяц','rep.deals':'Сделки за месяц','rep.cashTax':'Cashflow / налог','rep.taxBase':'Налоговая база (net profit)','rep.taxRate':'Ставка налога','rep.taxEst':'Оценка налога'
+});
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
   n = Math.abs(Number(n) || 0);
@@ -2554,6 +2616,8 @@ async function setLang(l){
     _cur = ({uk:'UAH', en:'USD', ru:'RUB'})[LANG] || _cur;
   }
   applyLang();
+  try{ loadCashflow(); loadSupplierROI(); loadReport(); updateOrderNotifyUI(); }catch(e){}
+  try{ loadMailQueue(); }catch(e){}
   try{ applyCurrency(); }catch(e){}
   try{ loadAudit(); }catch(e){}
   try{ if(g('onb') && g('onb').style.display === 'flex') onbRender(); }catch(e){}
@@ -2706,6 +2770,7 @@ function sw(id,el){
   try{ syncMnav(id); }catch(e){}
   try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
   if(id==='overview'){ renderOverview(); }
+  if(id==='mail'){ clearOrderAlert(); try{ loadMailQueue(); }catch(e){} }
   if(id==='tracker'){ setTimeout(()=>{ renderPurchases(); renderRevenueChart(); },50); }
   if(id==='channels'){ renderChAll(); setTimeout(()=>{ try{ translateAll(); }catch(e){} }, 700); }
   if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); loadReport(); }catch(e){} }
@@ -4097,11 +4162,11 @@ async function importCsvFile(input){
   const f=input.files&&input.files[0]; if(!f) return;
   const text=await f.text();
   const rows=parseCsvText(text);
-  if(rows.length<2){ toast('⚠ CSV порожній', false); return; }
+  if(rows.length<2){ toast('⚠ '+t('imp.emptyCsv'), false); return; }
   const hdr=rows[0].map(x=>String(x).trim().toLowerCase());
   const col=function(){ for(let i=0;i<arguments.length;i++){ const k=arguments[i]; const ix=hdr.findIndex(h=>h===k||h.includes(k)); if(ix>=0) return ix; } return -1; };
   const ci={date:col('date','created','sale date'),title:col('title','item','product','name','description'),price:col('price','amount','total','gross'),fee:col('fee','commission'),order:col('order','id')};
-  if(ci.title<0||ci.price<0){ toast('⚠ Не знайдено колонок title/price', false); return; }
+  if(ci.title<0||ci.price<0){ toast('⚠ '+t('imp.noColumns'), false); return; }
   const plat=g('impPlatform').value;
   const def=Number((FEE_CFG.fees||{})[plat]||0);
   _impRows=rows.slice(1).map(function(r){
@@ -4111,7 +4176,7 @@ async function importCsvFile(input){
     return {date:_date(ci.date>=0?r[ci.date]:''),title:String(ci.title>=0?r[ci.title]:'Import').slice(0,200),
             sell:sell,fee:fee,feePct:sell>0?fee/sell:0,order:ci.order>=0?String(r[ci.order]||''):'',platform:plat};
   }).filter(Boolean).slice(0,1000);
-  if(!_impRows.length){ toast('⚠ Немає рядків з ціною', false); return; }
+  if(!_impRows.length){ toast('⚠ '+t('imp.noRows'), false); return; }
   // автоматичний матчинг зі складом (перші 100 рядків, без повторного використання однієї позиції)
   const used=new Set(); let matched=0;
   for(let i=0;i<Math.min(_impRows.length,100);i++){
@@ -4129,8 +4194,8 @@ async function importCsvFile(input){
     }catch(e){}
   }
   g('impRun').style.display='inline-flex';
-  g('impInfo').textContent=f.name+' · '+_impRows.length+' рядків · знайдено собівартість: '+matched;
-  g('impPreview').innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>Дата</th><th>Назва</th><th>Ціна</th><th>Комісія</th><th>Собівартість</th><th>Склад</th></tr></thead><tbody>'+
+  g('impInfo').textContent=f.name+' · '+_impRows.length+' · '+t('imp.foundCost')+': '+matched;
+  g('impPreview').innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>'+t('imp.titleCol')+'</th><th>'+t('imp.name')+'</th><th>'+t('imp.price')+'</th><th>'+t('imp.fee')+'</th><th>'+t('imp.cost')+'</th><th>'+t('imp.stock')+'</th></tr></thead><tbody>'+
     _impRows.slice(0,20).map(function(x){return '<tr><td>'+esc(x.date)+'</td><td>'+esc(x.title)+'</td><td>$'+x.sell.toFixed(2)+'</td><td>$'+x.fee.toFixed(2)+'</td><td>'+(x.buy?'$'+Number(x.buy).toFixed(2):'<span style="color:var(--rd)">—</span>')+'</td><td>'+esc(x.matchTitle||'—')+'</td></tr>';}).join('')+
     '</tbody></table></div>'+( _impRows.length>20?'<div style="font-size:10px;color:var(--mu);margin-top:4px">…ще '+(_impRows.length-20)+'</div>':'');
 }
@@ -4171,7 +4236,7 @@ async function runSalesImport(){
   }
   try{ loadInventory().catch(()=>{}); }catch(e){}
   renderPurchases();
-  toast('✅ Імпортовано: '+added+(skipped?' · пропущено дублів: '+skipped:'')+(holds?' · Hold: '+holds:''));
+  toast('✅ '+t('imp.imported')+': '+added+(skipped?' · '+t('imp.skipped')+': '+skipped:'')+(holds?' · Hold: '+holds:''));
   _impRows=[]; g('impRun').style.display='none'; g('impInfo').textContent=''; g('impPreview').innerHTML='';
   if(g('impFile')) g('impFile').value='';
 }
@@ -4180,25 +4245,26 @@ async function loadCashflow(){
   const el=g('cfList'); if(!el) return;
   try{
     const d=await fetch('/api/cashflow').then(r=>r.json());
-    const it=d.items||[], t=d.totals||{};
+    const it=d.items||[], tot=d.totals||{};
     if(g('cfCards')) g('cfCards').innerHTML=[
-      ['Hold','hold','var(--yw)'],['Available','available','var(--gr)'],['Withdrawn','withdrawn','var(--a1)'],['Total','all','var(--tx)']
-    ].map(function(a){var k=a[0],key=a[1],c=a[2];return '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:8px 12px;min-width:110px"><div style="font-size:10px;color:var(--mu)">'+k+'</div><div style="font-size:17px;font-weight:800;color:'+c+'">$'+Number(key==='all'?d.all:(t[key]||0)).toFixed(2)+'</div></div>';}).join('');
-    if(!it.length){ el.innerHTML='<div class="none">Немає записів. Додай hold/available/withdrawn.</div>'; return; }
+      [t('cf.hold'),'hold','var(--yw)'],[t('cf.available'),'available','var(--gr)'],[t('cf.withdrawn'),'withdrawn','var(--a1)'],[t('cf.total'),'all','var(--tx)']
+    ].map(function(a){var k=a[0],key=a[1],c=a[2];return '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:8px 12px;min-width:110px"><div style="font-size:10px;color:var(--mu)">'+k+'</div><div style="font-size:17px;font-weight:800;color:'+c+'">$'+Number(key==='all'?d.all:(tot[key]||0)).toFixed(2)+'</div></div>';}).join('');
+    if(!it.length){ el.innerHTML='<div class="none">'+esc(t('cf.empty'))+'</div>'; return; }
     var rows=it.slice().reverse().map(function(x){
       var id=esc(x.id);
-      return '<tr><td>'+esc(x.date||'')+'</td><td>'+esc(CF_NAMES[x.platform]||x.platform||'—')+'</td><td>$'+Number(x.amount||0).toFixed(2)+'</td><td>'+esc(x.status||'hold')+'</td><td>'+esc(x.availableDate||'—')+'</td><td>'+esc((x.note||'').substring(0,60))+'</td><td style="white-space:nowrap">'
+      const _st=(x.status||'hold'); const stLbl=t('cf.'+_st)||_st;
+      return '<tr><td>'+esc(x.date||'')+'</td><td>'+esc(CF_NAMES[x.platform]||x.platform||'—')+'</td><td>$'+Number(x.amount||0).toFixed(2)+'</td><td>'+esc(stLbl)+'</td><td>'+esc(x.availableDate||'—')+'</td><td>'+esc((x.note||'').substring(0,60))+'</td><td style="white-space:nowrap">'
         +'<button class="btn" style="padding:3px 7px;font-size:10px" onclick="cashflowSet(\''+id+'\',\'available\')">A</button> '
         +'<button class="btn" style="padding:3px 7px;font-size:10px" onclick="cashflowSet(\''+id+'\',\'withdrawn\')">W</button> '
         +'<button class="btn rd" style="padding:3px 7px;font-size:10px" onclick="cashflowDel(\''+id+'\')">✕</button>'
         +'</td></tr>';
     }).join('');
-    el.innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>Дата</th><th>Платформа</th><th>Сума</th><th>Статус</th><th>Доступно</th><th>Коментар</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    el.innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>'+t('cf.date')+'</th><th>'+t('cf.platform')+'</th><th>'+t('cf.amount')+'</th><th>'+t('cf.status')+'</th><th>'+t('cf.availableDate')+'</th><th>'+t('cf.note')+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
 }
 async function cashflowAdd(){
   const amount=Number(g('cfAmount')?.value||0);
-  if(!(amount>0)){ toast('⚠ '+(LANG==='en'?'Enter amount':LANG==='ru'?'Введи сумму':'Введи суму'), false); return; }
+  if(!(amount>0)){ toast('⚠ '+t('cf.amountRequired'), false); return; }
   const body={platform:g('cfPlatform')?.value||'other',amount,status:g('cfStatus')?.value||'hold',
     date:g('cfDate')?.value||new Date().toISOString().slice(0,10),note:g('cfNote')?.value||'',
     availableDate:g('cfAvailable')?.value||''};
@@ -4270,7 +4336,7 @@ async function savePayoutRules(){
 async function importCashflowCsv(input){
   const f=input.files&&input.files[0]; if(!f) return;
   const rows=parseCsvText(await f.text());
-  if(rows.length<2){ toast('⚠ CSV порожній', false); return; }
+  if(rows.length<2){ toast('⚠ '+t('imp.emptyCsv'), false); return; }
   const hdr=rows[0].map(x=>String(x).trim().toLowerCase());
   const col=function(){ for(let i=0;i<arguments.length;i++){ const ix=hdr.findIndex(h=>h===arguments[i]||h.includes(arguments[i])); if(ix>=0) return ix; } return -1; };
   const ci={date:col('date','created'),platform:col('platform','marketplace','source'),amount:col('amount','total','payout','net'),status:col('status','state'),note:col('note','comment','description'),available:col('available','payout date','release'),order:col('order','transaction','sale','id')};
@@ -4308,7 +4374,7 @@ async function cashflowSet(id,status){
   try{ const d=await fetch('/api/cashflow/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}).then(r=>r.json()); if(d.ok) await loadCashflow(); }catch(e){}
 }
 async function cashflowDel(id){
-  if(!confirm(LANG==='en'?'Delete cashflow entry?':LANG==='ru'?'Удалить запись?':'Видалити запис?')) return;
+  if(!confirm(t('cf.deleteConfirm'))) return;
   try{ const d=await fetch('/api/cashflow/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).then(r=>r.json()); if(d.ok) await loadCashflow(); }catch(e){}
 }
 async function loadSupplierROI(){
@@ -4316,10 +4382,8 @@ async function loadSupplierROI(){
   try{
     const d=await fetch('/api/supplier_roi').then(r=>r.json());
     const rows=d.suppliers||[];
-    if(!rows.length){ el.innerHTML='<div class="none">Немає даних: додай товар на склад із постачальником.</div>'; return; }
-    const H=LANG==='en'?['Supplier','Items','Sold','Stock','Cost','Revenue','Profit','ROI','ST%','Days']:
-            LANG==='ru'?['Поставщик','Товары','Продано','Склад','Затраты','Выручка','Прибыль','ROI','ST%','Дней']:
-            ['Постачальник','Товари','Продано','Склад','Витрати','Виручка','Прибуток','ROI','ST%','Днів'];
+    if(!rows.length){ el.innerHTML='<div class="none">'+esc(t('roi.empty'))+'</div>'; return; }
+    const H=['roi.supplier','roi.items','roi.sold','roi.stock','roi.cost','roi.revenue','roi.profit','roi.roi','roi.st','roi.days'].map(k=>t(k));
     el.innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr>'+
       H.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+
       rows.map(x=>'<tr><td><b>'+esc(x.source||'—')+'</b></td><td>'+x.items+'</td><td>'+x.sold+'</td><td>'+x.stock+
@@ -4420,7 +4484,7 @@ function renderStats(){
     {l:t('an.margin'),      v:avgMargin+'%',                   c:'var(--yw)'},
     {l:t('an.games'),       v:games.length,                    c:'var(--a3)'},
     {l:t('an.best'),        v:(top[0]?.name||'—').substring(0,18), c:'var(--gr)'},
-    {l:'ELDORADO',          v:(edAllProfit>=0?'+':'')+'$'+edAllProfit.toFixed(2), c:'var(--a3)'},
+    {l:t('an.profitED'),    v:(edAllProfit>=0?'+':'')+'$'+edAllProfit.toFixed(2), c:'var(--a3)'},
     {l:t('an.total'),       v:(combinedAll>=0?'+':'')+'$'+combinedAll.toFixed(2), c:combinedAll>=0?'var(--gr)':'var(--rd)'},
   ].concat(_rate ? [
     {l:t('an.totalIn')+' '+curSym(), v:curSym()+(combinedAll*_rate).toFixed(2), c:'var(--a1)'},
@@ -5842,9 +5906,9 @@ function playOrderSound(){
 }
 function updateOrderNotifyUI(){
   const b=g('orderNotifyBtn'); if(!b || !('Notification' in window)) return;
-  if(Notification.permission==='granted'){ b.textContent='🔔 Увімкнено'; b.style.opacity='.85'; }
-  else if(Notification.permission==='denied'){ b.textContent='🔕 Заблоковано'; b.style.opacity='.6'; }
-  else { b.textContent='🔔 Увімкнути'; }
+  if(Notification.permission==='granted'){ b.innerHTML='🔔 <span>'+t('order.enabled')+'</span>'; b.style.opacity='.85'; }
+  else if(Notification.permission==='denied'){ b.innerHTML='🔕 <span>'+t('order.blocked')+'</span>'; b.style.opacity='.6'; }
+  else { b.innerHTML='🔔 <span>'+t('order.notify')+'</span>'; }
 }
 async function enableOrderNotifications(){
   if(!('Notification' in window)){ toast('⚠ Браузер не підтримує Notification', false); return; }
@@ -5853,13 +5917,13 @@ async function enableOrderNotifications(){
     const p=await Notification.requestPermission();
     updateOrderNotifyUI();
     playOrderSound();
-    toast(p==='granted'?'🔔 Сповіщення увімкнено':'⚠ Сповіщення не дозволено', p==='granted');
+    toast(p==='granted'?('🔔 '+t('order.granted')):('⚠ '+t('order.permissionDenied')), p==='granted');
   }catch(e){ toast('⚠ '+e, false); }
 }
 function orderNotify(n){
   try{
     if(Notification.permission==='granted'){
-      const note=new Notification('🔔 Нове замовлення', {body:n+' нове замовлення в AccTrack', icon:'/icon-192.png', tag:'acctrack-orders', requireInteraction:true});
+      const note=new Notification('🔔 '+t('order.new'), {body:n+' · '+(window._appName||'AccTrack'), icon:'/icon-192.png', tag:'acctrack-orders', requireInteraction:true});
       note.onclick=()=>{ try{ window.focus(); goOrders(); note.close(); }catch(e){} };
     }
   }catch(e){}
@@ -5870,9 +5934,9 @@ function notifyNewOrder(n){
   _alertCount=n;
   document.title='('+n+') '+(window._appName||'AccTrack');
   setFaviconBadge(true);
-  const b=g('orderBanner'); if(b){ b.style.display='flex'; const t=g('orderBannerText'); if(t) t.textContent='Нове замовлення: '+n; }
+  const b=g('orderBanner'); if(b){ b.style.display='flex'; const bt=g('orderBannerText'); if(bt) bt.textContent=t('order.new')+': '+n; }
   orderNotify(n);
-  toast('🔔 Нове замовлення: '+n+' — відкрий «Замовлення»');
+  toast('🔔 '+t('order.new')+': '+n);
 }
 function goOrders(){
   const tab=[...document.querySelectorAll('.tab')].find(x=>String(x.getAttribute('onclick')||'').includes("'mail'"));
@@ -6386,15 +6450,15 @@ async function reportPdf(){
       '.note{font-size:11px;color:#666;margin-top:20px;line-height:1.5}@media print{button{display:none}}</style></head><body>'+
       '<h1>Ledger — '+esc(d.month||'')+'</h1><div class="sub">'+new Date().toLocaleString()+'</div>'+
       '<table>'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(String(r[1]))+'</td></tr>').join('')+'</table>'+
-      '<h2 style="font-size:15px;margin:24px 0 6px">Cashflow / податок</h2><table>'+
+      '<h2 style="font-size:15px;margin:24px 0 6px">'+esc(t('rep.cashTax'))+'</h2><table>'+
         '<tr><td>Hold</td><td>$'+Number((d.cashflow||{}).hold||0).toFixed(2)+'</td></tr>'+
         '<tr><td>Available</td><td>$'+Number((d.cashflow||{}).available||0).toFixed(2)+'</td></tr>'+
         '<tr><td>Withdrawn</td><td>$'+Number((d.cashflow||{}).withdrawn||0).toFixed(2)+'</td></tr>'+
-        '<tr><td>Податкова база (net profit)</td><td>$'+Number((d.tax||{}).base||0).toFixed(2)+'</td></tr>'+
-        '<tr><td>Ставка податку</td><td>'+Number((d.tax||{}).rate||0).toFixed(1)+'%</td></tr>'+
-        '<tr><td>Оцінка податку</td><td>$'+Number((d.tax||{}).estimate||0).toFixed(2)+'</td></tr>'+
+        '<tr><td>'+esc(t('rep.taxBase'))+'</td><td>$'+Number((d.tax||{}).base||0).toFixed(2)+'</td></tr>'+
+        '<tr><td>'+esc(t('rep.taxRate'))+'</td><td>'+Number((d.tax||{}).rate||0).toFixed(1)+'%</td></tr>'+
+        '<tr><td>'+esc(t('rep.taxEst'))+'</td><td>$'+Number((d.tax||{}).estimate||0).toFixed(2)+'</td></tr>'+
       '</table>'+
-      ((d.items&&d.items.length)?('<h2 style="font-size:15px;margin:24px 0 6px">Угоди за місяць</h2><table><thead><tr><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Дата</th><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Назва</th><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Майданчик</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Продаж</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Комісія</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Собівартість</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Прибуток</th></tr></thead><tbody>'+d.items.slice(0,200).map(function(x){return '<tr><td>'+esc(x.date)+'</td><td>'+esc((x.title||'').substring(0,55))+'</td><td>'+esc(x.platform||'')+'</td><td style="text-align:right">$'+Number(x.sell||0).toFixed(2)+'</td><td style="text-align:right">$'+Number(x.fee||0).toFixed(2)+'</td><td style="text-align:right">$'+Number(x.buy||0).toFixed(2)+'</td><td style="text-align:right;font-weight:700">$'+Number(x.profit||0).toFixed(2)+'</td></tr>';}).join('')+'</tbody></table>'+((d.items.length>200)?'<div class="note">Показано перші 200 угод.</div>':'')):'')+
+      ((d.items&&d.items.length)?('<h2 style="font-size:15px;margin:24px 0 6px">'+esc(t('rep.deals'))+'</h2><table><thead><tr><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Дата</th><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Назва</th><th style="text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ccc">Майданчик</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Продаж</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Комісія</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Собівартість</th><th style="text-align:right;font-size:11px;color:#666;border-bottom:1px solid #ccc">Прибуток</th></tr></thead><tbody>'+d.items.slice(0,200).map(function(x){return '<tr><td>'+esc(x.date)+'</td><td>'+esc((x.title||'').substring(0,55))+'</td><td>'+esc(x.platform||'')+'</td><td style="text-align:right">$'+Number(x.sell||0).toFixed(2)+'</td><td style="text-align:right">$'+Number(x.fee||0).toFixed(2)+'</td><td style="text-align:right">$'+Number(x.buy||0).toFixed(2)+'</td><td style="text-align:right;font-weight:700">$'+Number(x.profit||0).toFixed(2)+'</td></tr>';}).join('')+'</tbody></table>'+((d.items.length>200)?'<div class="note">Показано перші 200 угод.</div>':'')):'')+
       '<div class="note">'+esc(t('rep.formula'))+'</div>'+
       '<button onclick="window.print()" style="margin-top:20px;padding:9px 14px">Друк / Зберегти PDF</button>'+
       '</body></html>';
@@ -6527,6 +6591,7 @@ async function loadMailQueue(force){
     const badge=g('mailBadge'), n=d.new||0;
     const first=_lastMailNew===null;
     if(!first && n>_lastMailNew && !document.querySelector('#tab-mail.on')) notifyNewOrder(n);
+    if(n===0) clearOrderAlert();
     _lastMailNew=n;
     if(badge) badge.innerHTML = n ? ` <span style="background:var(--a2);color:#1a0a05;border-radius:20px;padding:0 7px;font-size:11px;font-weight:800">${n}</span>` : '';
     if(g('mailStat')) g('mailStat').textContent = mailItems.length ? `${mailItems.length} ${plural(mailItems.length,'emails')} · ${LANG==='ru'?'новых':LANG==='en'?'new':'нових'} ${n}` : '';
@@ -6544,7 +6609,7 @@ async function createDemoOrder(){
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     await loadMailQueue(true);
     notifyNewOrder(1);
-    toast('🧪 Демо-замовлення створено');
+    toast('🧪 '+t('order.demoCreated'));
   }catch(e){ toast('⚠ '+e, false); }
 }
 async function mailCookieHint(){
