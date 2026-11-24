@@ -3049,7 +3049,6 @@ async function importBackup(input){
   const f = input.files && input.files[0];
   input.value = '';
   if(!f) return;
-  if(!confirm(t('csv.importConfirm').replace('%s', f.name))) return;
   const enc = /\.enc$/i.test(f.name);
   const pw = enc ? prompt('Пароль від зашифрованого бекапу') : '';
   if(enc && !pw) return;
@@ -3057,8 +3056,14 @@ async function importBackup(input){
     toast(t('loading'));
     const headers={'Content-Type':'application/octet-stream'};
     if(enc) headers['X-Backup-Password']=pw;
+    const buf=await f.arrayBuffer();
+    const insp=await fetch('/api/backup/inspect',{method:'POST',headers,body:buf}).then(r=>r.json());
+    if(!insp.ok){ toast('⚠ '+(insp.error||'invalid backup'), false); return; }
+    const c=insp.counts||{};
+    const msg='Бекап: '+(insp.created||'—')+'\nФайлів: '+(insp.files||[]).length+'\nP&L: '+(c.pl||0)+' · Eldorado: '+(c.ed||0)+'\n\nВідновити? Поточна версія буде збережена.';
+    if(!confirm(msg)) return;
     const r = await fetch('/api/backup/import',{method:'POST',
-      headers, body:f});
+      headers, body:buf});
     const d = await r.json().catch(()=>({}));
     if(!r.ok || d.ok === false){ toast('⚠ '+(d.error||('HTTP '+r.status)), false); return; }
     await reloadAllData();

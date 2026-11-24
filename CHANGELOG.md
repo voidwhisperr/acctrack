@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.17.0 — backup restore preview
+
+- Backup import validates the zip/encrypted archive before writing.
+- Shows manifest created date, file count and P&L/Eldorado counts.
+- Restore requires explicit confirmation after preview.
+
 ## v1.16.0 — encrypted automatic backups
 
 - Optional AES-GCM encrypted backup on each scheduled run.

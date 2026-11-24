@@ -3865,6 +3865,32 @@ def _build_backup_zip():
     return buf.getvalue(), manifest
 
 
+def _inspect_backup_zip(raw, password=""):
+    """Перевіряє бекап без запису: manifest, файли, кількість записів."""
+    raw = _decrypt_backup(raw, password)
+    if len(raw) > 50 * 1024 * 1024:
+        raise ValueError("файл завеликий (>50 МБ)")
+    try:
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            names = z.namelist()
+            manifest = {}
+            if "manifest.json" in names:
+                manifest = json.loads(z.read("manifest.json").decode("utf-8"))
+            counts = {}
+            for n, key in ((".gt_pl.json", "pl"), (".gt_eldorado.json", "ed"),
+                           (".gt_goal.json", "goal")):
+                if n in names:
+                    try:
+                        counts[key] = len(json.loads(z.read(n).decode("utf-8")) or [])
+                    except Exception:
+                        counts[key] = 0
+            return {"ok": True, "files": names, "manifest": manifest,
+                    "counts": counts, "version": manifest.get("version"),
+                    "created": manifest.get("created")}
+    except zipfile.BadZipFile:
+        raise ValueError("це не zip-бекап")
+
+
 def _import_backup_zip(raw, password=""):
     """Відновлення з zip: перевіряє manifest/sha256, робить бекап поточного стану."""
     if not raw:
@@ -4266,7 +4292,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.16.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.17.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4650,7 +4676,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.16.0",
+            self._json({"ok": True, "version": "1.17.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -4839,10 +4865,16 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             n = int(self.headers.get("Content-Length", 0) or 0)
         except Exception:
             n = 0
-        body_limit = 60 * 1024 * 1024 if self.path == "/api/backup/import" else self.MAX_BODY
+        body_limit = 60 * 1024 * 1024 if self.path in ("/api/backup/import", "/api/backup/inspect") else self.MAX_BODY
         if n < 0 or n > body_limit:
             self._json({"ok": False, "error": "request body too large"}, code=413); return
         raw_body = self.rfile.read(n) if n else b""
+        if self.path == "/api/backup/inspect":
+            try:
+                self._json(_inspect_backup_zip(raw_body, self.headers.get("X-Backup-Password", "")))
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:200]})
+            return
         if self.path == "/api/backup/import":
             try:
                 self._json(_import_backup_zip(raw_body, self.headers.get("X-Backup-Password", "")))
@@ -5989,7 +6021,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.16.0")
+    print("  ▲  AccTrack v1.17.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 
