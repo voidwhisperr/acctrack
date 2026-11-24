@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.9.1 — automatic cost matching on import
+
+- CSV preview matches rows to in-stock inventory by title.
+- Matched cost is used for profit; matched stock is marked sold after import.
+- Unmatched rows are flagged with needsCost.
+
 ## v1.9.0 — sales import, cashflow, one-click targets
 
 - CSV import for G2G/Gameflip/PlayerAuctions with preview and duplicate order filtering.

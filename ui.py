@@ -4056,10 +4056,26 @@ async function importCsvFile(input){
             sell:sell,fee:fee,feePct:sell>0?fee/sell:0,order:ci.order>=0?String(r[ci.order]||''):'',platform:plat};
   }).filter(Boolean).slice(0,1000);
   if(!_impRows.length){ toast('⚠ Немає рядків з ціною', false); return; }
+  // автоматичний матчинг зі складом (перші 100 рядків, без повторного використання однієї позиції)
+  const used=new Set(); let matched=0;
+  for(let i=0;i<Math.min(_impRows.length,100);i++){
+    const x=_impRows[i];
+    try{
+      const q=encodeURIComponent(x.title||'');
+      if(q){
+        const mm=await fetch('/api/inventory/match?title='+q).then(r=>r.json());
+        const hit=(mm.matches||[]).find(z=>!used.has(String(z.id)));
+        if(hit){
+          used.add(String(hit.id));
+          x.buy=Number(hit.cost||0); x.inventoryId=hit.id; x.matchTitle=hit.title; matched++;
+        }
+      }
+    }catch(e){}
+  }
   g('impRun').style.display='inline-flex';
-  g('impInfo').textContent=f.name+' · '+_impRows.length+' рядків';
-  g('impPreview').innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>Дата</th><th>Назва</th><th>Ціна</th><th>Комісія</th></tr></thead><tbody>'+
-    _impRows.slice(0,20).map(function(x){return '<tr><td>'+esc(x.date)+'</td><td>'+esc(x.title)+'</td><td>$'+x.sell.toFixed(2)+'</td><td>$'+x.fee.toFixed(2)+'</td></tr>';}).join('')+
+  g('impInfo').textContent=f.name+' · '+_impRows.length+' рядків · знайдено собівартість: '+matched;
+  g('impPreview').innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>Дата</th><th>Назва</th><th>Ціна</th><th>Комісія</th><th>Собівартість</th><th>Склад</th></tr></thead><tbody>'+
+    _impRows.slice(0,20).map(function(x){return '<tr><td>'+esc(x.date)+'</td><td>'+esc(x.title)+'</td><td>$'+x.sell.toFixed(2)+'</td><td>$'+x.fee.toFixed(2)+'</td><td>'+(x.buy?'$'+Number(x.buy).toFixed(2):'<span style="color:var(--rd)">—</span>')+'</td><td>'+esc(x.matchTitle||'—')+'</td></tr>';}).join('')+
     '</tbody></table></div>'+( _impRows.length>20?'<div style="font-size:10px;color:var(--mu);margin-top:4px">…ще '+(_impRows.length-20)+'</div>':'');
 }
 async function runSalesImport(){
@@ -4068,13 +4084,22 @@ async function runSalesImport(){
   let added=0, skipped=0;
   _impRows.forEach(function(x){
     if(x.order && purchases.some(p=>String(p.orderId||'')===x.order)){ skipped++; return; }
-    const after=x.sell*(1-x.feePct);
+    const after=x.sell*(1-x.feePct)-(x.buy||0);
     purchases.unshift({id:Date.now()+added,title:x.title,src:plat,srcName:(FEE_CFG.marketplaces||[]).find(m=>m.id===plat)?.name||plat,
-      buy:0,sell:x.sell,feePct:x.feePct,expenses:0,afterFee:after,currency:'USD',fxRate:1,
-      orderId:x.order,date:x.date,platform:plat,imported:true,needsCost:true});
+      buy:Number(x.buy||0),sell:x.sell,feePct:x.feePct,expenses:0,afterFee:after,currency:'USD',fxRate:1,
+      orderId:x.order,date:x.date,platform:plat,imported:true,needsCost:!x.buy,
+      ...(x.inventoryId?{inventoryId:x.inventoryId}:{})});
     added++;
   });
-  await savePL(); renderPurchases();
+  await savePL();
+  for(const x of _impRows){
+    if(x.inventoryId){
+      try{ await fetch('/api/inventory/status',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id:x.inventoryId,status:'sold'})}); }catch(e){}
+    }
+  }
+  try{ loadInventory().catch(()=>{}); }catch(e){}
+  renderPurchases();
   toast('✅ Імпортовано: '+added+(skipped?' · пропущено дублів: '+skipped:''));
   _impRows=[]; g('impRun').style.display='none'; g('impInfo').textContent=''; g('impPreview').innerHTML='';
   if(g('impFile')) g('impFile').value='';
