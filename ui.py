@@ -772,6 +772,8 @@ code{
       <button class="btn" style="font-size:12px;padding:5px 11px" onclick="clearMailQueue()">🗑 Очистити всі</button>
       <div style="display:flex;gap:8px;align-items:center">
         <span id="mailStat" style="font-size:12px;color:var(--mu)"></span>
+        <button class="btn" id="orderNotifyBtn" style="padding:5px 10px;font-size:11px" onclick="enableOrderNotifications()">🔔 Сповіщення</button>
+        <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="orderSound" type="checkbox" checked> звук</label>
         <button class="btn" onclick="loadMailQueue(true)">↺ Оновити</button>
       </div>
     </div>
@@ -5783,10 +5785,58 @@ function setFaviconBadge(show){
   const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 12 52 50H12Z" fill="%23e8e8e8"/><circle cx="50" cy="14" r="12" fill="%2310b981" stroke="%230b0c0e" stroke-width="3"/></svg>';
   l.href='data:image/svg+xml,'+svg;
 }
+let _audioCtx=null;
+function _ensureAudio(){
+  try{
+    if(!_audioCtx) _audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(_audioCtx.state==='suspended') _audioCtx.resume();
+    return _audioCtx;
+  }catch(e){ return null; }
+}
+function playOrderSound(){
+  try{
+    if(g('orderSound') && !g('orderSound').checked) return;
+    const ctx=_ensureAudio(); if(!ctx) return;
+    const now=ctx.currentTime;
+    [0,0.16].forEach((dt,i)=>{
+      const o=ctx.createOscillator(), gain=ctx.createGain();
+      o.type='sine'; o.frequency.value=i?990:740;
+      gain.gain.setValueAtTime(0.001,now+dt);
+      gain.gain.exponentialRampToValueAtTime(0.18,now+dt+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001,now+dt+0.13);
+      o.connect(gain).connect(ctx.destination); o.start(now+dt); o.stop(now+dt+0.15);
+    });
+  }catch(e){}
+}
+function updateOrderNotifyUI(){
+  const b=g('orderNotifyBtn'); if(!b || !('Notification' in window)) return;
+  if(Notification.permission==='granted'){ b.textContent='🔔 Увімкнено'; b.style.opacity='.85'; }
+  else if(Notification.permission==='denied'){ b.textContent='🔕 Заблоковано'; b.style.opacity='.6'; }
+  else { b.textContent='🔔 Увімкнути'; }
+}
+async function enableOrderNotifications(){
+  if(!('Notification' in window)){ toast('⚠ Браузер не підтримує Notification', false); return; }
+  _ensureAudio();
+  try{
+    const p=await Notification.requestPermission();
+    updateOrderNotifyUI();
+    toast(p==='granted'?'🔔 Сповіщення увімкнено':'⚠ Сповіщення не дозволено', p==='granted');
+  }catch(e){ toast('⚠ '+e, false); }
+}
+function orderNotify(n){
+  try{
+    if(document.hidden && Notification.permission==='granted'){
+      const note=new Notification('🔔 Нове замовлення', {body:n+' нове замовлення в AccTrack', icon:'/icon-192.png', tag:'acctrack-orders'});
+      note.onclick=()=>{ try{ window.focus(); note.close(); }catch(e){} };
+    }
+  }catch(e){}
+  playOrderSound();
+}
 function notifyNewOrder(n){
   const mark=g('brandMark'); if(mark) mark.classList.add('order-alert');
   document.title='('+n+') AccTrack';
   setFaviconBadge(true);
+  orderNotify(n);
   toast('🔔 Нове замовлення: '+n+' — відкрий «Замовлення»');
 }
 function clearOrderAlert(){
@@ -6721,6 +6771,7 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
   loadSupStatus();
   setInterval(loadSupStatus, 60000);
   setInterval(()=>{ try{ loadMailQueue(); }catch(e){} }, 45000);
+  try{ updateOrderNotifyUI(); }catch(e){}
 
   // PWA: встановлення застосунку
   let _pwaPrompt=null;

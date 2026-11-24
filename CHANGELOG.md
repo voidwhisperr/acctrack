@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.22.0 — background order notifications
+
+- Browser notification on new order when the tab is in background.
+- Two-tone sound alert with a toggle.
+- Enable-notifications button in Orders; permission status.
+
 ## v1.21.0 — unified totals and new-order alert
 
 - P&L cards now show P&L + Eldorado combined; separate Eldorado row removed.
