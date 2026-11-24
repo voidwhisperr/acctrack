@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.8.0 — PDF report and marketplace fees
+
+- Monthly report PDF via print dialog (no extra dependency).
+- Gameflip added to marketplace fee calculator; G2G/PlayerAuctions fees wired into defaults.
+
 ## v1.7.0 — supplier ROI and agent setup
 
 - Supplier ROI table: items, sold, cost, revenue, profit, ROI, sell-through, days.

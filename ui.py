@@ -1099,6 +1099,7 @@ code{
         <input id="repMonth" type="month" style="font-size:13px">
         <button class="btn" style="font-size:12px;padding:6px 11px" onclick="loadReport()">Показати</button>
         <a class="btn" id="repCsv" style="font-size:12px;padding:6px 11px;text-decoration:none" href="#">⬇ CSV</a>
+        <button class="btn" style="font-size:12px;padding:6px 11px" onclick="reportPdf()">🖨 PDF</button>
       </div>
       <div id="repBox"><div class="none">Виберіть місяць</div></div>
     </div>
@@ -5888,6 +5889,39 @@ async function loadReport(){
       + t('rep.formula')
       + '</div>';
   }catch(e){ box.innerHTML = '<div class="al err">⚠ ' + esc(String(e)) + '</div>'; }
+}
+
+async function reportPdf(){
+  const m=(g('repMonth')&&g('repMonth').value)||'';
+  try{
+    const d=await fetch('/api/report'+(m?'?month='+m:'')).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    const s=d.sales||{};
+    const rows=[
+      [t('rep.count'), s.count||0],
+      [t('rep.revenue'), '$'+Number(s.revenue||0).toFixed(2)],
+      [t('rep.fees'), '−$'+Number(s.fees||0).toFixed(2)],
+      [t('rep.cogs'), '$'+Number(s.cogs||0).toFixed(2)],
+      [t('rep.profit'), (Number(s.profit||0)>=0?'+':'')+'$'+Number(s.profit||0).toFixed(2)],
+      [t('rep.purchases'), '$'+Number((d.purchases||{}).cost||0).toFixed(2)],
+      [t('rep.cash'), (Number(d.cash||0)>=0?'':'−')+'$'+Math.abs(Number(d.cash||0)).toFixed(2)],
+      [t('rep.stock'), '$'+Number((d.stock||{}).in_stock_value||0).toFixed(2)],
+    ];
+    const w=window.open('','_blank','width=900,height=700');
+    if(!w){ toast('⚠ Дозволь спливаючі вікна для PDF', false); return; }
+    const html='<!doctype html><html><head><meta charset="utf-8"><title>Ledger — '+esc(d.month||'')+'</title>'+
+      '<style>body{font-family:Arial,sans-serif;color:#111;margin:34px}h1{font-size:22px;margin:0 0 4px}'+
+      '.sub{color:#666;font-size:12px;margin-bottom:22px}table{width:100%;border-collapse:collapse;margin-top:12px}'+
+      'td{border-bottom:1px solid #ddd;padding:9px 6px;font-size:13px}td:last-child{text-align:right;font-weight:700}'+
+      '.note{font-size:11px;color:#666;margin-top:20px;line-height:1.5}@media print{button{display:none}}</style></head><body>'+
+      '<h1>Ledger — '+esc(d.month||'')+'</h1><div class="sub">'+new Date().toLocaleString()+'</div>'+
+      '<table>'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(String(r[1]))+'</td></tr>').join('')+'</table>'+
+      '<div class="note">'+esc(t('rep.formula'))+'</div>'+
+      '<button onclick="window.print()" style="margin-top:20px;padding:9px 14px">Друк / Зберегти PDF</button>'+
+      '</body></html>';
+    w.document.open(); w.document.write(html); w.document.close();
+    setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 350);
+  }catch(e){ toast('⚠ '+e, false); }
 }
 
 async function loadAnalytics(){

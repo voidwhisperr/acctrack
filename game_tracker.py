@@ -220,8 +220,9 @@ def _read_json_strict(path, default):
 #   payout — додаткові витрати на вивід грошей, які враховує калькулятор ціни
 #   ed     — комісія ELDORADO
 # ─────────────────────────────────────────────────
-PLATFORM_FEES = {"zeusx": 0.10, "funpay": 0.10, "eldorado": 0.10, "other": 0.0}
-PAYOUT_FEES   = {"zeusx": 0.015, "funpay": 0.055}
+PLATFORM_FEES = {"zeusx": 0.10, "funpay": 0.10, "eldorado": 0.10, "other": 0.0,
+                 "g2g": 0.08, "gameflip": 0.10, "pa": 0.13}
+PAYOUT_FEES   = {"zeusx": 0.015, "funpay": 0.055, "g2g": 0.02, "gameflip": 0.0, "pa": 0.02}
 ED_FEE        = 0.10
 
 DEFAULT_PLATFORM_FEES = dict(PLATFORM_FEES)
@@ -257,7 +258,8 @@ MARKETPLACES = [
     {"id": "ggsel",    "name": "GGsel",            "emoji": "🔴", "fee": 0.05,  "payout": 0.0,   "note": ""},
     {"id": "own",      "name": "Своя вітрина",     "emoji": "🏠", "fee": 0.05,  "payout": 0.03,  "note": ""},
     {"id": "z2u",      "name": "Z2U",              "emoji": "🟣", "fee": 0.07,  "payout": 0.02,  "note": ""},
-    {"id": "g2g",      "name": "G2G",              "emoji": "🟢", "fee": 0.08,  "payout": 0.02,  "note": ""},
+    {"id": "g2g",      "name": "G2G",              "emoji": "🟢", "fee": 0.08,  "payout": 0.02,  "note": "8% seller fee + payout"},
+    {"id": "gameflip", "name": "Gameflip",         "emoji": "🎮", "fee": 0.10,  "payout": 0.0,   "note": "10% seller fee; payment fees may apply"},
     {"id": "zeusx",    "name": "ZeusX",            "emoji": "⚡", "fee": 0.10,  "payout": 0.005, "note": "5–10% залежно від рангу продавця"},
     {"id": "eldorado", "name": "Eldorado",         "emoji": "🟡", "fee": 0.10,  "payout": 0.0,   "note": "10% для акаунтів; окремі ігри 15–30%"},
     {"id": "pa",       "name": "PlayerAuctions",   "emoji": "🅿️", "fee": 0.13,  "payout": 0.02,  "note": ""},
@@ -4173,7 +4175,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.7.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.8.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4548,7 +4550,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.7.0",
+            self._json({"ok": True, "version": "1.8.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5790,7 +5792,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.7.0")
+    print("  ▲  Ledger v1.8.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 
