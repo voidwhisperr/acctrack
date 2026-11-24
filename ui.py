@@ -1212,7 +1212,8 @@ code{
   </div>
   <div class="panel" style="margin-bottom:14px">
     <div class="ph"><span id="rateTitle">CURRENCY · USD → UAH</span></div>
-    <div style="font-size:11px;color:var(--mu);margin:-4px 0 10px" data-i18n="cur.auto">Курс оновлюється автоматично раз на 6 годин. Кнопка ↻ — примусове оновлення.</div>
+    <div style="font-size:11px;color:var(--mu);margin:-4px 0 4px" data-i18n="cur.auto">Курс оновлюється автоматично раз на 6 годин. Кнопка ↻ — примусове оновлення.</div>
+    <div style="font-size:11px;color:var(--mu);margin:0 0 10px" data-i18n="cur.manualHint">Можна вибрати будь-яку валюту вручну. Після цього зміна мови не змінюватиме валюту.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="cur.title">CURRENCY</div>
@@ -1821,7 +1822,7 @@ const EXTRA_I18N = {
     "lot.desc":"ОПИС","lot.afterFee":"Після комісії:","lot.copy":"КОПІЮВАТИ ДЛЯ ЛОТУ",
     "lot.copied":"Скопійовано для лоту!","lot.enterName":"Введи назву",
     "lot.clipboard":"Буфер обміну недоступний",
-    "onb.hint":"Змінити мову можна пізніше в ⚙ Налаштування",
+    "onb.hint":"Мову й валюту можна змінити пізніше в ⚙ Налаштування",
     "set.whatToSend":"Що надсилати в Telegram (кожен тип окремо):",
     "set.notifySave":"Зберегти сповіщення","set.chatId":"CHAT ID",
     "set.gmail":"GMAIL","set.appPass":"APP PASSWORD","set.selfSigned":"Згенерувати self-signed",
@@ -1932,7 +1933,7 @@ const EXTRA_I18N = {
     "lot.desc":"DESCRIPTION","lot.afterFee":"After fee:","lot.copy":"COPY FOR LOT",
     "lot.copied":"Copied for lot!","lot.enterName":"Enter a name",
     "lot.clipboard":"Clipboard unavailable",
-    "onb.hint":"You can change this later in ⚙ Settings",
+    "onb.hint":"You can change language and currency later in ⚙ Settings",
     "set.whatToSend":"What to send to Telegram (each type separately):",
     "set.notifySave":"Save notifications","set.chatId":"CHAT ID",
     "set.gmail":"GMAIL","set.appPass":"APP PASSWORD","set.selfSigned":"Generate self-signed",
@@ -2047,7 +2048,7 @@ const EXTRA_I18N = {
     "lot.desc":"ОПИСАНИЕ","lot.afterFee":"После комиссии:","lot.copy":"КОПИРОВАТЬ ДЛЯ ЛОТА",
     "lot.copied":"Скопировано для лота!","lot.enterName":"Введи название",
     "lot.clipboard":"Буфер обмена недоступен",
-    "onb.hint":"Изменить язык можно позже в ⚙ Настройки",
+    "onb.hint":"Язык и валюту можно изменить позже в ⚙ Настройки",
     "set.whatToSend":"Что отправлять в Telegram (каждый тип отдельно):",
     "set.notifySave":"Сохранить уведомления","set.chatId":"CHAT ID",
     "set.gmail":"GMAIL","set.appPass":"APP PASSWORD","set.selfSigned":"Сгенерировать self-signed",
@@ -2178,9 +2179,9 @@ Object.assign(I18N.ru, {
   'sched.deal.label':'Порог выгодного лота','sched.deal.desc':'Во сколько раз цена должна быть ниже твоей, чтобы пришёл алерт. 5× = цена ≤ 20% твоей.',
   'sched.hours':'ч','sched.hour':'ч','sched.save':'Сохранить расписание','sched.hint':'Не уверен? Оставь значения как есть — это безопасные дефолты.'
 });
-Object.assign(I18N.uk, {'cur.auto':'Курс оновлюється автоматично раз на 6 годин. Кнопка ↻ — примусове оновлення.'});
-Object.assign(I18N.en, {'cur.auto':'The rate refreshes automatically every 6 hours. The ↻ button refreshes it now.'});
-Object.assign(I18N.ru, {'cur.auto':'Курс обновляется автоматически раз в 6 часов. Кнопка ↻ — принудительное обновление.'});
+Object.assign(I18N.uk, {'cur.auto':'Курс оновлюється автоматично раз на 6 годин. Кнопка ↻ — примусове оновлення.','cur.manualHint':'Можна вибрати будь-яку валюту вручну. Після цього зміна мови не змінюватиме валюту.'});
+Object.assign(I18N.en, {'cur.auto':'The rate refreshes automatically every 6 hours. The ↻ button refreshes it now.','cur.manualHint':'You can choose any currency manually. After that, changing the language will not change the currency.'});
+Object.assign(I18N.ru, {'cur.auto':'Курс обновляется автоматически раз в 6 часов. Кнопка ↻ — принудительное обновление.','cur.manualHint':'Можно выбрать любую валюту вручную. После этого смена языка не будет менять валюту.'});
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
   n = Math.abs(Number(n) || 0);

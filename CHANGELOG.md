@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.4.7 — currency hints
+
+- Onboarding says both language and currency can be changed later.
+- Settings explains that manual currency choice is not overridden by language.
+
 ## v1.4.6 — automatic exchange-rate refresh
 
 - Selected-currency rate refreshes every 6 hours in the background.
