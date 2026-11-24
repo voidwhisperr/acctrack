@@ -2100,6 +2100,31 @@ const PLURAL = {
        sales:["продажа","продажи","продаж"],lots:["лот","лота","лотов"],
        emails:["письмо","письма","писем"]}
 };
+
+Object.assign(I18N.uk, {
+  'aud.time':'Час','aud.action':'Дія','aud.details':'Деталі','aud.none':'Ще немає подій',
+  'aud.e.settings_save':'Налаштування','aud.e.deals_save':'Угоди','aud.e.eldorado_save':'Eldorado',
+  'aud.e.inventory_add':'Склад +','aud.e.inventory_status':'Статус складу','aud.e.inventory_delete':'Склад −',
+  'aud.e.auth_login':'Вхід','aud.e.auth_logout_all':'Вихід з усіх пристроїв',
+  'aud.e.2fa_setup':'2FA секрет','aud.e.2fa_enabled':'2FA увімкнено','aud.e.2fa_disabled':'2FA вимкнено',
+  'aud.e.2fa_recovery':'Recovery-коди'
+});
+Object.assign(I18N.en, {
+  'aud.time':'Time','aud.action':'Action','aud.details':'Details','aud.none':'No events yet',
+  'aud.e.settings_save':'Settings','aud.e.deals_save':'Deals','aud.e.eldorado_save':'Eldorado',
+  'aud.e.inventory_add':'Stock +','aud.e.inventory_status':'Stock status','aud.e.inventory_delete':'Stock −',
+  'aud.e.auth_login':'Login','aud.e.auth_logout_all':'Logout all devices',
+  'aud.e.2fa_setup':'2FA setup','aud.e.2fa_enabled':'2FA enabled','aud.e.2fa_disabled':'2FA disabled',
+  'aud.e.2fa_recovery':'Recovery codes'
+});
+Object.assign(I18N.ru, {
+  'aud.time':'Время','aud.action':'Действие','aud.details':'Детали','aud.none':'Пока нет событий',
+  'aud.e.settings_save':'Настройки','aud.e.deals_save':'Сделки','aud.e.eldorado_save':'Eldorado',
+  'aud.e.inventory_add':'Склад +','aud.e.inventory_status':'Статус склада','aud.e.inventory_delete':'Склад −',
+  'aud.e.auth_login':'Вход','aud.e.auth_logout_all':'Выход со всех устройств',
+  'aud.e.2fa_setup':'2FA секрет','aud.e.2fa_enabled':'2FA включена','aud.e.2fa_disabled':'2FA отключена',
+  'aud.e.2fa_recovery':'Recovery-коды'
+});
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
   n = Math.abs(Number(n) || 0);
@@ -2260,6 +2285,7 @@ async function setLang(l){
   try{ localStorage.setItem('gt_lang', LANG); }catch(e){}
   applyLang();
   try{ applyCurrency(); }catch(e){}
+  try{ loadAudit(); }catch(e){}
   try{ if(g('onb') && g('onb').style.display === 'flex') onbRender(); }catch(e){}
   renderOverview();
   try{ renderPurchases(); if(typeof renderEldorado==='function') renderEldorado(); }catch(e){}
@@ -2875,20 +2901,22 @@ async function checkUpdates(){
 
 async function loadAudit(){
   const el=g('auditList'); if(!el) return;
-  const labels={ 'settings.save':'Налаштування','deals.save':'Угоди','eldorado.save':'Eldorado',
-    'inventory.add':'Склад +','inventory.status':'Статус складу','inventory.delete':'Склад −',
-    'auth.login':'Вхід','2fa.setup':'2FA секрет','2fa.enabled':'2FA увімкнено','2fa.disabled':'2FA вимкнено' };
+  const labelOf=ev=>{
+    const key='aud.e.'+String(ev||'').replace(/\./g,'_');
+    const v=t(key);
+    return (v && v!==key) ? v : (ev||'');
+  };
   try{
     const d=await fetch('/api/audit').then(r=>r.json());
     const rows=d.rows||[];
-    if(!rows.length){ el.innerHTML='<div class="none">Ще немає подій</div>'; return; }
-    el.innerHTML='<table class="sup-table"><thead><tr><th>Час</th><th>Дія</th><th>Деталі</th></tr></thead><tbody>'+
+    if(!rows.length){ el.innerHTML='<div class="none">'+t('aud.none')+'</div>'; return; }
+    el.innerHTML='<table class="sup-table"><thead><tr><th>'+t('aud.time')+'</th><th>'+t('aud.action')+'</th><th>'+t('aud.details')+'</th></tr></thead><tbody>'+
       rows.map(r=>{
         const dt=new Date((r.ts||0)*1000);
         const ts=dt.toLocaleString(dateLocale());
         const det=Object.entries(r.detail||{}).map(([k,v])=>k+'='+v).join(' · ');
         return '<tr><td style="font-size:10px;color:var(--mu);white-space:nowrap">'+esc(ts)+'</td>'+
-          '<td style="font-size:11px">'+esc(labels[r.event]||r.event||'')+'</td>'+
+          '<td style="font-size:11px">'+esc(labelOf(r.event))+'</td>'+
           '<td style="font-size:10px;color:var(--mu);word-break:break-word">'+esc(det)+'</td></tr>';
       }).join('')+'</tbody></table>';
   }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }

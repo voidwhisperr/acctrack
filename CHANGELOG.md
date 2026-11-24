@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.3 — audit log localization
+
+- Action log headers, event names and empty state now follow UA/EN/RU.
+- Switching language re-renders the audit table immediately.
+- Added translations for login, logout-all and 2FA recovery events.
+
 ## v1.4.2 — onboarding language picks currency
 
 - Ukrainian → UAH, English → USD, Russian → RUB.
