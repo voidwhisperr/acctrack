@@ -2183,9 +2183,10 @@ def _copy_cloud(files):
             if os.path.exists(src):
                 shutil.copy2(src, os.path.join(dst, name))
                 copied.append(name)
+        _keep = max(1, min(365, int((_read_json(SETTINGS_FILE, {}) or {}).get("backup_keep") or 30)))
         for prefix in ("gt_pl_", "gt_eldorado_", "gt_goal_"):
             keep = sorted(f for f in os.listdir(dst) if f.startswith(prefix))
-            for old in keep[:-30]:
+            for old in keep[:-_keep]:
                 try: os.remove(os.path.join(dst, old))
                 except OSError: pass
         return {"dir": dst, "copied": copied, "error": None}
@@ -2245,6 +2246,12 @@ def do_backup():
             for old in keep[:-30]:
                 try: os.remove(os.path.join(BACKUP_DIR, old))
                 except OSError: pass
+        _keepn = max(1, min(365, int((_read_json(SETTINGS_FILE, {}) or {}).get("backup_keep") or 30)))
+        for prefix in ("gt_pl", "gt_eldorado", "gt_goal"):
+            keep = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith(prefix + "_"))
+            for old in keep[:-_keepn]:
+                try: os.remove(os.path.join(BACKUP_DIR, old))
+                except OSError: pass
         if made:
             print(f"  💾 Backup: {', '.join(made)}", flush=True)
     except Exception as e:
@@ -2255,19 +2262,27 @@ def do_backup():
         print(f"  ☁ Cloud: {len(cloud['copied'])} file(s) → {cloud['dir']}", flush=True)
     elif cloud.get("error") and cloud.get("dir"):
         print(f"  ⚠ Cloud: {cloud['error']}", flush=True)
+    try:
+        with _WRITE_LOCK:
+            st = _read_json(SETTINGS_FILE, {}) or {}
+            st["backup_last_ts"] = int(time.time())
+            st["backup_last_status"] = "ok" if cloud.get("copied") else (cloud.get("error") or "local")
+            _atomic_dump(SETTINGS_FILE, st)
+    except Exception:
+        pass
     return {"ok": True, "files": made, "cloud": cloud}
 
 def _backup_loop():
-    last = ""
     while True:
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        if today != last:
-            try:
+        try:
+            st = _read_json(SETTINGS_FILE, {}) or {}
+            hours = max(1, min(168, float(st.get("backup_hours") or 24)))
+            last = float(st.get("backup_last_ts") or 0)
+            if time.time() - last >= hours * 3600:
                 do_backup()
-            except Exception as e:
-                print(f"  ⚠ Backup loop: {e}", flush=True)
-            last = today
-        time.sleep(3600)
+        except Exception as e:
+            print(f"  ⚠ Backup loop: {e}", flush=True)
+        time.sleep(300)
 
 
 def _refresh_suppliers(reason=""):
@@ -4238,7 +4253,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.14.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.15.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4522,6 +4537,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "price_targets": st.get("price_targets") or [],
                 "payout_days": {**PAYOUT_DAYS_DEFAULT, **(st.get("payout_days") or {})},
                 "tax_rate": float(st.get("tax_rate") if st.get("tax_rate") is not None else 5),
+                "backup_hours": float(st.get("backup_hours") or 24),
+                "backup_keep": int(st.get("backup_keep") or 30),
+                "backup_last_ts": int(st.get("backup_last_ts") or 0),
+                "backup_last_status": str(st.get("backup_last_status") or ""),
                 "digest_last": str(st.get("digest_last") or ""),
                 "alerts_only_my_games": bool(st.get("alerts_only_my_games", True)),
                 "notify": {k: bool(st.get("notify_" + k, v))
@@ -4617,7 +4636,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.14.0",
+            self._json({"ok": True, "version": "1.15.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5065,6 +5084,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         st["taobao_min_cny"] = round(_fnum(body.get("taobao_min_cny"), "taobao_min_cny", 0, 10000), 2)
                     if "deal_x" in body:
                         st["deal_x"] = round(_fnum(body.get("deal_x"), "deal_x", 1, 100), 1)
+                    if "backup_hours" in body:
+                        st["backup_hours"] = round(max(1, min(168, _fnum(body.get("backup_hours"), "backup_hours", 1, 168, 24))), 1)
+                    if "backup_keep" in body:
+                        st["backup_keep"] = int(max(1, min(365, _fnum(body.get("backup_keep"), "backup_keep", 1, 365, 30))))
                     if "tax_rate" in body:
                         st["tax_rate"] = round(max(0, min(50, _fnum(body.get("tax_rate"), "tax_rate", 0, 50, 5))), 2)
                     if isinstance(body.get("payout_days"), dict):
@@ -5933,7 +5956,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.14.0")
+    print("  ▲  AccTrack v1.15.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

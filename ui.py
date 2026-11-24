@@ -1468,6 +1468,13 @@ code{
       </div>
       <button class="btn gr" onclick="saveCloud()">✓ Зберегти</button>
     </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:10px">
+      <label style="font-size:11px;color:var(--mu)">Кожні <input id="backupHours" type="number" min="1" max="168" style="width:64px"> год</label>
+      <label style="font-size:11px;color:var(--mu)">Тримати <input id="backupKeep" type="number" min="1" max="365" style="width:64px"> копій</label>
+      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="saveBackupSettings()">✓ Зберегти</button>
+      <button class="btn gr" style="font-size:11px;padding:5px 10px" onclick="backupNow()">💾 Бекап зараз</button>
+    </div>
+    <div id="backupInfo" style="font-size:11px;color:var(--mu);margin-top:7px">—</div>
     <div id="cloudInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
   </div>
   <div class="panel" style="margin-bottom:14px">
@@ -3298,6 +3305,11 @@ async function loadSettings(){
       if(_cur !== 'USD' && _stale) setTimeout(()=>{ try{ refreshRate(); }catch(e){} }, 400);
     }
     if(g('cloudDir')) g('cloudDir').value = d.cloud_dir || '';
+    if(g('backupHours')) g('backupHours').value = d.backup_hours || 24;
+    if(g('backupKeep')) g('backupKeep').value = d.backup_keep || 30;
+    if(g('backupInfo')) g('backupInfo').textContent = d.backup_last_ts
+      ? ('Останній бекап: '+new Date(d.backup_last_ts*1000).toLocaleString(dateLocale())+' · '+(d.backup_last_status||''))
+      : 'Автобекап ще не запускався';
     if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
     ['g2g','gameflip','pa','zeusx','funpay','eldorado','other'].forEach(k=>{
       const el=g('pd_'+k); if(el) el.value=(d.payout_days&&d.payout_days[k]!=null)?d.payout_days[k]:3;
@@ -4172,6 +4184,24 @@ async function cashflowAdd(){
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     g('cfAmount').value=''; g('cfNote').value='';
     await loadCashflow();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function saveBackupSettings(){
+  const body={backup_hours:Math.max(1,Math.min(168,parseFloat(g('backupHours')?.value||24)||24)),
+              backup_keep:Math.max(1,Math.min(365,parseInt(g('backupKeep')?.value||30)||30))};
+  try{
+    const d=await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+    toast(d.ok?'✅ Розклад бекапів збережено':'⚠ '+(d.error||''), !!d.ok);
+    loadSettings();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function backupNow(){
+  try{
+    toast('⏳ Бекап...', true);
+    const d=await fetch('/api/backup/run',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    toast('✅ Бекап: '+(d.files||[]).length+' файлів');
+    loadSettings();
   }catch(e){ toast('⚠ '+e, false); }
 }
 async function savePayoutRules(){

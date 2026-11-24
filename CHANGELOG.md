@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.15.0 — scheduled cloud backups
+
+- Configurable backup interval (hours) and retention count.
+- Automatic backup loop checks the schedule every 5 minutes.
+- Settings shows last backup time/status and a "Backup now" button.
+- Google Drive for desktop: set its folder as the cloud backup path.
+
 ## v1.14.0 — tax and cashflow in report
 
 - Configurable tax rate in the monthly report.
