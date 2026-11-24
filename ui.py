@@ -5789,24 +5789,28 @@ function _favFrame(phase){
   const r = phase%2 ? 15 : 11;
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 12 52 50H12Z" fill="%23f2f2f2"/><circle cx="50" cy="14" r="'+r+'" fill="'+c+'" stroke="%230b0c0e" stroke-width="3"/><circle cx="50" cy="14" r="22" fill="none" stroke="'+c+'" stroke-width="2" opacity=".5"/></svg>';
 }
+function _favLinks(){ return Array.from(document.querySelectorAll('link[rel~="icon"]')); }
 function _paintFavicon(phase){
-  const l=document.querySelector('link[rel="icon"]'); if(!l) return;
-  l.href='data:image/svg+xml,'+_favFrame(phase);
+  const href='data:image/svg+xml,'+_favFrame(phase);
+  _favLinks().forEach(l=>{ try{ l.type='image/svg+xml'; l.href=href; }catch(e){} });
 }
 function setFaviconBadge(show){
-  const l=document.querySelector('link[rel="icon"]'); if(!l) return;
-  if(!window._origFavicon) window._origFavicon=l.href;
+  const links=_favLinks(); if(!links.length) return;
+  if(!window._origFavicons) window._origFavicons=links.map(l=>({el:l,href:l.href,type:l.type}));
   if(!show){
     clearInterval(_favTimer); clearInterval(_titleTimer);
-    _favTimer=null; _titleTimer=null; l.href=window._origFavicon; return;
+    _favTimer=null; _titleTimer=null;
+    (window._origFavicons||[]).forEach(o=>{ try{ o.el.type=o.type; o.el.href=o.href; }catch(e){} });
+    return;
   }
   if(_favTimer) return;
   _favTick=0; _paintFavicon(0);
   _favTimer=setInterval(()=>{ _favTick++; _paintFavicon(_favTick); }, 450);
+  const nm=window._appName||'AccTrack';
   _titleTimer=setInterval(()=>{
     document.title = (document.title.indexOf('🔔')>=0)
-      ? '('+_alertCount+') AccTrack'
-      : '('+_alertCount+') 🔔 AccTrack';
+      ? '('+_alertCount+') '+nm
+      : '('+_alertCount+') 🔔 '+nm;
   }, 1000);
 }
 let _audioCtx=null;
@@ -5864,7 +5868,7 @@ function orderNotify(n){
 function notifyNewOrder(n){
   const mark=g('brandMark'); if(mark) mark.classList.add('order-alert');
   _alertCount=n;
-  document.title='('+n+') AccTrack';
+  document.title='('+n+') '+(window._appName||'AccTrack');
   setFaviconBadge(true);
   const b=g('orderBanner'); if(b){ b.style.display='flex'; const t=g('orderBannerText'); if(t) t.textContent='Нове замовлення: '+n; }
   orderNotify(n);
@@ -5876,7 +5880,7 @@ function goOrders(){
 }
 function clearOrderAlert(){
   const mark=g('brandMark'); if(mark) mark.classList.remove('order-alert');
-  document.title='AccTrack';
+  document.title=(window._appName||'AccTrack');
   setFaviconBadge(false);
   const b=g('orderBanner'); if(b) b.style.display='none';
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.26.0 — animated tab and custom app name
+
+- All favicon links switch to the pulsing alert icon (32/svg/192).
+- Tab title alternates `(N) 🔔 name`.
+- Notification title uses configured app name; live instance set to Ledger.
+
 ## v1.25.0 — louder alert and animated tab
 
 - Three-tone louder order sound with AudioContext resume.
