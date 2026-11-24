@@ -17,10 +17,10 @@ HTML = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-title" content="Ledger">
 <meta name="theme-color" content="#0d1017">
 <link rel="manifest" href="/manifest.json?v=2">
-<link rel="icon" href="/ledger-32.png?v=2" sizes="32x32">
-<link rel="icon" type="image/svg+xml" href="/ledger.svg?v=2">
-<link rel="icon" type="image/png" sizes="192x192" href="/ledger-192.png?v=2">
-<link rel="apple-touch-icon" sizes="180x180" href="/ledger-touch.png?v=2">
+<link rel="icon" href="/app-icon-32.png" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/app-icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/app-icon-180.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -2574,6 +2574,7 @@ function applyAppName(){
     if(span) h.appendChild(span);
   }
   document.title = nm;
+  try{ setDefaultFavicon(); }catch(e){}
 }
 
 function syncDemoLink(){
@@ -5854,6 +5855,16 @@ function _favFrame(phase){
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 12 52 50H12Z" fill="%23f2f2f2"/><circle cx="50" cy="14" r="'+r+'" fill="'+c+'" stroke="%230b0c0e" stroke-width="3"/><circle cx="50" cy="14" r="22" fill="none" stroke="'+c+'" stroke-width="2" opacity=".5"/></svg>';
 }
 function _favLinks(){ return Array.from(document.querySelectorAll('link[rel~="icon"]')); }
+function _defaultFavSvg(){
+  const nm=window._appName||'AccTrack';
+  const letter=(nm.trim()[0]||'A').toUpperCase().replace(/[<>&"]/g,'');
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 9 55 54H9Z" fill="%23e8e8e8"/><text x="32" y="46" text-anchor="middle" font-family="Arial,sans-serif" font-size="23" font-weight="800" fill="%230b0c0e">'+letter+'</text></svg>';
+}
+function setDefaultFavicon(){
+  const href='data:image/svg+xml,'+_defaultFavSvg();
+  _favLinks().forEach(l=>{ try{ l.type='image/svg+xml'; l.href=href; }catch(e){} });
+  window._origFavicons=null;
+}
 function _paintFavicon(phase){
   const href='data:image/svg+xml,'+_favFrame(phase);
   _favLinks().forEach(l=>{ try{ l.type='image/svg+xml'; l.href=href; }catch(e){} });

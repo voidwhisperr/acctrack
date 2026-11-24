@@ -4165,6 +4165,14 @@ _LEDGER_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect x="372" y="244" width="22" height="10" rx="5" fill="#34D399"/>
 </svg>"""
 
+def _app_brand():
+    st = _read_json(SETTINGS_FILE, {}) or {}
+    nm = (str(st.get("app_name") or "AccTrack").strip()[:32] or "AccTrack")
+    letter = (nm[0] if nm else "A").upper()
+    tag = "l" if letter == "L" else "a"
+    return nm, letter, tag
+
+
 _ICONS_B64 = {
     "favicon.ico": ("image/x-icon", "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"),
     "favicon-32.png": ("image/png", "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAeklEQVR42u2XyxGAMAgFybvq2H99NKIdaD6QPQgNsDsQIO04r9vAkMFRAAWwDODuHMBq8rASrICItA9twlkgkfbhz3AGTKR9yiAaBRRpnzaKR0BF2qcuo15gkfbp67gHXKT9loPkS0Ck/baT7E1EpL2ZWaufUQH8HuABJEk3f3JzN04AAAAASUVORK5CYII="),
@@ -4364,7 +4372,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                           "/icon.svg", "/icon.png", "/ledger.svg")
                 or self.path.split("?")[0].lstrip("/") in _ICONS_B64
                 or self.path.split("?")[0] in ("/icon.svg", "/icon.png", "/ledger.svg")
-                or self.path.startswith("/logo/") or self.path == "/demo"
+                or self.path.startswith("/logo/") or self.path.startswith("/app-icon") or self.path == "/demo"
                 or self.path.startswith("/docs/")):
             return True      # публічні статичні файли
         if (self.path.startswith("/api/taobao")
@@ -4430,12 +4438,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.27.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.28.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
                 or p.split("?")[0].lstrip("/") in _ICONS_B64
-                or p.startswith("/logo/")):
+                or p.startswith("/logo/") or p.startswith("/app-icon")):
             pass  # публічні статичні файли (без них PWA/іконки ламаються)
         elif (AUTH_MODE != "off"
                 and (p.startswith("/api/taobao") or p.startswith("/api/secrets/"))
@@ -4462,19 +4470,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 cookie += "; Secure"
             self._send(200, "text/html", Handler.html_bytes, extra={"Set-Cookie": cookie})
         elif p == "/manifest.json":
+            _nm, _letter, _tag = _app_brand()
             manifest = {
-                "name": "Ledger — Game Account Tracker",
-                "short_name": "Ledger",
-                "description": "Ledger: deals, stock, fees and profit for game-account resale",
+                "name": _nm + " — Game Account Tracker",
+                "short_name": _nm,
+                "description": _nm + ": deals, stock, fees and profit for game-account resale",
                 "start_url": "/?source=pwa",
                 "scope": "/",
                 "display": "standalone",
                 "background_color": "#0d1017",
                 "theme_color": "#0d1017",
                 "icons": [
-                    {"src": "/ledger-192.png?v=2", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-                    {"src": "/ledger-512.png?v=2", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
-                    {"src": "/ledger.svg?v=2", "sizes": "any", "type": "image/svg+xml"},
+                    {"src": "/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                    {"src": "/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+                    {"src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml"},
                 ],
             }
             self._send(200, "application/json", json.dumps(manifest))
@@ -4487,12 +4496,27 @@ self.addEventListener('fetch', e => {});
 self.addEventListener('push', e => {
   const d = e.data ? e.data.json() : {};
   e.waitUntil(self.registration.showNotification(d.title||'GameTracker', {
-    body: d.body||'', icon: '/ledger-192.png?v=2', badge: '/ledger-32.png?v=2', vibrate: [200,100,200]
+    body: d.body||'', icon: '/app-icon-192.png', badge: '/app-icon-32.png', vibrate: [200,100,200]
   }));
 });
 self.addEventListener('notificationclick', e => { e.notification.close(); clients.openWindow('/'); });
 """
             self._send(200, "application/javascript", sw)
+        elif p in ("/app-icon.svg", "/app-icon-32.png", "/app-icon-180.png",
+                     "/app-icon-192.png", "/app-icon-512.png"):
+            _nm, _letter, _tag = _app_brand()
+            if p == "/app-icon.svg":
+                _f = os.path.join(_BASE_DIR, f"icon-{_tag}.svg")
+                _ct = "image/svg+xml"
+            else:
+                _sz = p.rsplit("-", 1)[1].split(".")[0]
+                _f = os.path.join(_BASE_DIR, f"icon-{_tag}-{_sz}.png")
+                _ct = "image/png"
+            if not os.path.exists(_f):
+                self._send(404, "text/plain", b"404"); return
+            with open(_f, "rb") as _fh:
+                _data = _fh.read()
+            self._send(200, _ct, _data, extra={"Cache-Control": "public, max-age=300"})
         elif p.split("?")[0].lstrip("/") in _ICONS_B64:
             _n = p.split("?")[0].lstrip("/")
             ct, data = _icon_bytes(_n)
@@ -4817,7 +4841,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.27.0",
+            self._json({"ok": True, "version": "1.28.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6216,7 +6240,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.27.0")
+    print("  ▲  AccTrack v1.28.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

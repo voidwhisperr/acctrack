@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.28.0 — brand icons
+
+- Dynamic app icon: A for AccTrack, L for Ledger.
+- Manifest, favicon, Apple touch icon and PWA icons use the active brand.
+- Windows shortcut icon updated to the A mark.
+
 ## v1.27.0 — localization and alert cleanup
 
 - Three-language labels for cashflow, import, supplier ROI, report, order banner and buttons.
