@@ -51,7 +51,7 @@ def check(name, cond, info=""):
 print("=== 1. ПУБЛІЧНЕ / АВТОРИЗАЦІЯ ===")
 st, d = call("/api/health", auth=False)
 check("health без пароля", st == 200 and d.get("ok"), st)
-check("версія 1.1.0", d.get("version") == "1.1.0", d)
+check("версія 1.1.1", d.get("version") == "1.1.1", d)
 st, d = call("/api/settings", auth=False)
 auth_open = (st == 200)
 check("API: режим без пароля (або 401, якщо пароль увімкнено)", st in (200, 401), st)
@@ -72,6 +72,10 @@ check("diag", st == 200 and "counts" in d, st)
 check("diag має токени", "tokens" in d, d.keys())
 
 print("=== 3. УГОДИ (P&L) ===")
+# Тест не має залежати від збережених fee_profiles користувача
+call("/api/settings/save", "POST", {"fee_profiles": {
+    "funpay": 0.10, "eldorado": 0.10, "other": 0.0, "games": {}
+}})
 call("/api/pl/save", "POST", {"purchases": []})
 st, d = call("/api/pl/save", "POST", {"purchases": [
     {"id": 1, "date": "2026-11-20", "title": "TestOne", "src": "funpay",

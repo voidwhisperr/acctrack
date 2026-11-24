@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.1.1 — default fee profiles
+
+### Added
+- Settings → **Default marketplace fees**: FunPay, Eldorado, Other.
+- **Game overrides**: one line per game, e.g. "GTA 5 | eldorado | 30".
+- New deals use the saved profile automatically; a title match applies the game override.
+- Custom commission still overrides the profile for a specific deal.
+- Profiles are saved in settings and survive restart.
+
 ## v1.1.0 — stock-linked sales and net profit
 
 ### Added

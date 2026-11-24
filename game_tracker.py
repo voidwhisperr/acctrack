@@ -207,6 +207,21 @@ PLATFORM_FEES = {"zeusx": 0.10, "funpay": 0.10, "eldorado": 0.10, "other": 0.0}
 PAYOUT_FEES   = {"zeusx": 0.015, "funpay": 0.055}
 ED_FEE        = 0.10
 
+DEFAULT_PLATFORM_FEES = dict(PLATFORM_FEES)
+
+
+def _apply_fee_profiles(st):
+    """Застосовує збережені дефолтні комісії до PLATFORM_FEES."""
+    fp = (st or {}).get("fee_profiles") or {}
+    for k in ("funpay", "eldorado", "other"):
+        try:
+            v = float(fp.get(k))
+            if 0.0 <= v <= 1.0:
+                PLATFORM_FEES[k] = v
+        except (TypeError, ValueError):
+            pass
+
+
 # ZeusX: комісія залежить від рангу продавця (5–10%).
 # Точну ставку продавець бачить у кабінеті; це стартові пресети,
 # які можна перебити полем «Комісія %».
@@ -3764,7 +3779,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.1.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.1.1", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png")
@@ -4012,6 +4027,12 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "onboarded": bool(st.get("onboarded")),
                 "app_name": str(st.get("app_name") or "AccTrack")[:32],
                 "zeusx_tier": str(st.get("zeusx_tier") or "iron")[:16],
+                "fee_profiles": {
+                    "funpay": round(float(st.get("fee_profiles", {}).get("funpay", PLATFORM_FEES["funpay"])), 6),
+                    "eldorado": round(float(st.get("fee_profiles", {}).get("eldorado", PLATFORM_FEES["eldorado"])), 6),
+                    "other": round(float(st.get("fee_profiles", {}).get("other", PLATFORM_FEES["other"])), 6),
+                    "games": st.get("fee_profiles", {}).get("games", {}) or {},
+                },
                 "auth_enabled": AUTH_MODE != "off",
                 "sup_hours": float(st.get("sup_hours") or _sup_hours()),
                 "news_hours": float(st.get("news_hours") or 1),
@@ -4092,7 +4113,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.1.0",
+            self._json({"ok": True, "version": "1.1.1",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -4427,6 +4448,34 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     if "zeusx_tier" in body:
                         _zt = str(body.get("zeusx_tier") or "iron").lower()[:16]
                         st["zeusx_tier"] = _zt if _zt in {t["id"] for t in ZEUSX_TIERS} else "iron"
+                    if isinstance(body.get("fee_profiles"), dict):
+                        _fp = body["fee_profiles"]
+                        _clean = {}
+                        for _k in ("funpay", "eldorado", "other"):
+                            try:
+                                _v = float(_fp.get(_k))
+                                if 0.0 <= _v <= 1.0:
+                                    _clean[_k] = round(_v, 6)
+                            except (TypeError, ValueError):
+                                pass
+                        _games = {}
+                        if isinstance(_fp.get("games"), dict):
+                            for _g, _pv in list(_fp["games"].items())[:200]:
+                                if not isinstance(_pv, dict):
+                                    continue
+                                _row = {}
+                                for _pk in ("funpay", "eldorado", "other"):
+                                    try:
+                                        _v = float(_pv.get(_pk))
+                                        if 0.0 <= _v <= 1.0:
+                                            _row[_pk] = round(_v, 6)
+                                    except (TypeError, ValueError):
+                                        pass
+                                if _row:
+                                    _games[str(_g)[:80]] = _row
+                        if _clean:
+                            st["fee_profiles"] = {**_clean, "games": _games}
+                            _apply_fee_profiles(st)
                     if "lang" in body:
                         _l = str(body.get("lang")).lower()
                         st["lang"] = "en" if _l.startswith("en") else ("ru" if _l.startswith("ru") else "uk")
@@ -5162,6 +5211,10 @@ def _startup_supplier_refresh(allow_network=True):
 
 
 def main():
+    try:
+        _apply_fee_profiles(_read_json(SETTINGS_FILE, {}) or {})
+    except Exception:
+        pass
     _load_extra_suppliers()
     global _SCHEME
     # CLI для cron/обслуговування:
@@ -5203,7 +5256,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.1.0")
+    print("  ▲  AccTrack v1.1.1")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 
