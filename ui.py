@@ -927,7 +927,7 @@ code{
       <div style="font-size:11.5px;color:var(--mu);line-height:1.55;margin-top:8px">
         <div>Сервер: <code id="agentServer">—</code> <button class="btn" style="padding:2px 7px;font-size:10px" onclick="copyAgent('agentServer')">Копіювати</button></div>
         <div style="margin-top:4px">Токен: <code id="agentToken">—</code> <button class="btn" style="padding:2px 7px;font-size:10px" onclick="copyAgent('agentToken')">Копіювати</button></div>
-        <div style="margin-top:6px">На ПК: запусти <b>install_taobao_agent.bat</b> з папки Ledger, встав ці два значення, дочекайся Chromium. Потім один раз увійди в Taobao через QR.</div>
+        <div style="margin-top:6px">На ПК: запусти <b>launchers\install_taobao_agent.bat</b> з папки Ledger, встав ці два значення, дочекайся Chromium. Потім один раз увійди в Taobao через QR.</div>
       </div>
     </details>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">

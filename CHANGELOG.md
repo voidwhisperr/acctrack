@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.1 — launcher paths
+
+- Agent setup path updated to `launchers/install_taobao_agent.bat`.
+- Launcher folder documented.
+
 ## v1.33.0 — organized repo
 
 - Icons moved to `assets/`.
