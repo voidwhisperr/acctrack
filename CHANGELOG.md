@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.0 — free/paid Taobao split and form labels
+
+- Free Taobao page hides automation buttons, filters, data list and agent setup; paid keeps them.
+- Marketplace table headers, names and notes localized UA/EN/RU.
+- Deal form labels localized; removed misleading $ from amount labels; added currency/rate hint.
+
 ## v1.30.0 — human Taobao copy
 
 - Rewritten Taobao hero and benefit copy in UA/EN/RU.

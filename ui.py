@@ -561,7 +561,7 @@ code{
   <!-- Додати запис -->
   <div class="panel">
     <div class="ph"><span data-i18n="ph.newDeal">+ НОВИЙ ПРОДАЖ</span></div>
-    <div style="font-size:10.5px;color:var(--mu);margin:-6px 0 10px">Суми вводяться у валюті угоди. Курс — скільки одиниць валюти за 1 USD; він зберігається для історії.</div>
+    <div style="font-size:10.5px;color:var(--mu);margin:-6px 0 10px" data-i18n="f.currencyHint">Суми вводяться у валюті угоди. Курс — скільки одиниць валюти за 1 USD; він зберігається для історії.</div>
     <div id="invSellBanner" style="display:none;margin:0 0 10px;padding:8px 11px;border:1px solid var(--gr);border-radius:8px;background:color-mix(in srgb,var(--gr) 8%,transparent);font-size:12px;display:none;align-items:center;gap:8px">
       <span>📦 <b data-i18n="inv.sellFromStock">Продаж зі складу:</b> <span id="invSellText"></span></span>
       <button class="btn" style="margin-left:auto;padding:3px 8px;font-size:11px" onclick="clearInvSell()">✕</button>
@@ -596,11 +596,11 @@ code{
         <select id="plZeusRank" onchange="plZeusRankPick()" style="width:120px"></select>
       </div>
       <div>
-        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px">ВАЛЮТА УГОДИ</div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.currency">ВАЛЮТА УГОДИ</div>
         <select id="plCur" onchange="plCurPick()" style="width:115px;font-size:12px"></select>
       </div>
       <div>
-        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px">КУРС / USD</div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.rate">КУРС / USD</div>
         <input type="number" id="plFx" value="1" step="0.0001" min="0.000001" style="width:95px" oninput="updateFeePreview()">
       </div>
       <div>
@@ -849,9 +849,10 @@ code{
         <div style="font-size:13px;color:var(--mu);line-height:1.65;max-width:720px" data-i18n="tb.heroSub">Ledger щогодини збирає лоти, переводить юані в долари, показує потенційну маржу й підсвічує вигідні. Ви купуєте тільки те, що реально продається.</div>
         <div id="tbStatus" style="font-size:12px;color:var(--mu);font-weight:400;margin-top:10px"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
-          <button class="btn gr" style="font-size:12px;padding:7px 12px" onclick="tbRequest()">⚡ <span data-i18n="tb.collect">Зібрати зараз</span></button>
-          <button class="btn" style="font-size:12px;padding:7px 12px" onclick="tbAddManual()">＋ <span data-i18n="tb.lot">Додати лот</span></button>
-          <button class="btn" style="font-size:12px;padding:7px 12px" onclick="tbEnrich()">💳 <span data-i18n="tb.checkPay">Перевірити оплату</span></button>
+          <button data-paid-only class="btn gr" style="font-size:12px;padding:7px 12px" onclick="tbRequest()">⚡ <span data-i18n="tb.collect">Зібрати зараз</span></button>
+          <button data-paid-only class="btn" style="font-size:12px;padding:7px 12px" onclick="tbAddManual()">＋ <span data-i18n="tb.lot">Додати лот</span></button>
+          <button data-paid-only class="btn" style="font-size:12px;padding:7px 12px" onclick="tbEnrich()">💳 <span data-i18n="tb.checkPay">Перевірити оплату</span></button>
+          <button data-free-only class="btn" style="font-size:12px;padding:7px 12px" onclick="document.getElementById('tbHow').open=true;document.getElementById('tbHow').scrollIntoView({behavior:'smooth'})">📖 <span data-i18n="tb.learnMore">Як це працює</span></button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:260px;flex:0 1 330px">
@@ -896,7 +897,7 @@ code{
       </div>
       <div style="font-size:10px;color:var(--mu);margin-top:7px" data-i18n="taobao.demoNote">Це демонстраційний приклад у USD. Реальні лоти, ціни й маржа з’являться після запуску агента.</div>
     </div>
-    <details style="margin-top:12px;font-size:11.5px;color:var(--mu);line-height:1.6">
+    <details id="tbHow" style="margin-top:12px;font-size:11.5px;color:var(--mu);line-height:1.6">
       <summary style="cursor:pointer;color:var(--tx);font-weight:600" data-i18n="tb.how">Як працює агент і що потрібно</summary>
       <div data-i18n="tb.d1" style="margin-top:8px">Збирається колектором на вашому ПК. Агент працює у фоні (автозапуск при вході в Windows) і сам відкриває вікно браузера, якщо його немає. Капчу проходите ви — колектор чекає. Ціни в юанях, нижче — орієнтовний долар.</div>
       <div data-i18n="tb.d2" style="margin-top:6px">Мітки: натисніть 💳 біля лота, якщо там оплата карткою, і 🎛 — скільки варіантів акаунтів. Taobao часто блокує автоматичне читання сторінок лотів, тому ручна мітка — найнадійніше.</div>
@@ -912,7 +913,7 @@ code{
       </div>
     </div>
   </div>
-  <div class="panel">
+  <div class="panel" id="tbWorkPanel">
     <div id="tbPaidBar" style="display:none;margin-bottom:12px">
       <div class="ph" style="margin-bottom:10px">TAOBAO — ціни з Китаю</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -921,7 +922,7 @@ code{
         <button class="btn" style="font-size:12px;padding:6px 11px" onclick="tbEnrich()">💳 <span data-i18n="tb.checkPay">Перевірити оплату</span></button>
       </div>
     </div>
-    <details id="agentSetup" style="margin-bottom:12px;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 12px">
+    <details id="agentSetup" data-paid-only style="margin-bottom:12px;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 12px">
       <summary style="cursor:pointer;font-size:12px;font-weight:700">⚙ Налаштування Taobao-агента</summary>
       <div style="font-size:11.5px;color:var(--mu);line-height:1.55;margin-top:8px">
         <div>Сервер: <code id="agentServer">—</code> <button class="btn" style="padding:2px 7px;font-size:10px" onclick="copyAgent('agentServer')">Копіювати</button></div>
@@ -2358,7 +2359,7 @@ Object.assign(I18N.uk, {
   'tb.ben1t':'Збір на автопілоті','tb.ben1d':'Агент відкриває Taobao, оновлює лоти й чекає, поки ви пройдете капчу. Без ручного копіювання.',
   'tb.ben2t':'Маржа видна одразу','tb.ben2d':'Ціна в юанях, орієнтовний долар, ваша ціна продажу й прибуток — в одному рядку.',
   'tb.ben3t':'Від лоту до угоди — один клік','tb.ben3d':'Сподобався лот? Додайте його в P&L, і він одразу потрапить в облік.',
-  'tb.how':'Як працює агент і що потрібно',
+  'tb.how':'Як працює агент і що потрібно','tb.learnMore':'Як це працює',
   'taobao.demoTitle':'ЯК ЦЕ ВИГЛЯДАЄ В РОБОТІ','taobao.demoBadge':'ДЕМО-ПРИКЛАД','taobao.demoNote':'Демо-приклад у USD: реальні лоти, ціни й маржа з’являться після запуску агента.',
   'taobao.buy':'Купити','taobao.sell':'Продати','taobao.margin':'Маржа','taobao.hot':'ТОП','taobao.new':'НОВЕ','taobao.value':'ВИГІДНО'
 });
@@ -2369,7 +2370,7 @@ Object.assign(I18N.en, {
   'tb.ben1t':'Collection on autopilot','tb.ben1d':'The agent opens Taobao, refreshes lots and waits while you solve the captcha. No manual copying.',
   'tb.ben2t':'Margin at a glance','tb.ben2d':'Yuan price, estimated dollars, your sale price and profit — all in one row.',
   'tb.ben3t':'From lot to deal in one click','tb.ben3d':'Like a lot? Add it to P&L and it becomes part of your ledger.',
-  'tb.how':'How the agent works and what you need',
+  'tb.how':'How the agent works and what you need','tb.learnMore':'How it works',
   'taobao.demoTitle':'WHAT IT LOOKS LIKE IN USE','taobao.demoBadge':'DEMO','taobao.demoNote':'Demo example in USD. Real lots, prices and margin appear once the agent starts.',
   'taobao.buy':'Buy','taobao.sell':'Sell','taobao.margin':'Margin','taobao.hot':'HOT','taobao.new':'NEW','taobao.value':'VALUE'
 });
@@ -2380,7 +2381,7 @@ Object.assign(I18N.ru, {
   'tb.ben1t':'Сбор на автопилоте','tb.ben1d':'Агент открывает Taobao, обновляет лоты и ждёт, пока вы пройдёте капчу. Без ручного копирования.',
   'tb.ben2t':'Маржа видна сразу','tb.ben2d':'Цена в юанях, примерный доллар, ваша цена продажи и прибыль — в одной строке.',
   'tb.ben3t':'От лота до сделки — один клик','tb.ben3d':'Понравился лот? Добавьте его в P&L, и он сразу попадёт в учёт.',
-  'tb.how':'Как работает агент и что нужно',
+  'tb.how':'Как работает агент и что нужно','tb.learnMore':'Как это работает',
   'taobao.demoTitle':'КАК ЭТО ВЫГЛЯДИТ В РАБОТЕ','taobao.demoBadge':'ДЕМО-ПРИМЕР','taobao.demoNote':'Демо-пример в USD: реальные лоты, цены и маржа появятся после запуска агента.',
   'taobao.buy':'Купить','taobao.sell':'Продать','taobao.margin':'Маржа','taobao.hot':'ТОП','taobao.new':'НОВОЕ','taobao.value':'ВЫГОДНО'
 });
@@ -2402,6 +2403,7 @@ Object.assign(I18N.uk, {
   'pl.profit':'ПРИБУТОК','pl.revenue':'ВИРУЧКА','pl.cost':'ВКЛАДЕНО','pl.margin':'МАРЖА','pl.deals':'УГОД','pl.fees':'КОМІСІЇ',
   'cf.title':'CASHFLOW / ВИПЛАТИ','cf.hold':'Hold','cf.available':'Доступно','cf.withdrawn':'Виведено','cf.total':'Всього',
   'cf.date':'Дата','cf.platform':'Платформа','cf.amount':'Сума','cf.status':'Статус','cf.availableDate':'Доступно з','cf.note':'Коментар',
+  'mp.marketplace':'МАЙДАНЧИК','mp.fee':'КОМІСІЯ','mp.net':'НА РУКИ','mp.profit':'ПРИБУТОК','mp.margin':'МАРЖА',
   'cf.add':'Додати','cf.payoutCsv':'Payout CSV','cf.empty':'Немає записів. Додай Hold, Available або Withdrawn.',
   'cf.rules':'Правила payout (днів до Available)','cf.priority':'Дата в полі «Доступно з» має пріоритет.','cf.save':'Зберегти',
   'cf.deleteConfirm':'Видалити запис?','cf.amountRequired':'Введи суму','cf.invalidPrice':'Некоректна ціна',
@@ -2424,6 +2426,7 @@ Object.assign(I18N.en, {
   'pl.profit':'PROFIT','pl.revenue':'REVENUE','pl.cost':'INVESTED','pl.margin':'MARGIN','pl.deals':'DEALS','pl.fees':'FEES',
   'cf.title':'CASHFLOW / PAYOUTS','cf.hold':'Hold','cf.available':'Available','cf.withdrawn':'Withdrawn','cf.total':'Total',
   'cf.date':'Date','cf.platform':'Platform','cf.amount':'Amount','cf.status':'Status','cf.availableDate':'Available from','cf.note':'Note',
+  'mp.marketplace':'MARKETPLACE','mp.fee':'FEE','mp.net':'NET','mp.profit':'PROFIT','mp.margin':'MARGIN',
   'cf.add':'Add','cf.payoutCsv':'Payout CSV','cf.empty':'No entries. Add Hold, Available or Withdrawn.',
   'cf.rules':'Payout rules (days to Available)','cf.priority':'The date in "Available from" overrides the rule.','cf.save':'Save',
   'cf.deleteConfirm':'Delete this entry?','cf.amountRequired':'Enter an amount','cf.invalidPrice':'Invalid price',
@@ -2446,6 +2449,7 @@ Object.assign(I18N.ru, {
   'pl.profit':'ПРИБЫЛЬ','pl.revenue':'ВЫРУЧКА','pl.cost':'ВЛОЖЕНО','pl.margin':'МАРЖА','pl.deals':'СДЕЛОК','pl.fees':'КОМИССИИ',
   'cf.title':'CASHFLOW / ВЫПЛАТЫ','cf.hold':'Hold','cf.available':'Доступно','cf.withdrawn':'Выведено','cf.total':'Всего',
   'cf.date':'Дата','cf.platform':'Платформа','cf.amount':'Сумма','cf.status':'Статус','cf.availableDate':'Доступно с','cf.note':'Комментарий',
+  'mp.marketplace':'ПЛОЩАДКА','mp.fee':'КОМИССИЯ','mp.net':'НА РУКИ','mp.profit':'ПРИБЫЛЬ','mp.margin':'МАРЖА',
   'cf.add':'Добавить','cf.payoutCsv':'Payout CSV','cf.empty':'Нет записей. Добавь Hold, Available или Withdrawn.',
   'cf.rules':'Правила payout (дней до Available)','cf.priority':'Дата в поле «Доступно с» имеет приоритет.','cf.save':'Сохранить',
   'cf.deleteConfirm':'Удалить запись?','cf.amountRequired':'Введи сумму','cf.invalidPrice':'Неверная цена',
@@ -2461,6 +2465,24 @@ Object.assign(I18N.ru, {
   'order.demo':'Демо','order.sound':'звук','order.testSound':'Проверить звук','order.permissionDenied':'Уведомления не разрешены',
   'order.granted':'Уведомления включены','order.demoCreated':'Демо-заказ создан',
   'rep.title':'Месячный отчёт','rep.tax':'Налог %','rep.show':'Показать','rep.choose':'Выберите месяц','rep.deals':'Сделки за месяц','rep.cashTax':'Cashflow / налог','rep.taxBase':'Налоговая база (net profit)','rep.taxRate':'Ставка налога','rep.taxEst':'Оценка налога'
+});
+Object.assign(I18N.uk, {
+  'f.title':'НАЗВА (необов.)','f.platform':'ПЛАТФОРМА','f.zeusRank':'РАНГ ZEUSX','f.currency':'ВАЛЮТА УГОДИ','f.rate':'КУРС / USD',
+  'f.feePct':'КОМІСІЯ %','f.expenses':'ІНШІ ВИТРАТИ','f.buy':'КУПЛЕНО','f.sell':'ПРОДАНО','f.after':'ПІСЛЯ КОМІСІЇ','f.net':'ЧИСТИЙ ПРИБУТОК','f.date':'ДАТА',
+  'f.currencyHint':'Суми — у валюті угоди. Курс — скільки одиниць цієї валюти за 1 USD; він зберігається для історії.',
+  'b.add':'+ ДОДАТИ','b.sync':'СИНХРОНІЗУВАТИ','b.bulk':'МАСОВО','b.bulkFee':'КОМІСІЯ'
+});
+Object.assign(I18N.en, {
+  'f.title':'TITLE (optional)','f.platform':'PLATFORM','f.zeusRank':'ZEUSX TIER','f.currency':'DEAL CURRENCY','f.rate':'RATE / USD',
+  'f.feePct':'FEE %','f.expenses':'OTHER EXPENSES','f.buy':'BOUGHT','f.sell':'SOLD','f.after':'AFTER FEE','f.net':'NET PROFIT','f.date':'DATE',
+  'f.currencyHint':'Amounts are in the deal currency. The rate is units of that currency per 1 USD and is saved for history.',
+  'b.add':'+ ADD','b.sync':'SYNC','b.bulk':'BULK','b.bulkFee':'COMMISSION'
+});
+Object.assign(I18N.ru, {
+  'f.title':'НАЗВАНИЕ (необяз.)','f.platform':'ПЛАТФОРМА','f.zeusRank':'РАНГ ZEUSX','f.currency':'ВАЛЮТА СДЕЛКИ','f.rate':'КУРС / USD',
+  'f.feePct':'КОМИССИЯ %','f.expenses':'ДРУГИЕ РАСХОДЫ','f.buy':'КУПЛЕНО','f.sell':'ПРОДАНО','f.after':'ПОСЛЕ КОМИССИИ','f.net':'ЧИСТАЯ ПРИБЫЛЬ','f.date':'ДАТА',
+  'f.currencyHint':'Суммы — в валюте сделки. Курс — сколько единиц этой валюты за 1 USD; он сохраняется для истории.',
+  'b.add':'+ ДОБАВИТЬ','b.sync':'СИНХРОНИЗИРОВАТЬ','b.bulk':'МАССОВО','b.bulkFee':'КОМИССИЯ'
 });
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
@@ -2626,7 +2648,7 @@ async function setLang(l){
     _cur = ({uk:'UAH', en:'USD', ru:'RUB'})[LANG] || _cur;
   }
   applyLang();
-  try{ loadCashflow(); loadSupplierROI(); loadReport(); updateOrderNotifyUI(); }catch(e){}
+  try{ loadCashflow(); loadSupplierROI(); loadReport(); calcMarkets(); updateOrderNotifyUI(); }catch(e){}
   try{ loadMailQueue(); }catch(e){}
   try{ applyCurrency(); }catch(e){}
   try{ loadAudit(); }catch(e){}
@@ -6108,7 +6130,9 @@ async function loadTaobao(statusOnly){
       : '<span style="color:var(--rd)">🤖 '+(LANG==='ru'?'офлайн':LANG==='en'?'offline':'офлайн') + agoTxt + '</span>';
     if(st) st.innerHTML = (tbItems.length
       ? ((LANG==='ru'?'лотов: ':LANG==='en'?'lots: ':'лотів: ') + tbItems.length + ' · '+(LANG==='ru'?'обновлено ':LANG==='en'?'updated ':'оновлено ') + (d.ts ? Math.round((Date.now()/1000 - d.ts)/60) + (LANG==='ru'?' мин назад':LANG==='en'?' min ago':' хв тому') : '—') + ' · '+(LANG==='ru'?'курс':LANG==='en'?'rate':'курс')+' ¥' + d.usd_cny + '/$')
-      : (LANG==='ru'?'данных ещё нет — нажмите «Собрать сейчас»':LANG==='en'?'no data yet — press “Collect now”':'даних ще немає — натисніть «Зібрати зараз»'))
+      : (!GT_PAID
+          ? (LANG==='ru'?'автоматизация доступна в платной версии':LANG==='en'?'automation is available in the paid version':'автоматизація доступна в платній версії')
+          : (LANG==='ru'?'данных ещё нет — нажмите «Собрать сейчас»':LANG==='en'?'no data yet — press “Collect now”':'даних ще немає — натисніть «Зібрати зараз»')))
       + ' · ' + agentTxt
       + (d.next_in ? ' · '+(LANG==='ru'?'следующий сбор через ':LANG==='en'?'next collection in ':'наступний збір через ') + Math.round(d.next_in/60) + (LANG==='ru'?' мин':LANG==='en'?' min':' хв') : '')
       + ' · '+(LANG==='ru'?'посредник':LANG==='en'?'middleman':'посередник')+' +' + Math.round((d.landed_pct||0)*100) + '%';
@@ -6580,6 +6604,12 @@ async function saveSchedule(){
 
 function calcMarkets(){
   const el = g('mpTable'); if(!el) return;
+  const MP_LOCAL={
+    uk:{funpay:['FunPay','залежить від розділу; для акаунтів зазвичай 10%'],ggsel:['GGsel',''],own:['Своя вітрина',''],z2u:['Z2U',''],g2g:['G2G','8% комісія продавця + виплата'],gameflip:['Gameflip','10% комісія продавця; можливі платіжні збори'],eldorado:['Eldorado','10% для акаунтів; окремі ігри 15–30%'],zeusx:['ZeusX','5–10% залежно від рангу продавця'],pa:['PlayerAuctions',''],tg:['Telegram (прямо)','']},
+    en:{funpay:['FunPay','depends on section; usually 10% for accounts'],ggsel:['GGsel',''],own:['Own storefront',''],z2u:['Z2U',''],g2g:['G2G','8% seller fee + payout'],gameflip:['Gameflip','10% seller fee; payment fees may apply'],eldorado:['Eldorado','10% for accounts; some games 15–30%'],zeusx:['ZeusX','5–10% depending on seller tier'],pa:['PlayerAuctions',''],tg:['Telegram (direct)','']},
+    ru:{funpay:['FunPay','зависит от раздела; для аккаунтов обычно 10%'],ggsel:['GGsel',''],own:['Свой магазин',''],z2u:['Z2U',''],g2g:['G2G','8% комиссия продавца + выплата'],gameflip:['Gameflip','10% комиссия продавца; возможны платёжные сборы'],eldorado:['Eldorado','10% для аккаунтов; отдельные игры 15–30%'],zeusx:['ZeusX','5–10% в зависимости от ранга продавца'],pa:['PlayerAuctions',''],tg:['Telegram (напрямую)','']}
+  };
+  const MPN=MP_LOCAL[LANG]||MP_LOCAL.en;
   const price = Number(g('mpPrice') && g('mpPrice').value) || 0;
   const cost  = Number(g('mpCost')  && g('mpCost').value)  || 0;
   const list = (FEE_CFG.marketplaces || []).map(m => {
@@ -6590,13 +6620,13 @@ function calcMarkets(){
     return Object.assign({}, m, {net, profit, margin});
   }).sort((a,b) => b.net - a.net);
   const best = list.length && list[0].net > 0 ? list[0].id : null;
-  el.innerHTML = '<table class="sup-table"><thead><tr><th>МАЙДАНЧИК</th><th>КОМІСІЯ</th><th>НА РУКИ</th><th>ПРИБУТОК</th><th>МАРЖА</th></tr></thead><tbody>'
-    + list.map(m => '<tr' + (m.id===best?' style="background:rgba(34,197,94,.07)"':'') + '>'
-        + '<td><b>' + m.emoji + ' ' + esc(m.name) + '</b>' + (m.note? '<div style="font-size:11px;color:var(--mu)">' + esc(m.note) + '</div>' : '') + '</td>'
+  el.innerHTML = '<table class="sup-table"><thead><tr><th>'+t('mp.marketplace')+'</th><th>'+t('mp.fee')+'</th><th>'+t('mp.net')+'</th><th>'+t('mp.profit')+'</th><th>'+t('mp.margin')+'</th></tr></thead><tbody>'
+    + list.map(m => { const loc=MPN[m.id]||[m.name,m.note||'']; return '<tr' + (m.id===best?' style="background:rgba(34,197,94,.07)"':'') + '>'
+        + '<td><b>' + m.emoji + ' ' + esc(loc[0]) + '</b>' + (loc[1]? '<div style="font-size:11px;color:var(--mu)">' + esc(loc[1]) + '</div>' : '') + '</td>'
         + '<td>' + ((m.fee||0)*100).toFixed(1) + '%' + (m.payout? ' + ' + (m.payout*100).toFixed(1) + '%' : '') + '</td>'
         + '<td style="color:var(--gr);font-weight:700">$' + m.net.toFixed(2) + '</td>'
         + '<td style="color:' + (m.profit>=0?'var(--gr)':'var(--rd)') + ';font-weight:700">' + (m.profit>=0?'+':'') + '$' + m.profit.toFixed(2) + '</td>'
-        + '<td>' + m.margin.toFixed(1) + '%</td></tr>').join('')
+        + '<td>' + m.margin.toFixed(1) + '%</td></tr>'; }).join('')
     + '</tbody></table>';
 }
 
@@ -6946,9 +6976,17 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
 
   // Paid Ledger: без продажної сторінки Taobao, тільки робочий інтерфейс
   function applyPaidMode(){
-    if(typeof GT_PAID === 'undefined' || !GT_PAID) return;
-    const hero=g('tbHero'), bar=g('tbPaidBar');
+    const hero=g('tbHero'), work=g('tbWorkPanel'), bar=g('tbPaidBar');
+    const paid=(typeof GT_PAID!=='undefined' && GT_PAID);
+    document.querySelectorAll('[data-paid-only]').forEach(el=>{ el.style.display=paid?'':'none'; });
+    document.querySelectorAll('[data-free-only]').forEach(el=>{ el.style.display=paid?'none':''; });
+    if(!paid){
+      if(hero) hero.style.display='block';
+      if(work) work.style.display='none';
+      return;
+    }
     if(hero) hero.style.display='none';
+    if(work) work.style.display='block';
     if(bar){
       bar.style.display='block';
       ['tbStatus','tbProgress'].forEach(id=>{
