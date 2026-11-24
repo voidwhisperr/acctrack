@@ -1212,6 +1212,7 @@ code{
   </div>
   <div class="panel" style="margin-bottom:14px">
     <div class="ph"><span id="rateTitle">CURRENCY · USD → UAH</span></div>
+    <div style="font-size:11px;color:var(--mu);margin:-4px 0 10px" data-i18n="cur.auto">Курс оновлюється автоматично раз на 6 годин. Кнопка ↻ — примусове оновлення.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="cur.title">CURRENCY</div>
@@ -2177,6 +2178,9 @@ Object.assign(I18N.ru, {
   'sched.deal.label':'Порог выгодного лота','sched.deal.desc':'Во сколько раз цена должна быть ниже твоей, чтобы пришёл алерт. 5× = цена ≤ 20% твоей.',
   'sched.hours':'ч','sched.hour':'ч','sched.save':'Сохранить расписание','sched.hint':'Не уверен? Оставь значения как есть — это безопасные дефолты.'
 });
+Object.assign(I18N.uk, {'cur.auto':'Курс оновлюється автоматично раз на 6 годин. Кнопка ↻ — примусове оновлення.'});
+Object.assign(I18N.en, {'cur.auto':'The rate refreshes automatically every 6 hours. The ↻ button refreshes it now.'});
+Object.assign(I18N.ru, {'cur.auto':'Курс обновляется автоматически раз в 6 часов. Кнопка ↻ — принудительное обновление.'});
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
   n = Math.abs(Number(n) || 0);
@@ -2860,6 +2864,7 @@ async function importBackup(input){
 // ⚙️ НАЛАШТУВАННЯ: курс, Telegram, хмара
 // ═══════════════════════════════════════════════
 let _rate = 0;
+let _rateAutoDone = false;
 
 const CUR_SYM = {UAH:'₴', EUR:'€', USD:'$', PLN:'zł', CZK:'Kč', TRY:'₺', GBP:'£', KZT:'₸', GEL:'₾', RUB:'₽',
   CHF:'Fr', CAD:'C$', AUD:'A$', NZD:'NZ$', JPY:'¥', CNY:'¥', HKD:'HK$', SGD:'S$', INR:'₹', KRW:'₩',
@@ -3073,6 +3078,11 @@ async function loadSettings(){
     if(g('rateInfo')) g('rateInfo').textContent = d.rate_ts
       ? (t('cur.updated')+' '+new Date(d.rate_ts*1000).toLocaleString(dateLocale())+' · '+(d.rate_source||''))
       : (LANG==='ru'?'курс ещё не задан':LANG==='en'?'rate not set yet':'курс ще не задано');
+    if(!_rateAutoDone){
+      _rateAutoDone = true;
+      const _stale = !d.rate_ts || (Date.now()/1000 - Number(d.rate_ts) > 6*3600);
+      if(_cur !== 'USD' && _stale) setTimeout(()=>{ try{ refreshRate(); }catch(e){} }, 400);
+    }
     if(g('cloudDir')) g('cloudDir').value = d.cloud_dir || '';
     if(g('cloudInfo')) g('cloudInfo').innerHTML = d.cloud_effective
       ? ((LANG==='ru'?'Копирование в: ':LANG==='en'?'Copying to: ':'Копіювання у: ')+'<code>'+esc(d.cloud_effective)+'</code> '+(d.cloud_exists?'✓':(LANG==='ru'?'· папка создастся при бэкапе':LANG==='en'?'· folder will be created on backup':'· папка створиться при бекапі')))

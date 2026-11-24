@@ -1980,6 +1980,16 @@ def _get_rate(force=False):
     except Exception:
         return rate, ts, ("manual" if rate else "none")
 
+def _currency_rate_loop():
+    """Оновлює курс обраної валюти кожні 6 годин, навіть якщо сторінка закрита."""
+    while True:
+        try:
+            _get_rate(True)
+        except Exception as e:
+            print(f"  ⚠ currency rate: {e}", flush=True)
+        time.sleep(RATE_TTL)
+
+
 def _cloud_dir():
     """Папка хмарного бекапу: своя з налаштувань, інакше OneDrive\\GameTrackerBackups."""
     st = _read_json(SETTINGS_FILE, {}) or {}
@@ -4023,7 +4033,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.4.5", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.4.6", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4382,7 +4392,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.4.5",
+            self._json({"ok": True, "version": "1.4.6",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5605,7 +5615,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.4.5")
+    print("  ▲  Ledger v1.4.6")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 
@@ -5658,6 +5668,7 @@ def main():
     threading.Thread(target=_watchdog_loop, daemon=True).start()
     threading.Thread(target=_agent_watchdog_loop, daemon=True).start()
     threading.Thread(target=_fx_usd_cny_loop, daemon=True).start()
+    threading.Thread(target=_currency_rate_loop, daemon=True).start()
     threading.Thread(target=_funpay_orders_loop, daemon=True).start()
     threading.Thread(target=_startup_supplier_refresh,
                      kwargs={"allow_network": os.environ.get("GT_NO_SUPPLIERS") != "1"},

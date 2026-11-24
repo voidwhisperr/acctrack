@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.4.6 — automatic exchange-rate refresh
+
+- Selected-currency rate refreshes every 6 hours in the background.
+- Stale rate is refreshed automatically on page load.
+- Settings explains the 6-hour schedule and the manual refresh button.
+- Manual currency choice is preserved when the UI language changes.
+
 ## v1.4.5 — currency follows language
 
 - Switching UI language maps UA→UAH, EN→USD, RU→RUB when currency was not manually chosen.
