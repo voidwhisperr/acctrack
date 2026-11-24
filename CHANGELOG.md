@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.11.0 — payout automation
+
+- Cashflow entries support an available date; Hold auto-promotes to Available when the date arrives.
+- Payout CSV import into cashflow.
+- Cashflow table shows the available date.
+
 ## v1.10.0 — auto cashflow and PDF line items
 
 - Imported sales create a linked cashflow Hold (saleId/order dedupe).

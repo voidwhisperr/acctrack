@@ -1117,8 +1117,10 @@ code{
       <input id="cfAmount" type="number" min="0.01" step="0.01" placeholder="Сума $" style="width:120px">
       <select id="cfStatus" style="font-size:12px"><option value="hold">Hold</option><option value="available">Available</option><option value="withdrawn">Withdrawn</option></select>
       <input id="cfDate" type="date" style="width:140px">
-      <input id="cfNote" placeholder="Коментар" style="width:180px">
+      <input id="cfAvailable" type="date" title="Доступно з (Hold → Available)" style="width:140px">
+      <input id="cfNote" placeholder="Коментар" style="width:150px">
       <button class="btn gr" onclick="cashflowAdd()">＋ Додати</button>
+      <label class="btn" style="font-size:11px;cursor:pointer">⬆ Payout CSV<input id="cfImport" type="file" accept=".csv,text/csv" onchange="importCashflowCsv(this)" style="display:none"></label>
     </div>
     <div id="cfList"><div class="none">⏳ …</div></div>
   </div>
@@ -4132,26 +4134,50 @@ async function loadCashflow(){
     if(!it.length){ el.innerHTML='<div class="none">Немає записів. Додай hold/available/withdrawn.</div>'; return; }
     var rows=it.slice().reverse().map(function(x){
       var id=esc(x.id);
-      return '<tr><td>'+esc(x.date||'')+'</td><td>'+esc(CF_NAMES[x.platform]||x.platform||'—')+'</td><td>$'+Number(x.amount||0).toFixed(2)+'</td><td>'+esc(x.status||'hold')+'</td><td>'+esc((x.note||'').substring(0,60))+'</td><td style="white-space:nowrap">'
+      return '<tr><td>'+esc(x.date||'')+'</td><td>'+esc(CF_NAMES[x.platform]||x.platform||'—')+'</td><td>$'+Number(x.amount||0).toFixed(2)+'</td><td>'+esc(x.status||'hold')+'</td><td>'+esc(x.availableDate||'—')+'</td><td>'+esc((x.note||'').substring(0,60))+'</td><td style="white-space:nowrap">'
         +'<button class="btn" style="padding:3px 7px;font-size:10px" onclick="cashflowSet(\''+id+'\',\'available\')">A</button> '
         +'<button class="btn" style="padding:3px 7px;font-size:10px" onclick="cashflowSet(\''+id+'\',\'withdrawn\')">W</button> '
         +'<button class="btn rd" style="padding:3px 7px;font-size:10px" onclick="cashflowDel(\''+id+'\')">✕</button>'
         +'</td></tr>';
     }).join('');
-    el.innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>Дата</th><th>Платформа</th><th>Сума</th><th>Статус</th><th>Коментар</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    el.innerHTML='<div style="overflow-x:auto"><table class="sup-table"><thead><tr><th>Дата</th><th>Платформа</th><th>Сума</th><th>Статус</th><th>Доступно</th><th>Коментар</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
 }
 async function cashflowAdd(){
   const amount=Number(g('cfAmount')?.value||0);
   if(!(amount>0)){ toast('⚠ '+(LANG==='en'?'Enter amount':LANG==='ru'?'Введи сумму':'Введи суму'), false); return; }
   const body={platform:g('cfPlatform')?.value||'other',amount,status:g('cfStatus')?.value||'hold',
-    date:g('cfDate')?.value||new Date().toISOString().slice(0,10),note:g('cfNote')?.value||''};
+    date:g('cfDate')?.value||new Date().toISOString().slice(0,10),note:g('cfNote')?.value||'',
+    availableDate:g('cfAvailable')?.value||''};
   try{
     const d=await fetch('/api/cashflow/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     g('cfAmount').value=''; g('cfNote').value='';
     await loadCashflow();
   }catch(e){ toast('⚠ '+e, false); }
+}
+async function importCashflowCsv(input){
+  const f=input.files&&input.files[0]; if(!f) return;
+  const rows=parseCsvText(await f.text());
+  if(rows.length<2){ toast('⚠ CSV порожній', false); return; }
+  const hdr=rows[0].map(x=>String(x).trim().toLowerCase());
+  const col=function(){ for(let i=0;i<arguments.length;i++){ const ix=hdr.findIndex(h=>h===arguments[i]||h.includes(arguments[i])); if(ix>=0) return ix; } return -1; };
+  const ci={date:col('date','created'),platform:col('platform','marketplace','source'),amount:col('amount','total','payout','net'),status:col('status','state'),note:col('note','comment','description'),available:col('available','payout date','release')};
+  if(ci.amount<0){ toast('⚠ Немає колонки amount', false); return; }
+  let added=0;
+  for(const r of rows.slice(1)){
+    const amount=_num(r[ci.amount]); if(!(amount>0)) continue;
+    let plat=ci.platform>=0?String(r[ci.platform]||'').toLowerCase().trim():'other';
+    if(plat.includes('g2g'))plat='g2g'; else if(plat.includes('gameflip'))plat='gameflip'; else if(plat.includes('player')||plat==='pa')plat='pa'; else if(plat.includes('zeus'))plat='zeusx'; else if(plat.includes('fun'))plat='funpay'; else if(plat.includes('eldorado'))plat='eldorado';
+    const st=ci.status>=0?String(r[ci.status]||'').toLowerCase():'hold';
+    const body={platform:plat,amount,status:['hold','available','withdrawn'].includes(st)?st:'hold',
+      date:ci.date>=0?_date(r[ci.date]):new Date().toISOString().slice(0,10),
+      availableDate:(ci.available>=0&&String(r[ci.available]||'').trim())?_date(r[ci.available]):'',note:ci.note>=0?String(r[ci.note]||'').slice(0,200):''};
+    try{ const d=await fetch('/api/cashflow/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()); if(d.ok) added++; }catch(e){}
+  }
+  await loadCashflow();
+  toast('✅ Payout-записів: '+added);
+  if(g('cfImport')) g('cfImport').value='';
 }
 async function cashflowSet(id,status){
   try{ const d=await fetch('/api/cashflow/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}).then(r=>r.json()); if(d.ok) await loadCashflow(); }catch(e){}

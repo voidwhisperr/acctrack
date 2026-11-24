@@ -1679,13 +1679,25 @@ def _cashflow_data():
         items = []
     items = [x for x in items if isinstance(x, dict)][:5000]
     totals = {"hold": 0.0, "available": 0.0, "withdrawn": 0.0}
+    today = datetime.date.today().isoformat()
+    changed = False
     for x in items:
         st = str(x.get("status") or "hold")
         if st not in totals:
             st = "hold"
+        ad = str(x.get("availableDate") or "")[:10]
+        if st == "hold" and ad and ad <= today:
+            x["status"] = "available"
+            st = "available"
+            changed = True
         try:
             totals[st] += float(x.get("amount") or 0)
         except (TypeError, ValueError):
+            pass
+    if changed:
+        try:
+            _atomic_dump(CASHFLOW_FILE, items)
+        except Exception:
             pass
     return {"ok": True, "items": items,
             "totals": {k: round(v, 2) for k, v in totals.items()},
@@ -4211,7 +4223,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.10.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.11.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4588,7 +4600,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.10.0",
+            self._json({"ok": True, "version": "1.11.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5471,7 +5483,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                        "date": str(body.get("date") or datetime.date.today().isoformat())[:10],
                        "note": str(body.get("note") or "")[:200], "ts": int(time.time()),
                        "saleId": str(body.get("saleId") or "")[:80],
-                       "order": str(body.get("order") or "")[:80]}
+                       "order": str(body.get("order") or "")[:80],
+                       "availableDate": str(body.get("availableDate") or "")[:10]}
                 with _WRITE_LOCK:
                     items = _read_json(CASHFLOW_FILE, []) or []
                     if not isinstance(items, list):
@@ -5884,7 +5897,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.10.0")
+    print("  ▲  AccTrack v1.11.0")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 
