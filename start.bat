@@ -18,7 +18,7 @@ echo.
 
 rem create shortcut with icon on first run
 
-if not exist "AccTrack.lnk" if exist "acctrack.ico" (
+if not exist "AccTrack.lnk" if exist "assets\acctrack.ico" (
   powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$d = '%~dp0'.TrimEnd('\');" ^
     "$w = New-Object -ComObject WScript.Shell;" ^
@@ -26,7 +26,7 @@ if not exist "AccTrack.lnk" if exist "acctrack.ico" (
     "$s.TargetPath = Join-Path $env:WINDIR 'System32\cmd.exe';" ^
     "$s.Arguments = '/c \"\"' + (Join-Path $d 'start.bat') + '\"\"';" ^
     "$s.WorkingDirectory = $d;" ^
-    "$s.IconLocation = (Join-Path $d 'acctrack.ico') + ',0';" ^
+    "$s.IconLocation = (Join-Path $d 'assets\acctrack.ico') + ',0';" ^
     "$s.Description = 'AccTrack - deals, channels, stock';" ^
     "$s.Save()" >nul 2>&1
 )

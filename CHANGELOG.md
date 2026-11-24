@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.33.0 — organized repo
+
+- Icons moved to `assets/`.
+- Optional launchers moved to `launchers/`; root `start.bat` remains.
+- Release and repository root no longer filled with icon and batch files.
+
 ## v1.32.0 — free/paid Taobao, form labels, console language
 
 - Free Taobao page hides automation controls, data list and agent setup; paid keeps them.
