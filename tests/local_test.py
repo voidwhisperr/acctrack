@@ -380,7 +380,7 @@ def main():
         check("ED: 12 − 1.2 − 5 = 5.8", abs(float(_r["profit"]) - 5.8) < 0.01, _r["profit"])
         _r2 = gtp._clean_pl([{"date": "2026-11-23", "title": "x", "sell": 14.61, "buy": 8,
                               "src": "funpay"}])[0]
-        check("P&L: 14.61·0.985 − 8 = 6.39", abs(float(_r2["afterFee"]) - 6.39) < 0.02, _r2["afterFee"])
+        check("P&L: 14.61·0.90 − 8 = 5.15", abs(float(_r2["afterFee"]) - 5.149) < 0.02, _r2["afterFee"])
         # жоден шлях не передає profit/afterFee без закупівлі
         _src = open(os.path.join(BASE, "game_tracker.py"), encoding="utf-8").read()
         check("немає 'profit': round(price - fee, 2)",

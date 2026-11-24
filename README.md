@@ -14,7 +14,7 @@ Runs locally with Python's standard library. No tokens are required: every core 
 
 ### Core (works without any tokens)
 
-- **Deals / P&L** — buy and sell prices, **editable marketplace fee per deal** (including a custom % for “Other”), net profit, search, filters, sorting, bulk rename, CSV and Excel export.
+- **Deals / P&L** — buy and sell prices, **editable marketplace fee per deal** (including a custom % for “Other”, and ZeusX seller tiers), net profit, search, filters, sorting, bulk rename, CSV and Excel export.
 - **Inventory** — purchased accounts with cost, source, status (in stock / sold / written off), account credentials (revealed only on demand), dead-stock warning, and CSV exports.
 - **Eldorado ledger** — separate manual ledger with its own fee, categories, filters, and CSV export.
 - **Channels** — FunPay, ZeusX, and Eldorado in one view; marketplace fee comparison calculator; balances and recent sales.

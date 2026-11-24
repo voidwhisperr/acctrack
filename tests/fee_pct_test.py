@@ -7,7 +7,7 @@ import game_tracker as g
 
 
 def test_default_when_nothing_known():
-    assert abs(g._fee_pct_of({"src": "zeusx", "sell": 100, "buy": 20}) - 0.095) < 1e-9
+    assert abs(g._fee_pct_of({"src": "zeusx", "sell": 100, "buy": 20}) - 0.10) < 1e-9
 
 
 def test_recovers_from_after_fee():

@@ -203,19 +203,31 @@ def _read_json_strict(path, default):
 #   payout — додаткові витрати на вивід грошей, які враховує калькулятор ціни
 #   ed     — комісія ELDORADO
 # ─────────────────────────────────────────────────
-PLATFORM_FEES = {"zeusx": 0.095, "funpay": 0.015, "eldorado": 0.10, "other": 0.0}
+PLATFORM_FEES = {"zeusx": 0.10, "funpay": 0.10, "eldorado": 0.10, "other": 0.0}
 PAYOUT_FEES   = {"zeusx": 0.005, "funpay": 0.055}
 ED_FEE        = 0.10
 
+# ZeusX: комісія залежить від рангу продавця (5–10%).
+# Точну ставку продавець бачить у кабінеті; це стартові пресети,
+# які можна перебити полем «Комісія %».
+ZEUSX_TIERS = [
+    {"id": "iron",     "name": "Iron",     "fee": 0.10},
+    {"id": "bronze",   "name": "Bronze",   "fee": 0.09},
+    {"id": "silver",   "name": "Silver",   "fee": 0.08},
+    {"id": "gold",     "name": "Gold",     "fee": 0.07},
+    {"id": "platinum", "name": "Platinum", "fee": 0.06},
+    {"id": "diamond",  "name": "Diamond",  "fee": 0.05},
+]
+
 # Майданчики для калькулятора «де вигідніше продавати» (комісії орієнтовні!)
 MARKETPLACES = [
-    {"id": "funpay",   "name": "FunPay",           "emoji": "🔵", "fee": 0.015, "payout": 0.055, "note": ""},
+    {"id": "funpay",   "name": "FunPay",           "emoji": "🔵", "fee": 0.10,  "payout": 0.055, "note": "залежить від розділу; для акаунтів зазвичай 10%"},
     {"id": "ggsel",    "name": "GGsel",            "emoji": "🔴", "fee": 0.05,  "payout": 0.0,   "note": ""},
     {"id": "own",      "name": "Своя вітрина",     "emoji": "🏠", "fee": 0.05,  "payout": 0.03,  "note": ""},
     {"id": "z2u",      "name": "Z2U",              "emoji": "🟣", "fee": 0.07,  "payout": 0.02,  "note": ""},
     {"id": "g2g",      "name": "G2G",              "emoji": "🟢", "fee": 0.08,  "payout": 0.02,  "note": ""},
-    {"id": "zeusx",    "name": "ZeusX",            "emoji": "⚡", "fee": 0.095, "payout": 0.005, "note": ""},
-    {"id": "eldorado", "name": "Eldorado",         "emoji": "🟡", "fee": 0.10,  "payout": 0.0,   "note": ""},
+    {"id": "zeusx",    "name": "ZeusX",            "emoji": "⚡", "fee": 0.10,  "payout": 0.005, "note": "5–10% залежно від рангу продавця"},
+    {"id": "eldorado", "name": "Eldorado",         "emoji": "🟡", "fee": 0.10,  "payout": 0.0,   "note": "10% для акаунтів; окремі ігри 15–30%"},
     {"id": "pa",       "name": "PlayerAuctions",   "emoji": "🅿️", "fee": 0.13,  "payout": 0.02,  "note": ""},
     {"id": "tg",       "name": "Telegram (прямо)", "emoji": "✈️", "fee": 0.0,   "payout": 0.0,   "note": ""},
 ]
@@ -3748,7 +3760,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.0.1", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.0.2", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png")
@@ -4074,7 +4086,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.0.1",
+            self._json({"ok": True, "version": "1.0.2",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5086,7 +5098,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
 
 def _render_html():
     """HTML + конфіг комісій з Python (єдине джерело істини)."""
-    cfg = {"fees": PLATFORM_FEES, "payout": PAYOUT_FEES, "ed": ED_FEE,
+    cfg = {"fees": PLATFORM_FEES, "payout": PAYOUT_FEES, "ed": ED_FEE, "zeusx_tiers": ZEUSX_TIERS,
            "marketplaces": MARKETPLACES}
     payload = json.dumps(cfg)
     if ui is None:
@@ -5182,7 +5194,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.0.1")
+    print("  ▲  AccTrack v1.0.2")
     print("  📊 Deals · Channels · Stock · Analytics · Backups")
     print("=" * 60 + "\n")
 

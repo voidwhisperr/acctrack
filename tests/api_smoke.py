@@ -51,7 +51,7 @@ def check(name, cond, info=""):
 print("=== 1. ПУБЛІЧНЕ / АВТОРИЗАЦІЯ ===")
 st, d = call("/api/health", auth=False)
 check("health без пароля", st == 200 and d.get("ok"), st)
-check("версія 1.0.1", d.get("version") == "1.0.1", d)
+check("версія 1.0.2", d.get("version") == "1.0.2", d)
 st, d = call("/api/settings", auth=False)
 auth_open = (st == 200)
 check("API: режим без пароля (або 401, якщо пароль увімкнено)", st in (200, 401), st)
@@ -81,7 +81,7 @@ check("додати угоду", st == 200, st)
 st, d = call("/api/pl")
 rows = d.get("purchases", [])
 check("угода збережена", len(rows) == 1, len(rows))
-check("прибуток пораховано", abs(abs(rows[0].get("afterFee", 0)) - 6.82) < 0.02, rows[0].get("afterFee"))
+check("прибуток пораховано", abs(abs(rows[0].get("afterFee", 0)) - 5.80) < 0.02, rows[0].get("afterFee"))
 st, d = call("/api/pl/save", "POST", {"purchases": [
     {"id": 2, "date": "", "title": "Bad", "buy": 1, "sell": 2},
 ]})

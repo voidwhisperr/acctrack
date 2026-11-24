@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.0.2 — real marketplace fees and ZeusX tiers
+
+### Added
+- **Real defaults**: FunPay 10% (section-dependent), ZeusX 10% on the starting Iron tier, Eldorado 10% for accounts.
+- **ZeusX seller tier selector**: Iron 10%, Bronze 9%, Silver 8%, Gold 7%, Platinum 6%, Diamond 5%.
+- The exact ZeusX rate can differ by account; the tier preset is only a starting point, and the custom fee field still overrides it.
+- Per-deal `feePct` and custom "Other" fees remain from v1.0.1.
+
+### Changed
+- Plan/calculator hints now say ZeusX is 5–10% by tier, not a fixed 9.5%.
+- Market comparison notes explain that FunPay depends on the section and ZeusX depends on the seller tier.
+
+### Fixed
+- Existing records keep their historical fee; only new records use the updated defaults.
+
 ## v1.0.1 — custom marketplace fees
 
 ### Added
