@@ -3631,6 +3631,7 @@ async function addPLRecord(){
     edSales.unshift(rec);
     await saveED();
     if(invId) await markInvSold(invId);
+    await finishMailDraft();
     g('plTitle').value=''; g('plBuy').value=''; g('plSell').value='';
     g('plExpenses').value='0';
     g('plFeePreview').textContent='$0.00';
@@ -3659,6 +3660,7 @@ async function addPLRecord(){
   });
   await savePL();
   if(invId) await markInvSold(invId);
+  await finishMailDraft();
   g('plTitle').value=''; g('plBuy').value=''; g('plSell').value='';
   g('plExpenses').value='0';
   g('plFeePreview').textContent='$0.00';
@@ -5850,6 +5852,7 @@ function renderMailQueue(){
           ${status}
           ${canEd?`<button class="btn gr" onclick="mailAct('${esc(m.id)}','add_ed')">➕ ELDORADO</button>`:''}
           ${canPl?`<button class="btn" onclick="mailAct('${esc(m.id)}','add_pl')">➕ P&amp;L</button>`:''}
+          ${isOrder?`<button class="btn" onclick="mailDraft('${esc(m.id)}')">📝 ${LANG==='ru'?'Черновик':LANG==='en'?'Draft':'Чернетка'}</button>`:''}
           ${m.status==='new'?`<button class="btn" onclick="mailAct('${esc(m.id)}','ignore')">✕</button>`:''}
           <button class="btn rd" onclick="mailAct('${esc(m.id)}','remove')">🗑</button>
         </div>
@@ -5867,6 +5870,46 @@ async function clearMailQueue(){
   }catch(e){ toast(String(e), false); }
 }
 
+async function mailDraft(id){
+  const item=(mailItems||[]).find(x=>x.id===id);
+  if(!item){ toast('⚠ замовлення не знайдено', false); return; }
+  window._mailDraftId=id;
+  const platTxt=String(item.platform||'').toLowerCase();
+  const plat=platTxt.includes('zeus')?'zeusx':platTxt.includes('fun')?'funpay':platTxt.includes('eldorado')?'eldorado':'other';
+  const tab=[...document.querySelectorAll('.tabs .tab')].find(x=>String(x.getAttribute('onclick')||'').includes("'tracker'"));
+  if(tab) sw('tracker',tab);
+  plPlatPick(plat);
+  g('plTitle').value=(item.subject||item.game||'').trim();
+  g('plSell').value=item.price!=null?String(item.price):'';
+  g('plDate').value=todayLocal();
+  g('plExpenses').value='0';
+  g('plCur').value=_cur;
+  g('plFx').value=(_cur==='USD'?1:(_rate||''));
+  if(item.game) g('plTitle').value=String(item.game)+' · '+g('plTitle').value;
+  try{
+    const q=encodeURIComponent(((item.subject||'')+' '+(item.game||'')).trim());
+    if(q){
+      const mm=await fetch('/api/inventory/match?title='+q).then(r=>r.json());
+      const match=(mm.matches||[])[0];
+      if(match){
+        _invSellId=match.id;
+        g('plBuy').value=Number(match.cost||0).toFixed(2);
+        g('invSellText').textContent=match.title+' · '+Number(match.cost||0).toFixed(2);
+        g('invSellBanner').style.display='flex';
+      }
+    }
+  }catch(e){}
+  updateFeePreview();
+  toast(LANG==='ru'?'📝 Черновик создан — проверь и сохрани':LANG==='en'?'📝 Draft created — review and save':'📝 Чернетку створено — перевір і збережи');
+}
+async function finishMailDraft(){
+  const id=window._mailDraftId;
+  if(!id) return;
+  window._mailDraftId=null;
+  try{ await fetch('/api/mail/action',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id,action:'remove'})}); }catch(e){}
+  try{ loadMailQueue(); }catch(e){}
+}
 async function mailAct(id, action){
   try{
     let buy = 0, match = null, amount = null, game = '';

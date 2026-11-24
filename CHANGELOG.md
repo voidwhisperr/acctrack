@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.1 — order-to-draft
+
+- Orders from mail have a "Draft" button.
+- Draft pre-fills platform, title, price and matching stock cost.
+- Saving the draft removes the order from the mail queue and marks linked stock sold.
+
 ## v1.5.0 — deal currency and stock aging
 
 - Each deal now has its own currency and historical USD rate.
