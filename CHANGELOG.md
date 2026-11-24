@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.2.0 — platform profitability
+
+### Added
+- Analytics now shows **profit by platform**: deals, revenue, fees, expenses, net profit and net %.
+- Platform totals respect the current platform and period filter.
+- Eldorado is included from its own ledger.
+
+### Fixed
+- Analytics, game table and month-over-month comparison now use **net profit** (after other expenses), not after-fee profit.
+- Summary totals no longer overstate profit when a deal has other expenses.
+
 ## v1.1.2 — bulk commission
 
 ### Added

@@ -972,6 +972,7 @@ code{
     </div>
     <!-- Загальна статистика -->
     <div id="statsCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:18px"></div>
+    <div id="platformStats" style="margin-bottom:18px"></div>
     <div id="statsCompare" style="margin-bottom:18px"></div>
     <!-- Графік по іграх -->
     <div style="margin-bottom:18px">
@@ -1602,7 +1603,7 @@ const EXTRA_I18N = {
     "inv.offToast":"Списано","inv.returnToast":"Повернуто на склад","inv.deleted":"Видалено",
     "inv.deleteConfirm":"Видалити запис зі складу?","inv.noAccount":"(даних немає)",
     "inv.enterName":"Введіть назву",
-    "an.deals":"Угод","an.revenue":"Виручка","an.profit":"Прибуток","an.margin":"Маржа",
+    "an.deals":"Угод","an.revenue":"Виручка","an.profit":"Прибуток","an.margin":"Маржа","an.platforms":"ПРИБУТОК ПО ПЛАТФОРМАХ","an.platform":"ПЛАТФОРМА","an.feeCol":"КОМІСІЇ","an.expenseCol":"ВИТРАТИ","an.netCol":"ЧИСТИЙ","an.netPct":"NET %",
     "an.games":"Різних ігор","an.best":"Найкраща","an.total":"РАЗОМ P&L + ELD",
     "an.totalIn":"Разом у","an.game":"ГРА","an.dealsCol":"УГОД","an.revenueCol":"ВИРУЧКА",
     "an.profitCol":"ПРИБУТОК","an.marginCol":"МАРЖА",
@@ -1716,7 +1717,7 @@ const EXTRA_I18N = {
     "inv.added":"Added to stock","inv.soldToast":"Marked as sold","inv.offToast":"Written off",
     "inv.returnToast":"Returned to stock","inv.deleted":"Deleted",
     "inv.deleteConfirm":"Delete this stock item?","inv.noAccount":"(no data)","inv.enterName":"Enter a name",
-    "an.deals":"Deals","an.revenue":"Revenue","an.profit":"Profit","an.margin":"Margin",
+    "an.deals":"Deals","an.revenue":"Revenue","an.profit":"Profit","an.margin":"Margin","an.platforms":"PROFIT BY PLATFORM","an.platform":"PLATFORM","an.feeCol":"FEES","an.expenseCol":"EXPENSES","an.netCol":"NET","an.netPct":"NET %",
     "an.games":"Different games","an.best":"Best","an.total":"TOTAL P&L + ELD",
     "an.totalIn":"Total in","an.game":"GAME","an.dealsCol":"DEALS","an.revenueCol":"REVENUE",
     "an.profitCol":"PROFIT","an.marginCol":"MARGIN",
@@ -1828,7 +1829,7 @@ const EXTRA_I18N = {
     "inv.offToast":"Списано","inv.returnToast":"Возвращено на склад","inv.deleted":"Удалено",
     "inv.deleteConfirm":"Удалить запись со склада?","inv.noAccount":"(данных нет)",
     "inv.enterName":"Введите название",
-    "an.deals":"Сделок","an.revenue":"Выручка","an.profit":"Прибыль","an.margin":"Маржа",
+    "an.deals":"Сделок","an.revenue":"Выручка","an.profit":"Прибыль","an.margin":"Маржа","an.platforms":"ПРИБЫЛЬ ПО ПЛАТФОРМАМ","an.platform":"ПЛАТФОРМА","an.feeCol":"КОМИССИИ","an.expenseCol":"РАСХОДЫ","an.netCol":"ЧИСТАЯ","an.netPct":"NET %",
     "an.games":"Разных игр","an.best":"Лучшая","an.total":"ИТОГО P&L + ELD",
     "an.totalIn":"Итого в","an.game":"ИГРА","an.dealsCol":"СДЕЛОК","an.revenueCol":"ВЫРУЧКА",
     "an.profitCol":"ПРИБЫЛЬ","an.marginCol":"МАРЖА",
@@ -3398,7 +3399,7 @@ function renderStats(){
       displayName: game === '__noname__' ? 'Без назви' : game};
     gameMap[game].count++;
     gameMap[game].revenue += p.sell||0;
-    gameMap[game].profit  += p.afterFee||0;
+    gameMap[game].profit  += (p.afterFee||0) - Number(p.expenses||0);
     gameMap[game].buy     += p.buy||0;
   });
 
@@ -3410,12 +3411,12 @@ function renderStats(){
 
   // Картки загальної статистики
   const totRev    = recs.reduce((s,p)=>s+(p.sell||0),0);
-  const totProfit = recs.reduce((s,p)=>s+(p.afterFee||0),0);
+  const totProfit = recs.reduce((s,p)=>s+(p.afterFee||0)-Number(p.expenses||0),0);
   const totBuy    = recs.reduce((s,p)=>s+(p.buy||0),0);
   const avgMargin = totBuy>0?(totProfit/totBuy*100).toFixed(1):0;
 
   // Зведений підсумок P&L + ELDORADO (весь час)
-  const plAllProfit = purchases.reduce((s,p)=>s+(p.afterFee||0),0);
+  const plAllProfit = purchases.reduce((s,p)=>s+(p.afterFee||0)-Number(p.expenses||0),0);
   const edAllProfit = edSales.reduce((s,x)=>s+(x.profit||0),0);
   const plAllRev    = purchases.reduce((s,p)=>s+(p.sell||0),0);
   const edAllRev    = edSales.reduce((s,x)=>s+(x.price||0),0);
@@ -3447,13 +3448,14 @@ function renderStats(){
     const prevKey  = prevDate.getFullYear()+'-'+String(prevDate.getMonth()+1).padStart(2,'0');
     const ym   = p => (p.date||'').slice(0,7);
     const plSum = (key, field) => purchases.filter(p=>ym(p)===key).reduce((s,p)=>s+(p[field]||0),0);
+    const plNet = key => purchases.filter(p=>ym(p)===key).reduce((s,p)=>s+(p.afterFee||0)-Number(p.expenses||0),0);
     const edSum = (key, field) => edSales.filter(s=>ym(s)===key).reduce((s,x)=>s+(x[field]||0),0);
     const rows = [
-      {l:t('an.profitPL'),   cur:plSum(curKey,'afterFee'), prev:plSum(prevKey,'afterFee')},
+      {l:t('an.profitPL'),   cur:plNet(curKey), prev:plNet(prevKey)},
       {l:t('an.revenuePL'),  cur:plSum(curKey,'sell'),     prev:plSum(prevKey,'sell')},
       {l:t('an.profitED'),   cur:edSum(curKey,'profit'), prev:edSum(prevKey,'profit')},
-      {l:t('an.totalProfit'), cur:plSum(curKey,'afterFee')+edSum(curKey,'profit'),
-                            prev:plSum(prevKey,'afterFee')+edSum(prevKey,'profit')},
+      {l:t('an.totalProfit'), cur:plNet(curKey)+edSum(curKey,'profit'),
+                            prev:plNet(prevKey)+edSum(prevKey,'profit')},
     ];
     const pct = (a,b)=> b>0 ? ((a-b)/b*100) : (a>0?100:0);
     const fmtPct = (a,b)=> b>0 ? ((a-b)>=0?'+':'')+pct(a,b).toFixed(1)+'%' : (a>0?t('an.new'):'—');
@@ -3467,6 +3469,50 @@ function renderStats(){
           <div style="font-size:11px;color:var(--mu);margin-top:3px">${t('an.was')} $${r.prev.toFixed(2)} · <b style="color:${good?'var(--gr)':'var(--rd)'}">${fmtPct(r.cur,r.prev)}</b></div>
         </div>`;
       }).join('')+'</div>';
+  }
+
+  // ── Прибуток по платформах ──
+  const platEl = g('platformStats');
+  if(platEl){
+    const pm = {};
+    const addP = (name, rev, fee, exp, net) => {
+      const a = pm[name] || (pm[name] = {n:0, rev:0, fee:0, exp:0, net:0});
+      a.n++; a.rev += rev||0; a.fee += fee||0; a.exp += exp||0; a.net += net||0;
+    };
+    recs.forEach(p=>{
+      const fee=Number(p.sell||0)*feePctOf(p);
+      addP(p.srcName || p.src || '—', Number(p.sell||0), fee, Number(p.expenses||0),
+           (Number(p.afterFee)||0) - Number(p.expenses||0));
+    });
+    if(!platform || platform==='eldorado'){
+      edSales.filter(s=>{
+        const d=(s.date||'').slice(0,7);
+        if(period==='month' && d!==moStart) return false;
+        if(period.startsWith('m:') && d!==period.slice(2)) return false;
+        return true;
+      }).forEach(s=>addP('Eldorado', Number(s.price||0), Number(s.fee||0), 0, Number(s.profit||0)));
+    }
+    const rows = Object.entries(pm).map(([name,a])=>({name,...a,
+      margin: a.rev>0 ? a.net/a.rev*100 : 0
+    })).sort((a,b)=>b.net-a.net);
+    if(!rows.length){
+      platEl.innerHTML = '<div class="none">'+t('an.noData')+'</div>';
+    } else {
+      platEl.innerHTML = '<div style="font-size:11px;color:var(--mu);letter-spacing:1px;margin-bottom:8px">'+t('an.platforms')+'</div>'+
+        '<table class="sup-table"><thead><tr>'+
+        '<th>'+t('an.platform')+'</th><th style="text-align:right">'+t('an.dealsCol')+'</th>'+
+        '<th style="text-align:right">'+t('an.revenueCol')+'</th><th style="text-align:right">'+t('an.feeCol')+'</th>'+
+        '<th style="text-align:right">'+t('an.expenseCol')+'</th><th style="text-align:right">'+t('an.netCol')+'</th>'+
+        '<th style="text-align:right">'+t('an.netPct')+'</th></tr></thead><tbody>'+
+        rows.map(r=>'<tr><td style="font-weight:600">'+esc(r.name)+'</td>'+
+          '<td style="text-align:right;color:var(--mu)">'+r.n+'</td>'+
+          '<td style="text-align:right;font-family:var(--font);font-size:11px">$'+r.rev.toFixed(2)+'</td>'+
+          '<td style="text-align:right;font-family:var(--font);font-size:11px;color:var(--rd)">-$'+r.fee.toFixed(2)+'</td>'+
+          '<td style="text-align:right;font-family:var(--font);font-size:11px;color:var(--yw)">-$'+r.exp.toFixed(2)+'</td>'+
+          '<td style="text-align:right;font-family:var(--font);font-size:12px;font-weight:700;color:'+(r.net>=0?'var(--gr)':'var(--rd)')+'">'+(r.net>=0?'+':'')+'$'+r.net.toFixed(2)+'</td>'+
+          '<td style="text-align:right;font-size:11px;color:var(--mu)">'+r.margin.toFixed(1)+'%</td></tr>').join('')+
+        '</tbody></table>';
+    }
   }
 
   // Графік
