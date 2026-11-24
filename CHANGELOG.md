@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.4.2 — onboarding language picks currency
+
+- Ukrainian → UAH, English → USD, Russian → RUB.
+- Manual currency choice wins over later language clicks.
+
 ## v1.4.1 — currency applied to displayed amounts
 
 ### Fixed

@@ -4773,8 +4773,15 @@ function onbRender(){
     + '<div style="color:var(--mu);font-size:11.5px;margin-top:12px;text-align:center">'
     + t('onb.hint')+'</div>';
 }
-function onbSetLang(l){ setLang(l); onbRender(); }
-function onbSetCurrency(v){ _cur = v || 'USD'; applyCurrency(); }
+let _onbCurManual = false;
+function onbSetLang(l){
+  setLang(l);
+  if(!_onbCurManual){
+    _cur = ({uk:'UAH', en:'USD', ru:'RUB'})[l] || _cur;
+  }
+  onbRender();
+}
+function onbSetCurrency(v){ _onbCurManual = true; _cur = v || 'USD'; applyCurrency(); }
 function onbDone(){
   _onboarded = true;
   try{ localStorage.setItem('gt_onboarded','1'); }catch(e){}
