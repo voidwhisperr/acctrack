@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.39.0 — reliable PWA prompt
+
+- Early `beforeinstallprompt` capture in the page head.
+- Install button uses the captured prompt even if it fired before app scripts.
+- Public app icons so the manifest passes installability checks.
+
 ## v1.38.0 — working install button
 
 - Install button explains the HTTPS requirement and opens the secure URL on HTTP.

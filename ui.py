@@ -16,6 +16,7 @@ HTML = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ledger">
 <meta name="theme-color" content="#0d1017">
+<script>window.__pwaEarly=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaEarly=e;});</script>
 <link rel="manifest" href="/manifest.json?v=2">
 <link rel="icon" href="/app-icon-32.png" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="/app-icon.svg">
@@ -7072,11 +7073,11 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
   // PWA: встановлення застосунку
   let _pwaPrompt=null;
   window.addEventListener('beforeinstallprompt', e=>{
-    e.preventDefault(); _pwaPrompt=e;
+    e.preventDefault(); _pwaPrompt=e; window.__pwaEarly=e;
     const s=g('pwaStatus'); if(s) s.textContent='✅ '+(LANG==='ru'?'Готово к установке':LANG==='en'?'Ready to install':'Готово до встановлення');
   });
   window.addEventListener('appinstalled', ()=>{
-    _pwaPrompt=null;
+    _pwaPrompt=null; window.__pwaEarly=null;
     const s=g('pwaStatus'); if(s) s.textContent='✅ '+(LANG==='ru'?'Установлено':LANG==='en'?'Installed':'Встановлено');
   });
   function pwaInstall(){
@@ -7093,11 +7094,12 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
       }
       return;
     }
-    if(_pwaPrompt){
-      _pwaPrompt.prompt();
-      _pwaPrompt.userChoice.then(c=>{
+    const _pp=_pwaPrompt||window.__pwaEarly;
+    if(_pp){
+      _pp.prompt();
+      _pp.userChoice.then(c=>{
         if(c && c.outcome==='accepted') toast('✅ '+(LANG==='ru'?'Установлено':LANG==='en'?'Installed':'Встановлено'));
-        _pwaPrompt=null;
+        _pwaPrompt=null; window.__pwaEarly=null;
       }).catch(()=>{});
       return;
     }
