@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.60.1 — pricing polish
+- Pricing page: separate “Plans” heading (no duplicate), “on request” defaults for empty payment fields.
+- Demo screenshots refreshed for v1.60 (13 per language incl. pricing), CI workflow and license unit tests, audit update.
+
 ## v1.60.0 — client monitor
 - Provisioned clients are checked every 5 minutes; Telegram alerts on down/recovered transitions.
 - Hosting page shows down count and a “check all” action.

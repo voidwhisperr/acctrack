@@ -4642,7 +4642,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.60.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.60.1", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5254,7 +5254,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.60.0",
+            self._json({"ok": True, "version": "1.60.1",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7067,7 +7067,7 @@ _PRICING_TXT = {
         "sub": "Безкоштовний локальний облік. Ledger+ — хостинг, Taobao-агент, автододавання замовлень і команда.",
         "free": "Ledger", "freep": "$0", "solo": "Ledger+ Solo", "solop": "$7/міс",
         "team": "Ledger+ Team", "teamp": "$29/міс", "setup": "Налаштування під ключ", "setupp": "$29 разово",
-        "feat": "Що входить", "pay": "Оплата", "tg": "Telegram: @ENOUGHT285",
+        "feat": "Що входить", "plans": "Тарифи", "onreq": "за запитом", "pay": "Оплата", "tg": "Telegram: @ENOUGHT285",
         "f1": "Угоди, P&L, аналітика", "f2": "Склад і сейф акаунтів", "f3": "Бекапи і Telegram-бот",
         "h1": "Хостинг на сервері", "h2": "Taobao-агент", "h3": "Автододавання замовлень",
         "h4": "Команда: owner / manager / viewer", "h5": "Оновлення і підтримка",
@@ -7078,7 +7078,7 @@ _PRICING_TXT = {
         "sub": "Free local bookkeeping. Ledger+ adds hosting, the Taobao agent, automatic order import and a team.",
         "free": "Ledger", "freep": "$0", "solo": "Ledger+ Solo", "solop": "$7/mo",
         "team": "Ledger+ Team", "teamp": "$29/mo", "setup": "Done-for-you setup", "setupp": "$29 one-time",
-        "feat": "What is included", "pay": "Payment", "tg": "Telegram: @ENOUGHT285",
+        "feat": "What is included", "plans": "Plans", "onreq": "on request", "pay": "Payment", "tg": "Telegram: @ENOUGHT285",
         "f1": "Deals, P&L, analytics", "f2": "Inventory and account vault", "f3": "Backups and Telegram bot",
         "h1": "Hosting on our server", "h2": "Taobao agent", "h3": "Automatic order import",
         "h4": "Team: owner / manager / viewer", "h5": "Updates and support",
@@ -7089,7 +7089,7 @@ _PRICING_TXT = {
         "sub": "Бесплатный локальный учёт. Ledger+ — хостинг, Taobao-агент, автодобавление заказов и команда.",
         "free": "Ledger", "freep": "$0", "solo": "Ledger+ Solo", "solop": "$7/мес",
         "team": "Ledger+ Team", "teamp": "$29/мес", "setup": "Настройка под ключ", "setupp": "$29 разово",
-        "feat": "Что входит", "pay": "Оплата", "tg": "Telegram: @ENOUGHT285",
+        "feat": "Что входит", "plans": "Тарифы", "onreq": "по запросу", "pay": "Оплата", "tg": "Telegram: @ENOUGHT285",
         "f1": "Сделки, P&L, аналитика", "f2": "Склад и сейф аккаунтов", "f3": "Бэкапы и Telegram-бот",
         "h1": "Хостинг на сервере", "h2": "Taobao-агент", "h3": "Автодобавление заказов",
         "h4": "Команда: owner / manager / viewer", "h5": "Обновления и поддержка",
@@ -7101,9 +7101,9 @@ _PRICING_TXT = {
 def _pricing_page(lang="uk"):
     t = _PRICING_TXT.get(lang if lang in _PRICING_TXT else "uk")
     st = _read_json(SETTINGS_FILE, {}) or {}
-    usdt = str(st.get("pay_usdt") or "—")
-    binance = str(st.get("pay_binance") or "—")
-    payoneer = str(st.get("pay_payoneer") or "—")
+    usdt = str(st.get("pay_usdt") or t["onreq"])
+    binance = str(st.get("pay_binance") or t["onreq"])
+    payoneer = str(st.get("pay_payoneer") or t["onreq"])
     tg = str(st.get("pay_tg") or "@ENOUGHT285")
     card = ("<div style='background:#151922;border:1px solid #2a2f37;border-radius:12px;padding:16px'>"
             "<b>%s</b><div style='font-size:26px;color:#7ad3a1;margin:6px 0'>%s</div>%s</div>")
@@ -7127,7 +7127,7 @@ def _pricing_page(lang="uk"):
             "<p style='color:#8b93a1;font-size:12px'>Free app: "
             "<a href='https://github.com/voidwhisperr/ledger/releases/latest' style='color:#7ad3a1'>GitHub releases</a></p>"
             "</div></body>"
-            ) % (t["sub"], t["feat"], card % (t["free"], t["freep"], t["f1"]),
+            ) % (t["sub"], t["plans"], card % (t["free"], t["freep"], t["f1"]),
                  card % (t["solo"], t["solop"], t["h1"]),
                  card % (t["team"], t["teamp"], t["h4"]),
                  card % (t["setup"], t["setupp"], t["cta"]),
@@ -7820,7 +7820,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.60.0")
+    print("  ▲  Ledger v1.60.1")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
