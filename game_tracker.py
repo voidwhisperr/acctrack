@@ -4477,7 +4477,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _role_gate(self):
         p = self.path.split("?")[0]
-        if (p in ("/join", "/api/license/register", "/api/license/release")
+        if (p in ("/join", "/pricing", "/api/license/register", "/api/license/release")
                 or p.startswith("/admin") or p.startswith("/hosting")):
             return True
         role = self._role()
@@ -4574,7 +4574,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.split("?")[0] in ("/api/license/register", "/api/license/release",
                                                 "/admin", "/admin/revoke", "/join", "/hosting",
                                                 "/hosting/save", "/hosting/check", "/hosting/delete",
-                                                "/hosting/provision",
+                                                "/hosting/provision", "/hosting/backup", "/hosting/restore",
+                                                "/pricing",
                                                 "/api/license/admin/list", "/api/license/admin/revoke")):
             return True      # публічні статичні файли
         if (self.path.startswith("/api/taobao")
@@ -4640,7 +4641,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.58.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.59.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -4653,7 +4654,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 and (p.startswith("/api/taobao") or p.startswith("/api/secrets/"))
                 and "X-GT-TOKEN" in self.headers and self._collector_ok()):
             pass  # колектор з валідним токеном
-        elif p.startswith("/admin") or p == "/join" or p.startswith("/hosting"):
+        elif p.startswith("/admin") or p == "/join" or p.startswith("/hosting") or p == "/pricing":
             pass  # admin token / team invite token are checked in the route
         elif AUTH_MODE != "off" and not self._device_ok() and not self._basic_ok_quiet():
             if p == "/login":
@@ -4999,18 +5000,38 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     cookie += "; Secure"
                 _audit("team.join", member=mid, role=role)
                 self._send(302, "text/html", b"", extra={"Location": "/", "Set-Cookie": cookie})
+        elif p == "/pricing":
+            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+            _lang = (qs.get("lang") or [""])[0] or str((_read_json(SETTINGS_FILE, {}) or {}).get("lang") or "uk")
+            self._send(200, "text/html; charset=utf-8", _pricing_page(_lang).encode("utf-8"))
         elif p == "/hosting":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             self._send(200, "text/html; charset=utf-8",
                        _hosting_page((qs.get("token") or [""])[0]).encode("utf-8"))
-        elif p in ("/hosting/save", "/hosting/check", "/hosting/delete", "/hosting/provision"):
+        elif p in ("/hosting/save", "/hosting/check", "/hosting/delete", "/hosting/provision",
+                   "/hosting/backup", "/hosting/restore"):
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             _tok = (qs.get("token") or [""])[0]
             if _tok != _license_admin_token():
                 self._send(403, "text/plain", b"403 forbidden")
                 return
             clients = _clients_load()
-            if p == "/hosting/save":
+            if p in ("/hosting/backup", "/hosting/restore"):
+                _id = (qs.get("id") or [""])[0]
+                try:
+                    if p.endswith("backup"):
+                        _bk = _backup_client(_id)
+                        _audit("hosting.backup", client=_id, file=_bk.get("name"))
+                    else:
+                        _rs = _restore_client(_id)
+                        _audit("hosting.restore", client=_id, file=_rs)
+                except Exception as e:
+                    self._send(500, "text/html; charset=utf-8",
+                               ("<h3>Operation failed</h3><pre>%s</pre>"
+                                "<a href='/hosting?token=%s'>back</a>"
+                                % (_html_mod.escape(str(e)[:500]), _tok)).encode("utf-8"))
+                    return
+            elif p == "/hosting/save":
                 _id = (qs.get("id") or [""])[0]
                 rec = next((c for c in clients if c.get("id") == _id), None)
                 if not rec:
@@ -5221,7 +5242,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.58.0",
+            self._json({"ok": True, "version": "1.59.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6900,6 +6921,172 @@ def _deprovision_instance(cid, purge=False):
         shutil.rmtree(os.path.join(root, cid), ignore_errors=True)
 
 
+def _backup_root():
+    return os.environ.get("GT_BACKUP_ROOT") or "/root/backups"
+
+
+def _client_backups(cid):
+    d = os.path.join(_backup_root(), cid)
+    if not os.path.isdir(d):
+        return []
+    out = []
+    for f in os.listdir(d):
+        if f.endswith(".tar.gz"):
+            p = os.path.join(d, f)
+            try:
+                out.append({"name": f, "size": os.path.getsize(p), "ts": os.path.getmtime(p)})
+            except OSError:
+                pass
+    return sorted(out, key=lambda x: x["ts"], reverse=True)
+
+
+def _backup_client(cid, keep=7):
+    data = os.path.join(os.environ.get("GT_CLIENTS_ROOT") or "/root/clients", cid, "data")
+    if not os.path.isdir(data):
+        raise ValueError("client data dir not found")
+    dest = os.path.join(_backup_root(), cid)
+    os.makedirs(dest, exist_ok=True)
+    name = time.strftime("%Y%m%d-%H%M%S") + ".tar.gz"
+    path = os.path.join(dest, name)
+    rc, out, err = _run("tar czf %s -C %s ." % (path, data), timeout=300)
+    if rc != 0:
+        raise ValueError("tar failed: " + (err or out))
+    old = _client_backups(cid)
+    for x in old[keep:]:
+        try:
+            os.remove(os.path.join(dest, x["name"]))
+        except OSError:
+            pass
+    return {"name": name, "size": os.path.getsize(path), "ts": time.time()}
+
+
+def _restore_client(cid):
+    backups = _client_backups(cid)
+    if not backups:
+        raise ValueError("no backups")
+    rec = next((c for c in _clients_load() if c.get("id") == cid), None)
+    if not rec:
+        raise ValueError("client not found")
+    data = os.path.join(os.environ.get("GT_CLIENTS_ROOT") or "/root/clients", cid, "data")
+    stop = ("systemctl stop gametracker-%s" % cid) if rec.get("service") else "true"
+    _run(stop)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    if os.path.isdir(data):
+        _run("mv %s %s.before-restore-%s" % (data, data, stamp))
+    os.makedirs(data, exist_ok=True)
+    path = os.path.join(_backup_root(), cid, backups[0]["name"])
+    rc, out, err = _run("tar xzf %s -C %s" % (path, data), timeout=300)
+    start = ("systemctl start gametracker-%s" % cid) if rec.get("service") else "true"
+    _run(start)
+    if rc != 0:
+        raise ValueError("restore failed: " + (err or out))
+    return backups[0]["name"]
+
+
+def _client_disk(cid):
+    data = os.path.join(os.environ.get("GT_CLIENTS_ROOT") or "/root/clients", cid, "data")
+    rc, out, err = _run("du -sh %s 2>/dev/null | cut -f1" % data, timeout=20)
+    return out.strip() if rc == 0 and out.strip() else "—"
+
+
+def _client_backup_loop():
+    """Daily backup of provisioned clients; keeps 7 per client."""
+    while True:
+        try:
+            if _license_server_mode() and os.name == "posix":
+                st = _read_json(SETTINGS_FILE, {}) or {}
+                last = float(st.get("client_backup_ts") or 0)
+                if time.time() - last > 24 * 3600:
+                    for c in _clients_load():
+                        if c.get("id") and c.get("service"):
+                            try:
+                                _backup_client(c["id"])
+                            except Exception as e:
+                                print("  ⚠ client backup %s: %s" % (c["id"], e), flush=True)
+                    st["client_backup_ts"] = time.time()
+                    with _WRITE_LOCK:
+                        _atomic_dump(SETTINGS_FILE, st)
+        except Exception as e:
+            print("  ⚠ backup loop: %s" % e, flush=True)
+        time.sleep(3600)
+
+
+_PRICING_TXT = {
+    "uk": {
+        "title": "Ledger — облік і автоматизація для перепродажу ігрових акаунтів",
+        "sub": "Безкоштовний локальний облік. Ledger+ — хостинг, Taobao-агент, автододавання замовлень і команда.",
+        "free": "Ledger", "freep": "$0", "solo": "Ledger+ Solo", "solop": "$7/міс",
+        "team": "Ledger+ Team", "teamp": "$29/міс", "setup": "Налаштування під ключ", "setupp": "$29 разово",
+        "feat": "Що входить", "pay": "Оплата", "tg": "Telegram: @ENOUGHT285",
+        "f1": "Угоди, P&L, аналітика", "f2": "Склад і сейф акаунтів", "f3": "Бекапи і Telegram-бот",
+        "h1": "Хостинг на сервері", "h2": "Taobao-агент", "h3": "Автододавання замовлень",
+        "h4": "Команда: owner / manager / viewer", "h5": "Оновлення і підтримка",
+        "cta": "Написати в Telegram", "note": "Ключ прив’язується до одного пристрою; перенос — через деактивацію.",
+    },
+    "en": {
+        "title": "Ledger — bookkeeping and automation for game account reselling",
+        "sub": "Free local bookkeeping. Ledger+ adds hosting, the Taobao agent, automatic order import and a team.",
+        "free": "Ledger", "freep": "$0", "solo": "Ledger+ Solo", "solop": "$7/mo",
+        "team": "Ledger+ Team", "teamp": "$29/mo", "setup": "Done-for-you setup", "setupp": "$29 one-time",
+        "feat": "What is included", "pay": "Payment", "tg": "Telegram: @ENOUGHT285",
+        "f1": "Deals, P&L, analytics", "f2": "Inventory and account vault", "f3": "Backups and Telegram bot",
+        "h1": "Hosting on our server", "h2": "Taobao agent", "h3": "Automatic order import",
+        "h4": "Team: owner / manager / viewer", "h5": "Updates and support",
+        "cta": "Message on Telegram", "note": "A key is bound to one device; move it with deactivate.",
+    },
+    "ru": {
+        "title": "Ledger — учёт и автоматизация для перепродажи игровых аккаунтов",
+        "sub": "Бесплатный локальный учёт. Ledger+ — хостинг, Taobao-агент, автодобавление заказов и команда.",
+        "free": "Ledger", "freep": "$0", "solo": "Ledger+ Solo", "solop": "$7/мес",
+        "team": "Ledger+ Team", "teamp": "$29/мес", "setup": "Настройка под ключ", "setupp": "$29 разово",
+        "feat": "Что входит", "pay": "Оплата", "tg": "Telegram: @ENOUGHT285",
+        "f1": "Сделки, P&L, аналитика", "f2": "Склад и сейф аккаунтов", "f3": "Бэкапы и Telegram-бот",
+        "h1": "Хостинг на сервере", "h2": "Taobao-агент", "h3": "Автодобавление заказов",
+        "h4": "Команда: owner / manager / viewer", "h5": "Обновления и поддержка",
+        "cta": "Написать в Telegram", "note": "Ключ привязан к одному устройству; перенос — через деактивацию.",
+    },
+}
+
+
+def _pricing_page(lang="uk"):
+    t = _PRICING_TXT.get(lang if lang in _PRICING_TXT else "uk")
+    st = _read_json(SETTINGS_FILE, {}) or {}
+    usdt = str(st.get("pay_usdt") or "—")
+    binance = str(st.get("pay_binance") or "—")
+    payoneer = str(st.get("pay_payoneer") or "—")
+    tg = str(st.get("pay_tg") or "@ENOUGHT285")
+    card = ("<div style='background:#151922;border:1px solid #2a2f37;border-radius:12px;padding:16px'>"
+            "<b>%s</b><div style='font-size:26px;color:#7ad3a1;margin:6px 0'>%s</div>%s</div>")
+    return ("<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<title>Ledger+ — pricing</title><body style='font:14px system-ui;background:#0d1017;color:#e9ebf2;margin:0'>"
+            "<div style='max-width:960px;margin:0 auto;padding:32px 20px'>"
+            "<div style='display:flex;justify-content:space-between;align-items:center'>"
+            "<h1 style='margin:0'>Ledger</h1><div><a href='?lang=uk' style='color:#7ad3a1'>UA</a> · "
+            "<a href='?lang=en' style='color:#7ad3a1'>EN</a> · <a href='?lang=ru' style='color:#7ad3a1'>RU</a></div></div>"
+            "<p style='color:#8b93a1;font-size:16px'>%s</p><h2>%s</h2>"
+            "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px'>"
+            "%s %s %s %s</div>"
+            "<h3>%s</h3><ul style='line-height:1.8;color:#c8ccd4'>"
+            "<li>%s</li><li>%s</li><li>%s</li>"
+            "<li><b>Ledger+:</b> %s</li><li>%s</li><li>%s</li><li>%s</li><li>%s</li></ul>"
+            "<h3>%s</h3><p style='line-height:1.8'>USDT (TRC20/BEP20): <code>%s</code><br>"
+            "Binance Pay: <code>%s</code><br>Payoneer: <code>%s</code><br>%s</p>"
+            "<p><a href='https://t.me/%s' style='display:inline-block;background:#7ad3a1;color:#08110b;"
+            "padding:10px 18px;border-radius:9px;text-decoration:none;font-weight:700'>%s</a></p>"
+            "<p style='color:#8b93a1;font-size:12px'>%s</p>"
+            "<p style='color:#8b93a1;font-size:12px'>Free app: "
+            "<a href='https://github.com/voidwhisperr/ledger/releases/latest' style='color:#7ad3a1'>GitHub releases</a></p>"
+            "</div></body>"
+            ) % (t["sub"], t["feat"], card % (t["free"], t["freep"], t["f1"]),
+                 card % (t["solo"], t["solop"], t["h1"]),
+                 card % (t["team"], t["teamp"], t["h4"]),
+                 card % (t["setup"], t["setupp"], t["cta"]),
+                 t["feat"], t["f1"], t["f2"], t["f3"],
+                 t["h1"], t["h2"], t["h3"], t["h4"], t["h5"],
+                 t["pay"], _html_mod.escape(usdt), _html_mod.escape(binance),
+                 _html_mod.escape(payoneer), t["tg"], tg.lstrip("@"), t["cta"], t["note"])
+
+
 def _hosting_page(token):
     if not token or token != _license_admin_token():
         return ("<!doctype html><meta charset='utf-8'><title>Hosting admin</title>"
@@ -6922,6 +7109,8 @@ def _hosting_page(token):
         state = "—" if ok is None else ("up" if ok else "down")
         rows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
                     "<td><a style='color:#7ad3a1' href='/hosting/check?token=%s&id=%s'>check</a> "
+                    "<a style='color:#7ad3a1' href='/hosting/backup?token=%s&id=%s'>backup</a> "
+                    "<a style='color:#e0b24a' href='/hosting/restore?token=%s&id=%s'>restore</a> "
                     "<a style='color:#ff7a59' href='/hosting/delete?token=%s&id=%s'>delete</a></td></tr>"
                     % (_html_mod.escape(str(c.get("name") or "")),
                        _html_mod.escape(str(c.get("plan") or "")),
@@ -6929,13 +7118,19 @@ def _hosting_page(token):
                        "—" if left is None else str(left),
                        _html_mod.escape(str(c.get("url") or "")),
                        _html_mod.escape(state),
-                       _html_mod.escape(str(c.get("notes") or "")[:60]), token, c.get("id"), token, c.get("id")))
+                       _html_mod.escape(str(c.get("notes") or "")[:60]),
+                       token, c.get("id"), token, c.get("id"), token, c.get("id"), token, c.get("id")))
         if c.get("password"):
+            _bs = _client_backups(c.get("id"))
             rows.append("<tr><td colspan='8' style='color:#8b93a1;font-size:11px'>"
-                        "service: <code>%s</code> · port: %s · password: <code>%s</code></td></tr>"
+                        "service: <code>%s</code> · port: %s · password: <code>%s</code>"
+                        " · disk: %s · backups: %d%s</td></tr>"
                         % (_html_mod.escape(str(c.get("service") or "")),
                            _html_mod.escape(str(c.get("port") or "")),
-                           _html_mod.escape(str(c.get("password")))))
+                           _html_mod.escape(str(c.get("password"))),
+                           _html_mod.escape(_client_disk(c.get("id"))),
+                           len(_bs),
+                           (" · last: " + _bs[0]["name"]) if _bs else ""))
     form = ("<h3>Provision new instance</h3><form method='get' action='/hosting/provision'>"
             "<input type='hidden' name='token' value='%s'>"
             "<input name='name' placeholder='Client name' required style='padding:6px;margin:2px'>"
@@ -7572,7 +7767,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.58.0")
+    print("  ▲  Ledger v1.59.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
@@ -7638,6 +7833,7 @@ def main():
     threading.Thread(target=_fx_usd_cny_loop, daemon=True).start()
     threading.Thread(target=_currency_rate_loop, daemon=True).start()
     threading.Thread(target=_funpay_orders_loop, daemon=True).start()
+    threading.Thread(target=_client_backup_loop, daemon=True).start()
     threading.Thread(target=_startup_supplier_refresh,
                      kwargs={"allow_network": os.environ.get("GT_NO_SUPPLIERS") != "1"},
                      daemon=True).start()

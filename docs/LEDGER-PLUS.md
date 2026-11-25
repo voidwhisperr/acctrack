@@ -151,3 +151,15 @@ The server:
 Delete stops and removes the unit, removes the Caddy block, reloads Caddy and optionally purges the data dir. Caddyfile backups are written next to it as `.ledger-bak`.
 
 Requires Linux + systemd + root; on Windows/desktop provisioning returns an error.
+
+
+## Backups
+
+- Manual: `/hosting/backup?id=<client>` → `/root/backups/<id>/YYYYmmdd-HHMMSS.tar.gz` (latest 7 kept).
+- Automatic: the license-server instance runs a daily loop and backs up every provisioned client (timestamp in `client_backup_ts`).
+- Restore: `/hosting/restore?id=<client>` stops the unit, moves the current data dir to `data.before-restore-<ts>`, extracts the newest archive and starts the unit.
+- The hosting page shows disk usage, backup count and the last archive name.
+
+## Public pricing page
+
+`/pricing?lang=uk|en|ru` is public (no login) and shows free/Ledger+/Team/setup plans, payment details from settings (`pay_usdt`, `pay_binance`, `pay_payoneer`, `pay_tg`) and a Telegram CTA. Fill those settings on the server before sharing the link.
