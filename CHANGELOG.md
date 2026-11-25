@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.36.0 — more reply variants
+
+- Ten reply variants per language.
+- Removed platform names from replies and the generator hint.
+- Regenerate cycles through different wording.
+
 ## v1.35.0 — reply generator
 
 - Orders tab: three-language reply generator based on the order.

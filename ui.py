@@ -2523,13 +2523,13 @@ Object.assign(I18N.ru, {
   'cloud.encrypt':'Шифровать автоматические бэкапы','cloud.password':'Пароль шифрования','cloud.passwordHint':'Пароль хранится в secrets; без него бэкап не открыть.'
 });
 Object.assign(I18N.uk, {
-  'reply.title':'ГЕНЕРАТОР ВІДПОВІДІ','reply.hint':'Три готові варіанти — обери мову, скопіюй і встав у чат платформи. Кнопка «Інший варіант» змінює формулювання.','reply.copy':'Копіювати','reply.copied':'Скопійовано','reply.regen':'Інший варіант','reply.notFound':'Замовлення не знайдено','reply.copyFail':'Не вдалося скопіювати'
+  'reply.title':'ГЕНЕРАТОР ВІДПОВІДІ','reply.hint':'Три готові варіанти — обери мову, скопіюй і встав у чат. Кнопка «Інший варіант» змінює формулювання.','reply.copy':'Копіювати','reply.copied':'Скопійовано','reply.regen':'Інший варіант','reply.notFound':'Замовлення не знайдено','reply.copyFail':'Не вдалося скопіювати'
 });
 Object.assign(I18N.en, {
-  'reply.title':'REPLY GENERATOR','reply.hint':'Three ready-to-use variants — pick a language, copy and paste into the platform chat. “Another variant” changes the wording.','reply.copy':'Copy','reply.copied':'Copied','reply.regen':'Another variant','reply.notFound':'Order not found','reply.copyFail':'Could not copy'
+  'reply.title':'REPLY GENERATOR','reply.hint':'Three ready-to-use variants — pick a language, copy and paste into the chat. “Another variant” changes the wording.','reply.copy':'Copy','reply.copied':'Copied','reply.regen':'Another variant','reply.notFound':'Order not found','reply.copyFail':'Could not copy'
 });
 Object.assign(I18N.ru, {
-  'reply.title':'ГЕНЕРАТОР ОТВЕТА','reply.hint':'Три готовых варианта — выбери язык, скопируй и вставь в чат платформы. Кнопка «Другой вариант» меняет формулировку.','reply.copy':'Копировать','reply.copied':'Скопировано','reply.regen':'Другой вариант','reply.notFound':'Заказ не найден','reply.copyFail':'Не удалось скопировать'
+  'reply.title':'ГЕНЕРАТОР ОТВЕТА','reply.hint':'Три готовых варианта — выбери язык, скопируй и вставь в чат. Кнопка «Другой вариант» меняет формулировку.','reply.copy':'Копировать','reply.copied':'Скопировано','reply.regen':'Другой вариант','reply.notFound':'Заказ не найден','reply.copyFail':'Не удалось скопировать'
 });
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
@@ -6817,22 +6817,43 @@ function _replyData(item){
   const platform=String(item.platform||'').trim() || 'marketplace';
   const h=_replyHash(String(item.id||'')+title+platform);
   const pick=a=>a[(h+_replyRound)%a.length];
-  const fill=s=>s.replace('{title}',title).replace('{platform}',platform);
+  const fill=s=>s.replace('{title}',title);
   return {
     uk: fill(pick([
-      'Добрий день! Дякую за замовлення «{title}» на {platform}. Замовлення прийнято в роботу. Найближчим часом підготую акаунт і надішлю дані для входу. Якщо потрібна допомога — напишіть у цей чат.',
-      'Вітаю! Ваше замовлення «{title}» ({platform}) вже в обробці. Я підготую все найближчим часом і надішлю дані сюди. Дякую за покупку!',
-      'Дякую за замовлення «{title}»! Все прийнято. Очікуйте, будь ласка, повідомлення з даними для входу. Якщо виникнуть питання — я на зв’язку.'
+      'Добрий день! Дякую за замовлення «{title}». Замовлення прийнято в роботу. Найближчим часом підготую акаунт і надішлю дані для входу. Якщо потрібна допомога — напишіть у цей чат.',
+      'Привіт! Замовлення «{title}» прийнято. Вже займаюся підготовкою — дані для входу надішлю сюди найближчим часом.',
+      'Вітаю! Ваше замовлення «{title}» вже в обробці. Я підготую все найближчим часом і надішлю дані сюди. Дякую за покупку!',
+      'Дякую за замовлення «{title}»! Все прийнято. Очікуйте, будь ласка, повідомлення з даними для входу. Якщо виникнуть питання — я на зв’язку.',
+      'Вітаю! Почав підготовку замовлення «{title}». Щойно все буде готово — надішлю дані для входу. Дякую за очікування!',
+      'Добрий день! «{title}» в роботі. Намагаюся підготувати якнайшвидше; дані для входу прийдуть у цей чат.',
+      'Дякую за покупку «{title}»! Замовлення підтверджено. Будь ласка, зачекайте трохи — скоро надішлю всі дані для входу.',
+      'Привіт! Все гаразд, замовлення «{title}» прийнято. Вже готую акаунт; якщо є побажання — напишіть, врахую.',
+      'Ваше замовлення «{title}» в черзі на підготовку. Я повідомлю вас тут, щойно з’являться дані для входу. Дякую!',
+      'Добрий день! Дякую за «{title}». Замовлення прийнято; найближчим часом надішлю логін і пароль. Гарного дня!'
     ])),
     en: fill(pick([
-      'Hi! Thanks for ordering "{title}" on {platform}. Your order is now in progress. I’ll prepare the account and send the login details shortly. If you need anything, just reply here.',
-      'Hello! Your order for "{title}" ({platform}) is being processed. I’ll send the account details here as soon as it’s ready. Thanks for your purchase!',
-      'Thank you for your order "{title}"! It’s confirmed and in progress. Please wait for the login details — I’ll message you here shortly.'
+      'Hi! Thanks for ordering "{title}". Your order is now in progress. I’ll prepare the account and send the login details shortly. If you need anything, just reply here.',
+      'Hello! Your order for "{title}" is being processed. I’ll send the account details here as soon as it’s ready. Thanks for your purchase!',
+      'Thank you for your order "{title}"! It’s confirmed and in progress. Please wait for the login details — I’ll message you here shortly.',
+      'Hi! I’ve started preparing "{title}". I’ll send the login details here as soon as everything is ready. Thanks for your patience!',
+      'Hello! Your order "{title}" is in the queue. I’ll message you here with the account details shortly.',
+      'Thanks for buying "{title}"! The order is confirmed. Please give me a little time — I’ll send the login details soon.',
+      'Hi! Everything is fine — "{title}" is accepted and being prepared. If you have any preferences, just let me know.',
+      'Your order "{title}" is being prepared. I’ll update you here as soon as the login details are ready. Thank you!',
+      'Hello! Thank you for "{title}". The order is accepted; I’ll send the login and password shortly. Have a great day!',
+      'Hi! Just confirming: "{title}" is in progress. I’ll send the account details here as soon as it’s ready.'
     ])),
     ru: fill(pick([
-      'Здравствуйте! Спасибо за заказ «{title}» на {platform}. Заказ принят в работу. Скоро подготовлю аккаунт и отправлю данные для входа. Если нужна помощь — напишите в этот чат.',
-      'Привет! Ваш заказ «{title}» ({platform}) уже в обработке. Я всё подготовлю в ближайшее время и пришлю данные сюда. Спасибо за покупку!',
-      'Спасибо за заказ «{title}»! Всё принято. Пожалуйста, ожидайте сообщение с данными для входа. Если появятся вопросы — я на связи.'
+      'Здравствуйте! Спасибо за заказ «{title}». Заказ принят в работу. Скоро подготовлю аккаунт и отправлю данные для входа. Если нужна помощь — напишите в этот чат.',
+      'Привет! Заказ «{title}» принят. Уже занимаюсь подготовкой — данные для входа пришлю сюда в ближайшее время.',
+      'Здравствуйте! Ваш заказ «{title}» уже в обработке. Я всё подготовлю в ближайшее время и пришлю данные сюда. Спасибо за покупку!',
+      'Спасибо за заказ «{title}»! Всё принято. Пожалуйста, ожидайте сообщение с данными для входа. Если появятся вопросы — я на связи.',
+      'Здравствуйте! Начал подготовку заказа «{title}». Как только всё будет готово — пришлю данные для входа. Спасибо за ожидание!',
+      'Добрый день! «{title}» в работе. Стараюсь подготовить как можно быстрее; данные для входа придут в этот чат.',
+      'Спасибо за покупку «{title}»! Заказ подтверждён. Пожалуйста, подождите немного — скоро пришлю все данные для входа.',
+      'Привет! Всё в порядке, заказ «{title}» принят. Уже готовлю аккаунт; если есть пожелания — напишите, учту.',
+      'Ваш заказ «{title}» в очереди на подготовку. Я сообщу здесь, как только появятся данные для входа. Спасибо!',
+      'Добрый день! Спасибо за «{title}». Заказ принят; в ближайшее время пришлю логин и пароль. Хорошего дня!'
     ]))
   };
 }
