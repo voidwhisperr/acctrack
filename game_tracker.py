@@ -4501,7 +4501,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.split("?")[0].lstrip("/") in _ICONS_B64
                 or self.path.split("?")[0] in ("/icon.svg", "/icon.png", "/ledger.svg")
                 or self.path.startswith("/logo/") or self.path.startswith("/app-icon") or self.path.split("?")[0] == "/demo"
-                or self.path.startswith("/docs/")):
+                or self.path.startswith("/docs/")
+                or self.path.split("?")[0] in ("/api/license/register", "/api/license/release")):
             return True      # публічні статичні файли
         if (self.path.startswith("/api/taobao")
                 or self.path.startswith("/api/secrets/")) and self._collector_ok():
@@ -4566,9 +4567,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.53.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.54.0", "uptime": int(time.time() - _START_TS)})
             return
-        if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
+        if p in ("/api/license/register", "/api/license/release"):
+            pass  # licensing endpoint: public, protected by the key signature
+        elif (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
                 or p.split("?")[0].lstrip("/") in _ICONS_B64
                 or p.startswith("/logo/") or p.startswith("/app-icon")):
@@ -5028,7 +5031,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.53.0",
+            self._json({"ok": True, "version": "1.54.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5480,24 +5483,41 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             return
         if self.path == "/api/license/activate":
             try:
-                _code = str(body.get("code") or "").strip()
-                _inf = lic.verify(_code) if lic else None
+                _key = str(body.get("code") or "").strip()
+                _iid = _instance_id()
+                if _license_server_mode() or _license_server_url() == "local":
+                    _res = _license_register_local(_key, _iid)
+                else:
+                    _res = _license_register_remote(_key, _iid)
+                if not _res.get("ok"):
+                    raise ValueError(_res.get("error") or "activation failed")
+                _bound = _res["license"]["code"]
+                _inf = lic.verify(_bound, _iid) if lic else None
                 if not _inf:
-                    self._json({"ok": False, "error": "Невірний або прострочений ключ"}, code=400)
-                    return
-                lic.save(_BASE_DIR, _code)
+                    raise ValueError("license server returned an invalid token")
+                _license_store(_bound, _key)
                 try:
                     Handler.html_bytes = _render_html().encode("utf-8")
                 except Exception:
                     pass
                 _audit("license.activate", plan=_inf.get("plan"), exp=_inf.get("exp"),
-                       features=",".join(_inf.get("features") or []))
+                       instance=_iid[:8], features=",".join(_inf.get("features") or []))
                 self._json({"ok": True, "license": _inf, "paid": _license_paid()})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)[:200]}, code=400)
             return
         if self.path == "/api/license/deactivate":
             try:
+                _claim = _license_claim()
+                _iid = _instance_id()
+                if _claim:
+                    try:
+                        if _license_server_mode() or _license_server_url() == "local":
+                            _license_release_local(_claim, _iid)
+                        else:
+                            _license_release_remote(_claim, _iid)
+                    except Exception as _re:
+                        print(f"  ⚠ license release: {_re}", flush=True)
                 if lic:
                     lic.clear(_BASE_DIR)
                 try:
@@ -5508,6 +5528,51 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._json({"ok": True, "paid": _license_paid()})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)[:200]}, code=400)
+            return
+        if self.path in ("/api/license/register", "/api/license/release"):
+            try:
+                if not _license_server_mode():
+                    self._json({"ok": False, "error": "not a license server"}, code=404)
+                    return
+                _key = str(body.get("key") or body.get("code") or "").strip()
+                _iid = str(body.get("instance_id") or "").strip()[:64]
+                if not _key or not _iid:
+                    self._json({"ok": False, "error": "key and instance_id required"}, code=400)
+                    return
+                if self.path.endswith("/register"):
+                    _res = _license_register_local(_key, _iid)
+                else:
+                    _res = _license_release_local(_key, _iid)
+                self._json(_res)
+            except ValueError as e:
+                self._json({"ok": False, "error": str(e)[:200]}, code=409)
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:200]}, code=500)
+            return
+        if self.path in ("/api/license/admin/list", "/api/license/admin/revoke"):
+            try:
+                if (self.headers.get("X-Admin-Token") or "").strip() != _license_admin_token():
+                    self._json({"ok": False, "error": "admin token required"}, code=401)
+                    return
+                _d = _lic_registry()
+                if self.path.endswith("/revoke"):
+                    _kid = str(body.get("key_id") or _key_id(body.get("key") or ""))
+                    _rec = _d["keys"].get(_kid)
+                    if not _rec:
+                        self._json({"ok": False, "error": "key not found"}, code=404)
+                        return
+                    _rec["revoked"] = True
+                    _rec["instance"] = ""
+                    _lic_registry_save(_d)
+                    _audit("license.revoke", key_id=_kid)
+                    self._json({"ok": True, "revoked": _kid})
+                    return
+                _rows = [dict(k=v, key_id=k) for k, v in _d["keys"].items()]
+                _rows.sort(key=lambda x: x.get("activated_at") or 0, reverse=True)
+                self._json({"ok": True, "count": len(_rows), "keys": _rows,
+                            "admin_token_hint": _license_admin_token()[:8] + "…"})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:200]}, code=500)
             return
         if self.path == "/api/settings/save":
             try:
@@ -6394,13 +6459,167 @@ def _render_html():
     return ui.render_html(payload, _license_paid(), _lang)
 
 
+def _instance_id():
+    st = _read_json(SETTINGS_FILE, {}) or {}
+    iid = str(st.get("instance_id") or "").strip()
+    if iid:
+        return iid
+    iid = os.urandom(12).hex()
+    try:
+        st["instance_id"] = iid
+        _atomic_dump(SETTINGS_FILE, st)
+    except Exception:
+        pass
+    return iid
+
+
+def _license_private():
+    path = os.environ.get("LEDGER_LICENSE_PRIVATE_FILE") or os.path.expanduser(
+        "~/.ledger-license/private.b64")
+    try:
+        with open(path, encoding="ascii") as fh:
+            return base64.b64decode(fh.read().strip())
+    except Exception:
+        return None
+
+
+def _license_sign(payload):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    key = _license_private()
+    if not key:
+        raise ValueError("license signing key is not configured on this server")
+    return Ed25519PrivateKey.from_private_bytes(key).sign(payload)
+
+
+def _lic_registry_path():
+    return os.path.join(str(_BASE_DIR), ".gt_license_registry.json")
+
+
+def _lic_registry():
+    d = _read_json(_lic_registry_path(), {}) or {}
+    if not isinstance(d, dict):
+        d = {}
+    d.setdefault("keys", {})
+    return d
+
+
+def _lic_registry_save(d):
+    _atomic_dump(_lic_registry_path(), d)
+
+
+def _key_id(code):
+    return hashlib.sha256(str(code).strip().encode("utf-8")).hexdigest()[:24]
+
+
+def _license_server_mode():
+    if os.environ.get("GT_LICENSE_SERVER_MODE") == "1":
+        return True
+    return bool((_read_json(SETTINGS_FILE, {}) or {}).get("license_server_mode"))
+
+
+def _license_server_url():
+    url = os.environ.get("GT_LICENSE_SERVER") or         str((_read_json(SETTINGS_FILE, {}) or {}).get("license_server") or "")
+    return (url or "https://ledger.70-34-243-50.sslip.io").rstrip("/")
+
+
+def _license_register_remote(key, instance_id):
+    """Ask the license server (our VPS) to bind this key to this instance."""
+    import urllib.request
+    url = _license_server_url() + "/api/license/register"
+    data = json.dumps({"key": key, "instance_id": instance_id}).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _license_release_remote(key, instance_id):
+    import urllib.request
+    url = _license_server_url() + "/api/license/release"
+    data = json.dumps({"key": key, "instance_id": instance_id}).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _license_register_local(key, instance_id):
+    """Bind a claim key to one instance and return a bound signed license."""
+    info = lic.verify(str(key).strip()) if lic else None
+    if not info or info.get("bound"):
+        raise ValueError("invalid or already bound key")
+    kid = _key_id(key)
+    d = _lic_registry()
+    rec = d["keys"].get(kid)
+    if rec and rec.get("revoked"):
+        raise ValueError("key revoked")
+    if rec and rec.get("instance") and rec["instance"] != instance_id:
+        raise ValueError("key is already activated on another device")
+    d["keys"][kid] = {
+        "plan": info["plan"],
+        "exp": info["exp"],
+        "features": info["features"],
+        "instance": instance_id,
+        "activated_at": rec.get("activated_at") if rec else int(time.time()),
+        "last_seen": int(time.time()),
+        "revoked": bool(rec.get("revoked")) if rec else False,
+    }
+    _lic_registry_save(d)
+    days = max(1, int(info.get("days_left") or 1))
+    payload = lic.pack_payload_bound(info["plan"], days, info["features"], instance_id)
+    code = lic.make_code(payload, _license_sign(payload), "LDG")
+    return {"ok": True, "license": {"code": code, "info": lic.verify(code, instance_id)}}
+
+
+def _license_release_local(key, instance_id):
+    kid = _key_id(key)
+    d = _lic_registry()
+    rec = d["keys"].get(kid)
+    if not rec:
+        raise ValueError("key not found")
+    if rec.get("instance") and rec["instance"] != instance_id:
+        raise ValueError("key belongs to another device")
+    rec["instance"] = ""
+    rec["released_at"] = int(time.time())
+    _lic_registry_save(d)
+    return {"ok": True, "released": True}
+
+
 def _license_info():
     if lic is None:
         return None
     try:
-        return lic.load(_BASE_DIR)
+        return lic.load(_BASE_DIR, _instance_id())
     except Exception:
         return None
+
+
+def _license_store(bound, claim):
+    path = os.path.join(str(_BASE_DIR), ".gt_license.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"code": str(bound), "claim": str(claim),
+                   "activated_at": int(time.time())}, fh)
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass
+
+
+def _license_claim():
+    try:
+        with open(os.path.join(str(_BASE_DIR), ".gt_license.json"), encoding="utf-8") as fh:
+            return str(json.load(fh).get("claim") or "")
+    except Exception:
+        return ""
+
+
+def _license_admin_token():
+    s = _read_json(SECRETS_FILE, {}) or {}
+    tok = str(s.get("license_admin_token") or "")
+    if not tok:
+        tok = os.urandom(16).hex()
+        _save_secrets({"license_admin_token": tok})
+    return tok
 
 
 def _license_has(feature):
@@ -6752,7 +6971,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.53.0")
+    print("  ▲  Ledger v1.54.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

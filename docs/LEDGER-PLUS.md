@@ -60,3 +60,43 @@ Fill them on your own instance before sending screenshots to clients.
 - A key cannot be revoked offline and can technically be shared. Acceptable for early access.
 - Later: online activation + instance binding + revocation list when the hosted flow is ready.
 - Do not put the private key on client machines or in the repo.
+
+
+---
+
+## One key = one instance (v1.54+)
+
+Paid and trial keys are now **bound to a single installation**:
+
+1. Client opens Ledger → Ledger+ tab → pastes the key.
+2. The app sends `{key, instance_id}` to the license server (`GT_LICENSE_SERVER`, default the hosted Ledger+ URL).
+3. Server checks the key signature, revocation and existing binding, stores `key_hash -> instance`, and returns a **bound** signed license (payload v2 contains the instance hash).
+4. The app stores that bound license; the same key on another device is rejected with `409 key is already activated on another device`.
+5. Deactivate releases the binding on the server, after which the key can be moved to another device.
+
+Server side:
+
+- `license_server_mode: true` in settings (or `GT_LICENSE_SERVER_MODE=1`) makes this instance the licensing server.
+- Private signing key: `~/.ledger-license/private.b64` (or `LEDGER_LICENSE_PRIVATE_FILE`); **never ship it**.
+- Registry: `.gt_license_registry.json` in the server data dir.
+- Admin token lives in `.gt_secrets.json` as `license_admin_token`.
+
+Admin API:
+
+```bash
+TOKEN=<license_admin_token>
+curl -s -X POST https://<host>/api/license/admin/list -H "X-Admin-Token: $TOKEN" -H "Content-Type: application/json" -d '{}'
+curl -s -X POST https://<host>/api/license/admin/revoke -H "X-Admin-Token: $TOKEN" -H "Content-Type: application/json" -d '{"key_id":"..."}'
+```
+
+Local test without the VPS:
+
+```powershell
+$env:GT_LICENSE_SERVER_MODE='1'   # this server signs licenses
+$env:GT_DATA_DIR='C:\temp\lic'
+python game_tracker.py
+# in another instance:
+$env:GT_LICENSE_SERVER='http://127.0.0.1:8766'
+```
+
+Offline key tokens (`LDG.` / `TRIAL.`) are only **claim codes** now; the app accepts the bound token returned by the server. Old unbound tokens stop working for paid features until activated online.
