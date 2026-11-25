@@ -1245,8 +1245,8 @@ code{
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <label style="font-size:12px;color:var(--mu)"><span data-i18n="pw.new8">New password (min 8)</span>
         <br><input id="pwEnableNew" type="password" placeholder="••••••••" style="width:220px;margin-top:4px" autocomplete="new-password"></label>
-      <button class="btn gr" onclick="pwEnable()" data-i18n="pw.enable">Enable password</button>
-      <button class="btn" onclick="pwDisable()" data-i18n="pw.disable">Disable password</button>
+      <button class="btn gr" id="pwEnableBtn" onclick="pwEnable()" data-i18n="pw.enable">Enable password</button>
+      <button class="btn" id="pwDisableBtn" onclick="pwDisable()" data-i18n="pw.disable">Disable password</button>
     </div>
     <div style="font-size:11.5px;color:var(--mu);margin-top:8px" data-i18n="pw.hint">Without a password anyone who opens the link gets in. Set one if the app is reachable from the internet.</div>
   </div>
@@ -2567,6 +2567,13 @@ function plural(n, key){
 let LANG = localStorage.getItem('gt_lang') || window.__GT_LANG__ || 'en';
 function t(k){ return (I18N[LANG] && I18N[LANG][k]) || (I18N.uk[k] || k); }
 function dateLocale(){ return LANG==='ru' ? 'ru-RU' : LANG==='en' ? 'en-GB' : 'uk-UA'; }
+function fmtNum(v,d=2){ return Number(v||0).toLocaleString(dateLocale(),{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtDate(v){
+  const s=String(v||''); if(!s) return '';
+  const dt=new Date(s.length<=10 ? s+'T00:00:00' : s);
+  if(isNaN(dt.getTime())) return s;
+  return dt.toLocaleDateString(dateLocale());
+}
 
 // ── Переклад діалогів/тостів: точні рядки + шаблони ──
 const DIALOG_EXACT = {
@@ -2782,7 +2789,7 @@ async function renderOverview(){
           + '<div style="font-weight:600;font-size:.86rem">'+esc(String(r.title||'—')).slice(0,80)+'</div>'
           + '<div style="color:'+(p>=0?'var(--gr)':'var(--rd)')+';font-weight:600;white-space:nowrap">'
           + (p>=0?'+':'-')+locMoney(Math.abs(p))+'</div></div>'
-          + '<div style="font-size:.72rem;color:var(--mu);margin-top:4px">'+esc(String(r.date||''))
+          + '<div style="font-size:.72rem;color:var(--mu);margin-top:4px">'+esc(fmtDate(r.date))
           + ' · '+esc(String(r.srcName||r.src||''))+'</div></div>';
       }).join('') : '<div class="none">'+(LANG==='en'?'No deals yet':LANG==='ru'?'Пока нет сделок':'Ще немає угод')+'</div>';
     }
@@ -3288,7 +3295,7 @@ let _cur = 'USD';
 let _currencyManual = false;
 function curSym(){ return CUR_SYM[_cur] || _cur; }
 function dealSym(c){ return c==='USD' ? 'USD' : (CUR_SYM[c] || c); }
-function dealMoney(v,c){ return dealSym(c)+' '+Number(v||0).toFixed(2); }
+function dealMoney(v,c){ return dealSym(c)+' '+fmtNum(v,2); }
 function currencyOptions(sel){
   return CURRENCIES.map(c=>'<option value="'+c+'"'+(c===sel?' selected':'')+'>'+c+' '+(CUR_SYM[c]||'')+'</option>').join('');
 }
@@ -3638,6 +3645,8 @@ async function loadSettings(){
     renderGmailInfo(gm);
     const au = d.auth || {};
     if(g('pwStatus')) g('pwStatus').textContent = d.auth_enabled ? t('pw.statusOn') : t('pw.statusOff');
+    if(g('pwEnableBtn')) g('pwEnableBtn').style.display = d.auth_enabled ? 'none' : '';
+    if(g('pwDisableBtn')) g('pwDisableBtn').style.display = d.auth_enabled ? '' : 'none';
     const am = g('authModeInfo');
     if(am){
       if(au.mode === 'off'){
@@ -4236,7 +4245,7 @@ function renderPurchases(){
     }
     return '<div class="bub">'
       + '<div class="bub-head">'
-      + '<span class="bub-date">'+esc(p.date||'')+'</span>'
+      + '<span class="bub-date">'+esc(fmtDate(p.date))+'</span>'
       + '<span class="bub-chip" style="color:'+platClr+'">'+logoImg+esc(p.srcName||p.src)+'</span>'
       + '<span class="bub-title">'+esc(p.title||'—')+'</span>'
       + '<div class="bub-acts">'
@@ -5304,7 +5313,7 @@ function renderEldorado(){
       const pr = Number(s.profit||0);
       return `<div class="bub">
         <div class="bub-head">
-          <span class="bub-date">${esc(s.date||'')}</span>
+          <span class="bub-date">${esc(fmtDate(s.date))}</span>
           ${s.category?`<span class="bub-chip">${esc(s.category)}</span>`:''}
           <span class="bub-title">${esc(s.title)}</span>
           <div class="bub-acts">
@@ -6453,14 +6462,15 @@ function renderInventory(){
     : s === 'written_off' ? '<span style="color:var(--rd)">'+t('inv.offShort')+'</span>'
     : '<span style="color:var(--yw);font-weight:700">'+t('inv.inStockShort')+'</span>';
   el.innerHTML = '<div class="bub-wrap">' + list.slice().reverse().map(x => {
-    const acts = (x.status === 'in_stock' ? '<button class="bub-btn" onclick="invSell(\'' + esc(x.id) + '\')" title="Продати">💰</button>' : '')
-      + (x.status !== 'sold' ? '<button class="bub-btn" onclick="invStatus(\'' + esc(x.id) + '\',\'sold\')" title="Продано">✅</button>' : '')
-      + (x.status !== 'in_stock' ? '<button class="bub-btn" onclick="invStatus(\'' + esc(x.id) + '\',\'in_stock\')" title="Повернути на склад">↩</button>' : '')
-      + '<button class="bub-btn" onclick="invStatus(\'' + esc(x.id) + '\',\'written_off\')" title="Списати">🚫</button>'
-      + '<button class="bub-btn del" onclick="invDelete(\'' + esc(x.id) + '\')" title="Видалити">🗑</button>';
+    const _ia=(d)=>'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="'+d+'"/></svg>';
+    const acts = (x.status === 'in_stock' ? '<button class="bub-btn" onclick="invSell(\'' + esc(x.id) + '\')" title="'+esc(t('inv.actSell'))+'">'+_ia('M12 3v18M16.5 7.5a3.5 3.5 0 0 0-3.5-3H11a3 3 0 0 0 0 6h2a3 3 0 0 1 0 6h-2a3.5 3.5 0 0 1-3.5-3')+'</button>' : '')
+      + (x.status !== 'sold' ? '<button class="bub-btn" onclick="invStatus(\'' + esc(x.id) + '\',\'sold\')" title="'+esc(t('inv.actSold'))+'">'+_ia('M4 12l5 5L20 6')+'</button>' : '')
+      + (x.status !== 'in_stock' ? '<button class="bub-btn" onclick="invStatus(\'' + esc(x.id) + '\',\'in_stock\')" title="'+esc(t('inv.actReturn'))+'">'+_ia('M9 14L4 9l5-5M4 9h12a4 4 0 0 1 0 8h-2')+'</button>' : '')
+      + '<button class="bub-btn" onclick="invStatus(\'' + esc(x.id) + '\',\'written_off\')" title="'+esc(t('inv.actOff'))+'">'+_ia('M5 5l14 14M19 5L5 19')+'</button>'
+      + '<button class="bub-btn del" onclick="invDelete(\'' + esc(x.id) + '\')" title="'+esc(t('inv.actDelete'))+'">'+_ia('M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3')+'</button>';
     return '<div class="bub">'
       + '<div class="bub-head">'
-      + '<span class="bub-date">' + esc(x.date || '') + '</span>'
+      + '<span class="bub-date">' + esc(fmtDate(x.date)) + '</span>'
       + (x.game ? '<span class="bub-chip">' + esc(x.game) + '</span>' : '')
       + '<span class="bub-title">' + esc(x.title || '') + '</span>'
       + '<div class="bub-acts">' + acts + '</div>'
@@ -7330,6 +7340,7 @@ Object.assign(I18N.uk, {'tk.check':'Перевірити токени','tk.check
 Object.assign(I18N.en, {'fs.title':'Font size','fs.reset':'Reset'});
 Object.assign(I18N.ru, {'fs.title':'Размер шрифта','fs.reset':'Сбросить'});
 Object.assign(I18N.uk, {
+ 'inv.actSell':'Продати','inv.actSold':'Продано','inv.actReturn':'Повернути на склад','inv.actOff':'Списати','inv.actDelete':'Видалити',
  'twofa.code':'КОД 6 ЦИФР','twofa.recovery':'Recovery-коди','twofa.logoutAll':'Вийти на всіх пристроях',
  'twofa.keepCodes':'Збережи ці коди. Кожен працює один раз.','twofa.copy':'Копіювати',
  'twofa.secretCreated':'🔐 Секрет створено — додай його в Authenticator',
@@ -7345,6 +7356,7 @@ Object.assign(I18N.uk, {
  'upd.same':'✅ У тебе остання версія','upd.newer':'⬆ Доступна новіша версія','upd.open':'Відкрити release'
 });
 Object.assign(I18N.en, {
+ 'inv.actSell':'Sell','inv.actSold':'Sold','inv.actReturn':'Return to stock','inv.actOff':'Write off','inv.actDelete':'Delete',
  'twofa.code':'6-DIGIT CODE','twofa.recovery':'Recovery codes','twofa.logoutAll':'Sign out everywhere',
  'twofa.keepCodes':'Save these codes. Each works once.','twofa.copy':'Copy',
  'twofa.secretCreated':'🔐 Secret created — add it to your authenticator',
@@ -7360,6 +7372,7 @@ Object.assign(I18N.en, {
  'upd.same':'✅ You are up to date','upd.newer':'⬆ A newer version is available','upd.open':'Open release'
 });
 Object.assign(I18N.ru, {
+ 'inv.actSell':'Продать','inv.actSold':'Продано','inv.actReturn':'Вернуть на склад','inv.actOff':'Списать','inv.actDelete':'Удалить',
  'twofa.code':'КОД 6 ЦИФР','twofa.recovery':'Recovery-коды','twofa.logoutAll':'Выйти на всех устройствах',
  'twofa.keepCodes':'Сохрани эти коды. Каждый работает один раз.','twofa.copy':'Копировать',
  'twofa.secretCreated':'🔐 Секрет создан — добавь его в Authenticator',
