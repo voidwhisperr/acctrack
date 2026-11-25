@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.48.0 — icon content-type fix
+
+- Fixed `/app-icon-*.png` UnboundLocalError when the icon exists.
+- Rebuilt public desktop app.
+
 ## v1.47.0 — larger logo
 
 - L mark fills more of the icon tile.
