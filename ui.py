@@ -790,6 +790,20 @@ code{
   </div>
 </div>
 
+<div id="replyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:18px;width:min(920px,96vw);max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px">
+      <div style="font-size:15px;font-weight:800" id="replyTitle">💬</div>
+      <button class="btn" onclick="closeReplyGenerator()" style="padding:4px 10px">✕</button>
+    </div>
+    <div id="replyHint" style="font-size:11px;color:var(--mu);margin-bottom:12px"></div>
+    <div id="replyBody" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button class="btn gr" onclick="regenReply()" id="replyRegen">↻</button>
+    </div>
+  </div>
+</div>
+
 <!-- 💼 ПЛАТФОРМИ -->
 <div id="tab-platforms" data-nested="1">
   <div class="panel">
@@ -2507,6 +2521,15 @@ Object.assign(I18N.ru, {
   'ph.cloud':'ОБЛАЧНЫЙ БЭКАП','set.cloudHint':'Копия бэкапов в OneDrive (или любая папка). Пустое поле = авто: OneDrive/GameTrackerBackups.','set.folder':'ПАПКА',
   'cloud.save':'Сохранить','cloud.every':'Каждые','cloud.hours':'ч','cloud.keep':'Хранить','cloud.copies':'копий','cloud.now':'Бэкап сейчас','cloud.verify':'Проверить','cloud.restoreTest':'Тест восстановления',
   'cloud.encrypt':'Шифровать автоматические бэкапы','cloud.password':'Пароль шифрования','cloud.passwordHint':'Пароль хранится в secrets; без него бэкап не открыть.'
+});
+Object.assign(I18N.uk, {
+  'reply.title':'ГЕНЕРАТОР ВІДПОВІДІ','reply.hint':'Три готові варіанти — обери мову, скопіюй і встав у чат платформи. Кнопка «Інший варіант» змінює формулювання.','reply.copy':'Копіювати','reply.copied':'Скопійовано','reply.regen':'Інший варіант','reply.notFound':'Замовлення не знайдено','reply.copyFail':'Не вдалося скопіювати'
+});
+Object.assign(I18N.en, {
+  'reply.title':'REPLY GENERATOR','reply.hint':'Three ready-to-use variants — pick a language, copy and paste into the platform chat. “Another variant” changes the wording.','reply.copy':'Copy','reply.copied':'Copied','reply.regen':'Another variant','reply.notFound':'Order not found','reply.copyFail':'Could not copy'
+});
+Object.assign(I18N.ru, {
+  'reply.title':'ГЕНЕРАТОР ОТВЕТА','reply.hint':'Три готовых варианта — выбери язык, скопируй и вставь в чат платформы. Кнопка «Другой вариант» меняет формулировку.','reply.copy':'Копировать','reply.copied':'Скопировано','reply.regen':'Другой вариант','reply.notFound':'Заказ не найден','reply.copyFail':'Не удалось скопировать'
 });
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
@@ -6736,6 +6759,7 @@ function renderMailQueue(){
           ${status}
           ${canEd?`<button class="btn gr" onclick="mailAct('${esc(m.id)}','add_ed')">➕ ELDORADO</button>`:''}
           ${canPl?`<button class="btn" onclick="mailAct('${esc(m.id)}','add_pl')">➕ P&amp;L</button>`:''}
+          ${isOrder?`<button class="btn" onclick="openReplyGenerator('${esc(m.id)}')">💬 ${LANG==='ru'?'Ответ':LANG==='en'?'Reply':'Відповідь'}</button>`:''}
           ${isOrder?`<button class="btn" onclick="mailDraft('${esc(m.id)}')">📝 ${LANG==='ru'?'Черновик':LANG==='en'?'Draft':'Чернетка'}</button>`:''}
           ${m.status==='new'?`<button class="btn" onclick="mailAct('${esc(m.id)}','ignore')">✕</button>`:''}
           <button class="btn rd" onclick="mailAct('${esc(m.id)}','remove')">🗑</button>
@@ -6785,6 +6809,64 @@ async function mailDraft(id){
   }catch(e){}
   updateFeePreview();
   toast(LANG==='ru'?'📝 Черновик создан — проверь и сохрани':LANG==='en'?'📝 Draft created — review and save':'📝 Чернетку створено — перевір і збережи');
+}
+let _replyItemId=null, _replyRound=0, _replyCache={};
+function _replyHash(s){ let h=0; for(let i=0;i<String(s).length;i++){ h=(h*31+String(s).charCodeAt(i))|0; } return Math.abs(h); }
+function _replyData(item){
+  const title=String(item.subject||item.game||'').trim() || (LANG==='ru'?'ваш заказ':LANG==='en'?'your order':'ваше замовлення');
+  const platform=String(item.platform||'').trim() || 'marketplace';
+  const h=_replyHash(String(item.id||'')+title+platform);
+  const pick=a=>a[(h+_replyRound)%a.length];
+  const fill=s=>s.replace('{title}',title).replace('{platform}',platform);
+  return {
+    uk: fill(pick([
+      'Добрий день! Дякую за замовлення «{title}» на {platform}. Замовлення прийнято в роботу. Найближчим часом підготую акаунт і надішлю дані для входу. Якщо потрібна допомога — напишіть у цей чат.',
+      'Вітаю! Ваше замовлення «{title}» ({platform}) вже в обробці. Я підготую все найближчим часом і надішлю дані сюди. Дякую за покупку!',
+      'Дякую за замовлення «{title}»! Все прийнято. Очікуйте, будь ласка, повідомлення з даними для входу. Якщо виникнуть питання — я на зв’язку.'
+    ])),
+    en: fill(pick([
+      'Hi! Thanks for ordering "{title}" on {platform}. Your order is now in progress. I’ll prepare the account and send the login details shortly. If you need anything, just reply here.',
+      'Hello! Your order for "{title}" ({platform}) is being processed. I’ll send the account details here as soon as it’s ready. Thanks for your purchase!',
+      'Thank you for your order "{title}"! It’s confirmed and in progress. Please wait for the login details — I’ll message you here shortly.'
+    ])),
+    ru: fill(pick([
+      'Здравствуйте! Спасибо за заказ «{title}» на {platform}. Заказ принят в работу. Скоро подготовлю аккаунт и отправлю данные для входа. Если нужна помощь — напишите в этот чат.',
+      'Привет! Ваш заказ «{title}» ({platform}) уже в обработке. Я всё подготовлю в ближайшее время и пришлю данные сюда. Спасибо за покупку!',
+      'Спасибо за заказ «{title}»! Всё принято. Пожалуйста, ожидайте сообщение с данными для входа. Если появятся вопросы — я на связи.'
+    ]))
+  };
+}
+function openReplyGenerator(id){
+  const item=(mailItems||[]).find(x=>x.id===id);
+  if(!item){ toast('⚠ '+t('reply.notFound'), false); return; }
+  _replyItemId=id; _replyRound=0;
+  const modal=g('replyModal'); if(modal) modal.style.display='flex';
+  renderReplyGenerator();
+}
+function renderReplyGenerator(){
+  const item=(mailItems||[]).find(x=>x.id===_replyItemId); if(!item) return;
+  _replyCache=_replyData(item);
+  const title=g('replyTitle'), hint=g('replyHint'), body=g('replyBody'), regen=g('replyRegen');
+  if(title) title.textContent='💬 '+t('reply.title');
+  if(hint) hint.textContent=t('reply.hint');
+  if(regen) regen.textContent='↻ '+t('reply.regen');
+  if(!body) return;
+  const langs=[['uk','УКРАЇНСЬКА'],['en','ENGLISH'],['ru','РУССКИЙ']];
+  body.innerHTML=langs.map(([code,label])=>'<div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px"><b style="font-size:11px;letter-spacing:.08em;color:var(--mu)">'+label+'</b>'+
+    '<button class="btn gr" style="font-size:10px;padding:3px 9px" onclick="copyReply(\''+code+'\',this)">📋 '+esc(t('reply.copy'))+'</button></div>'+
+    '<div style="font-size:12px;line-height:1.55;white-space:pre-wrap">'+esc(_replyCache[code])+'</div></div>').join('');
+}
+function regenReply(){ _replyRound++; renderReplyGenerator(); }
+function closeReplyGenerator(){ const m=g('replyModal'); if(m) m.style.display='none'; }
+async function copyReply(code,btn){
+  const txt=_replyCache[code]||'';
+  try{ await navigator.clipboard.writeText(txt); toast('📋 '+t('reply.copied')); }
+  catch(e){
+    const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('📋 '+t('reply.copied')); }catch(_){ toast('⚠ '+t('reply.copyFail'), false); }
+    ta.remove();
+  }
 }
 async function finishMailDraft(){
   const id=window._mailDraftId;
@@ -7721,6 +7803,7 @@ function _trWalk(root){
     if(!parent) continue;
     const tag = parent.tagName;
     if(tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') continue;
+    if(parent.closest && parent.closest('#replyBody,[data-no-i18n]')) continue;
     // зберігаємо оригінал ОДИН раз — далі завжди перекладаємо з нього
     if(typeof node.__o === 'undefined') node.__o = node.nodeValue;
     if(LANG === 'uk'){ node.nodeValue = node.__o; continue; }

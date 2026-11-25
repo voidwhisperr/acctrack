@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.35.0 — reply generator
+
+- Orders tab: three-language reply generator based on the order.
+- Three rotating variants per language; copy button; regenerate without reload.
+- Generated text is excluded from the global UI translator.
+
 ## v1.34.0 — update and backup translations
 
 - Update panel, P&L backup and cloud backup fully localized UA/EN/RU.
