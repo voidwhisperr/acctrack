@@ -4498,7 +4498,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.51.2", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.51.3", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4937,7 +4937,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.51.2",
+            self._json({"ok": True, "version": "1.51.3",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6002,10 +6002,20 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             return
         if self.path == "/api/mail/demo":
             try:
+                _lg = str(body.get("lang") or "").lower()[:2]
+                if _lg not in ("uk", "en", "ru"):
+                    _lg = _console_lang()
+                _demo = {
+                    "uk": ("[ДЕМО] Genshin Impact · AR60 · EU",
+                           "Це тестове замовлення. Перевір анімацію, favicon, звук і браузерне сповіщення."),
+                    "en": ("[DEMO] Genshin Impact · AR60 · EU",
+                           "This is a test order. Check the animation, favicon, sound and browser notification."),
+                    "ru": ("[ДЕМО] Genshin Impact · AR60 · EU",
+                           "Это тестовый заказ. Проверь анимацию, favicon, звук и браузерное уведомление."),
+                }[_lg]
                 item = {"id": "demo-" + str(int(time.time() * 1000)),
                         "ts": int(time.time()), "platform": "ZeusX", "kind": "order",
-                        "subject": "[ДЕМО] Genshin Impact · AR60 · EU",
-                        "body": "Це тестове замовлення. Перевір анімацію, favicon, звук і браузерне сповіщення.",
+                        "subject": _demo[0], "body": _demo[1],
                         "orderId": "DEMO-" + str(int(time.time()))[-6:],
                         "price": 19.99, "game": "Genshin Impact", "status": "new"}
                 _mailq_add(item)
@@ -6455,7 +6465,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.51.2")
+    print("  ▲  Ledger v1.51.3")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

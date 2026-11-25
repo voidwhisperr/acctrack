@@ -226,7 +226,7 @@ label{font-size:.92rem}
 .c5::before{background:linear-gradient(90deg,var(--yw),transparent)}
 .cg::before{background:linear-gradient(90deg,var(--gr),transparent)}
 .sl{font-size:.75rem;letter-spacing:.09em;color:var(--mu);text-transform:uppercase;margin-bottom:6px;font-weight:600}
-.sv{font-size:1.55rem;font-weight:800;letter-spacing:-.01em}
+.sv{font-size:clamp(1rem,1.35vw,1.55rem);font-weight:800;letter-spacing:-.01em;white-space:nowrap}
 
 /* ── таблиці ── */
 .sup-table{width:100%;border-collapse:collapse}
@@ -1003,8 +1003,8 @@ code{
       </label>
       <button class="btn gr" style="font-size:12px;padding:6px 12px" onclick="invAdd()">＋ <span data-i18n="btn.add">Додати</span></button>
       <input id="lotMarkup" type="hidden" value="30">
-      <button class="btn" style="font-size:12px;padding:6px 11px" onclick="lotsCsv('inventory')" title="CSV лотів зі складу (ціна = собівартість × 1.3)">⬇ <span data-i18n="inv.csvStock">CSV (stock, +30%)</span></button>
-      <button class="btn" style="font-size:12px;padding:6px 11px" onclick="lotsCsv('suppliers')" title="CSV лотів із каталогу постачальників (ціна = закупівля × 1.3)">⬇ <span data-i18n="inv.csvSup">CSV (suppliers, +30%)</span></button>
+      <button class="btn" style="font-size:11px;padding:6px 9px" onclick="lotsCsv('inventory')" title="CSV лотів зі складу (ціна = собівартість × 1.3)">⬇ <span data-i18n="inv.csvStock">CSV (stock, +30%)</span></button>
+      <button class="btn" style="font-size:11px;padding:6px 9px" onclick="lotsCsv('suppliers')" title="CSV лотів із каталогу постачальників (ціна = закупівля × 1.3)">⬇ <span data-i18n="inv.csvSup">CSV (suppliers, +30%)</span></button>
       <select id="invFilter" onchange="renderInventory()" style="font-size:13px;margin-left:auto">
         <option value="" data-i18n="inv.all">Всі</option>
         <option value="in_stock" data-i18n="inv.inStock">На складі</option>
@@ -2756,14 +2756,14 @@ async function renderOverview(){
                         .reduce((a,r)=>a+Number(r.afterFee||0),0);
     const profit = sum(cur), profitPrev = sum(prev);
     const delta = profitPrev ? ((profit-profitPrev)/Math.abs(profitPrev)*100) : 0;
-    if(g('ovProfit')) g('ovProfit').textContent = (profit>=0?'+':'')+'$'+profit.toFixed(2);
+    if(g('ovProfit')) g('ovProfit').textContent = (profit>=0?'+':'-')+locMoney(Math.abs(profit));
     if(g('ovProfitD')) g('ovProfitD').textContent = profitPrev
       ? (t('u.vs')+' '+(delta>=0?'+':'')+delta.toFixed(1)+'%') : '';
     const nq = Number(q.new||0);
     if(g('ovActions')) g('ovActions').textContent = nq;
     if(g('ovActionsD')) g('ovActionsD').textContent = nq ? t('u.orders') : t('u.none');
     if(g('ovStock')) g('ovStock').textContent = Number(inv.in_stock||0);
-    if(g('ovStockD')) g('ovStockD').textContent = t('u.frozen')+' $'+Number(inv.frozen||0).toFixed(2);
+    if(g('ovStockD')) g('ovStockD').textContent = t('u.frozen')+' '+locMoney(inv.frozen);
     const agentOk = !!tb.agent_online;
     const bad = !agentOk;
     if(g('ovHealth')){
@@ -2781,7 +2781,7 @@ async function renderOverview(){
           + '<div style="display:flex;justify-content:space-between;gap:10px">'
           + '<div style="font-weight:600;font-size:.86rem">'+esc(String(r.title||'—')).slice(0,80)+'</div>'
           + '<div style="color:'+(p>=0?'var(--gr)':'var(--rd)')+';font-weight:600;white-space:nowrap">'
-          + (p>=0?'+':'')+'$'+p.toFixed(2)+'</div></div>'
+          + (p>=0?'+':'-')+locMoney(Math.abs(p))+'</div></div>'
           + '<div style="font-size:.72rem;color:var(--mu);margin-top:4px">'+esc(String(r.date||''))
           + ' · '+esc(String(r.srcName||r.src||''))+'</div></div>';
       }).join('') : '<div class="none">'+(LANG==='en'?'No deals yet':LANG==='ru'?'Пока нет сделок':'Ще немає угод')+'</div>';
@@ -2821,9 +2821,9 @@ async function renderChAll(){
         + logoOf(r.ch)
         + esc(r.ch)+'</span></td>'
         + '<td style="padding:8px;max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.game.slice(0,90))+'</td>'
-        + '<td style="padding:8px;text-align:right;white-space:nowrap">$'+r.sell.toFixed(2)+'</td>'
+        + '<td style="padding:8px;text-align:right;white-space:nowrap">'+locMoney(r.sell)+'</td>'
         + '<td style="padding:8px;text-align:right;white-space:nowrap;color:'+(r.pf>=0?'var(--gr)':'var(--rd)')+';font-weight:600">'
-        + (r.pf>=0?'+':'')+'$'+r.pf.toFixed(2)+'</td></tr>').join('')
+        + (r.pf>=0?'+':'-')+locMoney(Math.abs(r.pf))+'</td></tr>').join('')
       + '</table>';
   }catch(e){ box.innerHTML = '<div class="none">Помилка: '+esc(String(e))+'</div>'; }
 }
@@ -3301,11 +3301,16 @@ function initCurrencySelects(){
   }
 }
 function fmtUah(usd){
-  return _rate ? curSym()+(usd*_rate).toFixed(2) : '';
+  const v=Number(usd||0);
+  if(_cur==='USD') return '$'+v.toLocaleString(dateLocale(),{minimumFractionDigits:2,maximumFractionDigits:2});
+  return _rate ? curSym()+(v*_rate).toLocaleString(dateLocale(),{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
 }
 function locMoney(usd){
   const v=Number(usd||0);
-  return _rate ? curSym()+(v*_rate).toFixed(2) : '$'+v.toFixed(2);
+  const loc=dateLocale();
+  if(_cur==='USD') return '$'+v.toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(!_rate) return '$'+v.toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2});
+  return curSym()+(v*_rate).toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 let _moneyNodes=[];
 let _moneyOrig=new WeakMap();
@@ -4175,15 +4180,15 @@ function renderPurchases(){
 
   g('purCnt').textContent = plFilt.length;
   if(g('plProfit')){
-    g('plProfit').textContent=(totalProfit>=0?'+':'')+'$'+totalProfit.toFixed(2);
+    g('plProfit').textContent=(totalProfit>=0?'+':'-')+locMoney(Math.abs(totalProfit));
     g('plProfit').style.color=totalProfit>0?'var(--gr)':totalProfit<0?'var(--rd)':'var(--mu)';
-    g('plRevenue').textContent='$'+totalSell.toFixed(2);
-    g('plCost').textContent='$'+totalBuy.toFixed(2);
+    g('plRevenue').textContent=locMoney(totalSell);
+    g('plCost').textContent=locMoney(totalBuy);
     g('plMargin').textContent=margin+'%';
     g('plMargin').style.color=parseFloat(margin)>0?'var(--gr)':'var(--mu)';
     g('plCount').textContent=plFilt.length;
-    g('plFees').textContent='$'+totalFees.toFixed(2);
-    if(g('plExpenses')) g('plExpenses').textContent='$'+totalExpenses.toFixed(2);
+    g('plFees').textContent=locMoney(totalFees);
+    if(g('plExpenses')) g('plExpenses').textContent=locMoney(totalExpenses);
   }
 
   refreshCombinedStats();
@@ -4560,14 +4565,14 @@ function refreshCombinedStats(){
   const rev = plRev + edRev, cost = plBuy + edBuy;
   const profit = plProfit + edProfit;
   const margin = cost > 0 ? (profit / cost * 100) : 0;
-  g('plProfit').textContent=(profit>=0?'+':'')+'$'+profit.toFixed(2);
+  g('plProfit').textContent=(profit>=0?'+':'-')+locMoney(Math.abs(profit));
   g('plProfit').style.color=profit>0?'var(--gr)':profit<0?'var(--rd)':'var(--mu)';
-  if(g('plRevenue')) g('plRevenue').textContent='$'+rev.toFixed(2);
-  if(g('plCost')) g('plCost').textContent='$'+cost.toFixed(2);
+  if(g('plRevenue')) g('plRevenue').textContent=locMoney(rev);
+  if(g('plCost')) g('plCost').textContent=locMoney(cost);
   if(g('plMargin')){ g('plMargin').textContent=margin.toFixed(1)+'%'; g('plMargin').style.color=margin>0?'var(--gr)':'var(--mu)'; }
   if(g('plCount')) g('plCount').textContent=pl.length + ed.length;
-  if(g('plFees')) g('plFees').textContent='$'+(plFees + edFee).toFixed(2);
-  if(g('plExpenses')) g('plExpenses').textContent='$'+plExp.toFixed(2);
+  if(g('plFees')) g('plFees').textContent=locMoney(plFees + edFee);
+  if(g('plExpenses')) g('plExpenses').textContent=locMoney(plExp);
 }
 
 function renderStats(){
@@ -4629,13 +4634,13 @@ function renderStats(){
   const cards = g('statsCards');
   if(cards) cards.innerHTML = [
     {l:t('an.deals'),       v:recs.length,                    c:'var(--a1)'},
-    {l:t('an.revenue'),     v:'$'+totRev.toFixed(2),           c:'var(--tx)'},
-    {l:t('an.profit'),      v:(totProfit>=0?'+':'')+'$'+totProfit.toFixed(2), c:'var(--gr)'},
+    {l:t('an.revenue'),     v:locMoney(totRev),           c:'var(--tx)'},
+    {l:t('an.profit'),      v:(totProfit>=0?'+':'-')+locMoney(Math.abs(totProfit)), c:'var(--gr)'},
     {l:t('an.margin'),      v:avgMargin+'%',                   c:'var(--yw)'},
     {l:t('an.games'),       v:games.length,                    c:'var(--a3)'},
     {l:t('an.best'),        v:(top[0]?.name||'—').substring(0,18), c:'var(--gr)'},
-    {l:t('an.profitED'),    v:(edAllProfit>=0?'+':'')+'$'+edAllProfit.toFixed(2), c:'var(--a3)'},
-    {l:t('an.total'),       v:(combinedAll>=0?'+':'')+'$'+combinedAll.toFixed(2), c:combinedAll>=0?'var(--gr)':'var(--rd)'},
+    {l:t('an.profitED'),    v:(edAllProfit>=0?'+':'-')+locMoney(Math.abs(edAllProfit)), c:'var(--a3)'},
+    {l:t('an.total'),       v:(combinedAll>=0?'+':'-')+locMoney(Math.abs(combinedAll)), c:combinedAll>=0?'var(--gr)':'var(--rd)'},
   ].concat(_rate ? [
     {l:t('an.totalIn')+' '+curSym(), v:curSym()+(combinedAll*_rate).toFixed(2), c:'var(--a1)'},
   ] : []).map(c=>`<div style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px 14px">
@@ -5363,8 +5368,8 @@ function renderEdBreakdown(){
       return `<tr>
         <td style="font-weight:600">${esc(k)}</td>
         <td style="text-align:right;color:var(--mu)">${s.count}</td>
-        <td style="text-align:right;font-family:var(--font);font-size:11px">$${s.rev.toFixed(2)}</td>
-        <td style="text-align:right;font-family:var(--font);font-weight:700;color:${color}">${s.profit>=0?'+':''}$${s.profit.toFixed(2)}</td>
+        <td style="text-align:right;font-family:var(--font);font-size:11px">${locMoney(s.rev)}</td>
+        <td style="text-align:right;font-family:var(--font);font-weight:700;color:${color}">${s.profit>=0?'+':'-'}${locMoney(Math.abs(s.profit))}</td>
         <td style="text-align:right;font-size:11px;color:var(--mu)">${s.buy>0?margin.toFixed(0)+'%':'—'}</td>
         <td><div style="background:var(--bg2);border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color};border-radius:4px"></div></div></td>
       </tr>`;
@@ -5392,7 +5397,7 @@ function exportEdCsv(){
 //    (раніше вкладка тягла ~970 КБ JSON; тепер 50 товарів на запит + gzip)
 // ═══════════════════════════════════════════════
 let supPage = {items: [], total: 0, page: 1, per: 50, counts: {}, sale: 0, gone: 0};
-let _supReq = 0, _supTimer = null;
+let _supReq = 0, _supTimer = null, _supAbort = null;
 
 function supQuery(page){
   const p = new URLSearchParams();
@@ -5448,12 +5453,15 @@ async function loadSupply(page=1, force=false){
   loadBuyList();
   loadSupStatus();
   if(supLoaded && !force && page===1 && supPage.items.length) return;
+  // Скасовуємо попередній запит: інакше пізніша відповідь може "загубитись"
+  // через tag-перевірку і вкладка назавжди лишається на «Завантаження…».
+  if(_supAbort){ try{ _supAbort.abort(); }catch(e){} }
+  const ctrl=new AbortController(); _supAbort=ctrl;
   const tag = ++_supReq;
   g('supAl').className='al info';
   g('supAl').textContent='⏳ Завантаження...';
   try{
-    const ctrl=new AbortController();
-    const t=setTimeout(()=>ctrl.abort(),20000);
+    const t=setTimeout(()=>ctrl.abort(),12000);
     const r = await fetch('/api/suppliers?'+supQuery(page),{signal:ctrl.signal});
     clearTimeout(t);
     if(!r.ok) throw new Error('HTTP '+r.status);
@@ -5468,11 +5476,14 @@ async function loadSupply(page=1, force=false){
     renderSupPage();
     renderSupCards(window._supSuppliers || []);
   }catch(ex){
+    if(ex && ex.name==='AbortError') return;
     if(tag !== _supReq) return;
     supLoaded=false;
     g('supAl').className='al err';
     g('supAl').textContent='❌ '+ex.message+' (натисни ↺)';
     if(g('supList')) g('supList').innerHTML='';
+  }finally{
+    if(_supAbort===ctrl) _supAbort=null;
   }
 }
 
@@ -5962,9 +5973,9 @@ async function loadPlatforms(force){
       <span style="color:var(--mu)">${l}</span><b style="text-align:right">${v}</b></div>`;
     const zrows = z.ok
       ? row(TR.acc,esc(z.name||'—'))+row('Email',esc(z.email||'—'))+
-        row(TR.bal,'$'+(z.balance!=null?Number(z.balance).toFixed(2):'—'))+
-        row(TR.hold,'$'+Number(z.on_going||0).toFixed(2)+' / $'+Number(z.on_hold||0).toFixed(2))+
-        row(TR.wd,'$'+Number(z.withdraw||0).toFixed(2))+
+        row(TR.bal,locMoney(z.balance))+
+        row(TR.hold,locMoney(z.on_going)+' / '+locMoney(z.on_hold))+
+        row(TR.wd,locMoney(z.withdraw))+
         row(TR.tier,esc((z.seller_tier||'—')+' / '+(z.buyer_tier||'—')))+
         row(TR.orders,`${z.orders_all||0} · ✅ ${z.orders_good||0} · ⏳ ${z.orders_pending||0} · ↩ ${z.orders_refunded||0}`)+
         row(TR.msgs,(d.mail_msgs||{}).ZeusX||0)
@@ -5976,7 +5987,7 @@ async function loadPlatforms(force){
         row(TR.msgs,(d.mail_msgs||{}).FunPay||0)+
         (fl.length ? fl.map(o=>`<div style="padding:7px 0;border-bottom:1px solid rgba(40,48,63,.5);font-size:13px">
             <b>${esc((o.title||'').slice(0,62))}</b>
-            <div style="color:var(--mu);font-size:12px">${esc(o.status||'')} · $${Number(o.price||0).toFixed(2)} · ${esc(o.date||'')}</div>
+            <div style="color:var(--mu);font-size:12px">${esc(o.status||'')} · ${locMoney(o.price)} · ${esc(o.date||'')}</div>
           </div>`).join('')
         : '<div style="font-size:12px;color:var(--mu);padding-top:6px">Замовлень у списку немає</div>')
       : `${errBox(f.error||'немає даних')}
@@ -5984,9 +5995,9 @@ async function loadPlatforms(force){
     const e = d.eldorado||{};
     const erows = e.ok
       ? row('Продажів усього',e.count||0)+
-        row('Виторг','$'+Number(e.revenue||0).toFixed(2))+
-        row('Прибуток','$'+Number(e.profit||0).toFixed(2))+
-        row('Цей місяць',`${e.month_count||0} · $`+Number(e.month_profit||0).toFixed(2))+
+        row('Виторг',locMoney(e.revenue))+
+        row('Прибуток',locMoney(e.profit))+
+        row('Цей місяць',(e.month_count||0)+' · '+locMoney(e.month_profit))+
         row('Джерело',esc(e.source||'—'))
       : errBox(e.error||'немає даних');
     el.innerHTML='<div style="display:flex;gap:14px;flex-wrap:wrap">'
@@ -6392,17 +6403,17 @@ async function loadInventory(){
                 ru:{a:'7+ дней',b:'30+ дней',c:'60+ дней',d:'90+ дней',e:'Доля продаж',f:'Ср. дней продажи'}}[LANG] || {a:'7+ days',b:'30+ days',c:'60+ days',d:'90+ days',e:'Sell-through',f:'Avg days to sell'};
       const cell=(k,v,c)=>'<div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:8px 11px;min-width:105px"><div style="font-size:10px;color:var(--mu)">'+k+'</div><div style="font-size:15px;font-weight:800;color:'+(c||'var(--tx)')+'">'+v+'</div></div>';
       g('invAging').innerHTML =
-        cell(_A.a, (ag['7']?.count||0)+' · $'+Number(ag['7']?.value||0).toFixed(2), 'var(--yw)') +
-        cell(_A.b, (ag['30']?.count||0)+' · $'+Number(ag['30']?.value||0).toFixed(2), 'var(--yw)') +
-        cell(_A.c, (ag['60']?.count||0)+' · $'+Number(ag['60']?.value||0).toFixed(2), 'var(--rd)') +
-        cell(_A.d, (ag['90']?.count||0)+' · $'+Number(ag['90']?.value||0).toFixed(2), 'var(--rd)') +
+        cell(_A.a, (ag['7']?.count||0)+' · '+locMoney(ag['7']?.value||0), 'var(--yw)') +
+        cell(_A.b, (ag['30']?.count||0)+' · '+locMoney(ag['30']?.value||0), 'var(--yw)') +
+        cell(_A.c, (ag['60']?.count||0)+' · '+locMoney(ag['60']?.value||0), 'var(--rd)') +
+        cell(_A.d, (ag['90']?.count||0)+' · '+locMoney(ag['90']?.value||0), 'var(--rd)') +
         cell(_A.e, Number(d.sell_through||0).toFixed(1)+'%', 'var(--gr)') +
         cell(_A.f, d.avg_sold_days==null?'—':d.avg_sold_days, 'var(--mu)');
     }
     if(g('invOld')){
       if((d.old_count || 0) > 0){
         const _oldTxt = LANG==='ru'?'(куплены 30+ дней назад)':LANG==='en'?'(bought 30+ days ago)':'(куплені 30+ днів тому)';
-        g('invOld').innerHTML = '🧊 <b>'+t('inv.dead')+':</b> ' + d.old_count + ' $' + Number(d.old_value || 0).toFixed(2)
+        g('invOld').innerHTML = '🧊 <b>'+t('inv.dead')+':</b> ' + d.old_count + ' ' + locMoney(d.old_value)
           + ' ' + _oldTxt + ' · ' + t('inv.oldest') + ' ' + (d.oldest_days || 0) + ' ' + (LANG==='ru'?'дней':LANG==='en'?'days':'днів');
       } else {
         g('invOld').innerHTML = '<span style="color:var(--mu)">🧊 '+t('inv.noDead')+'</span>'
@@ -6774,7 +6785,7 @@ async function createDemoOrder(){
     if('Notification' in window && Notification.permission==='default'){
       try{ Notification.requestPermission().then(updateOrderNotifyUI).catch(()=>{}); }catch(e){}
     }
-    const d=await fetch('/api/mail/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+    const d=await fetch('/api/mail/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lang:LANG})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     await loadMailQueue(true);
     notifyNewOrder(1);
@@ -8023,6 +8034,303 @@ Object.assign(TR_RU, {
   '✓ Змінити пароль':'✓ Изменить пароль',
   '✓ Зберегти':'✓ Сохранить',
   '🔑 Згенерувати self-signed':'🔑 Сгенерировать self-signed'
+});
+
+Object.assign(TR_RU, {
+  "у":"в",
+  "і":"и",
+  "У":"В",
+  "І":"И",
+  "з":"с",
+  "є":"есть",
+  "Спостерігаю…":"Наблюдаю…",
+  "Спостерігаю за кабінетами":"Наблюдаю за кабинетами",
+  "Email":"Email",
+  "нових повідомлень":"новых сообщений",
+  "немає даних":"нет данных",
+  "＋ Додати":"＋ Добавить",
+  "Ledger — лаконічна, без градієнтів":"Ledger — лаконичная, без градиентов",
+  "Slate — попередня тема":"Slate — предыдущая тема",
+  "Nord — холодний синьо-сірий":"Nord — холодный сине-серый",
+  "Carbon — теплий графіт":"Carbon — тёплый графит",
+  "Без назви":"Без названия",
+  "Без назви ":"Без названия ",
+  "Весь час":"Всё время",
+  "Дата":"Дата",
+  "Поки порожньо":"Пока пусто",
+  "Без ":"Без ",
+  "Дані читаються з ваших кабінетів за збереженими cookie":"Данные читаются из ваших кабинетов по сохранённым cookie",
+  "База порожня":"База пуста",
+  "Постачальники":"Поставщики",
+  "Ще немає постачальників":"Поставщиков пока нет",
+  "Порожньо":"Пусто",
+  "додайте першу закупівлю":"добавьте первую закупку",
+  "Алерт":"Алерт",
+  "ВИТОРГ ПО ДНЯХ":"ВЫРУЧКА ПО ДНЯМ",
+  "ВСІ ЦИФРИ В ОДНОМУ МІСЦІ":"ВСЕ ЦИФРЫ В ОДНОМ МЕСТЕ",
+  "БЕКАП":"БЭКАП",
+  "Бот пише лише про те":"Бот пишет только о том",
+  "Ціль":"Цель",
+  "ціль":"цель",
+  "Місяць":"Месяц",
+  "Тиждень":"Неделя",
+  "Вчора":"Вчера",
+  "За місяць":"За месяц",
+  "Платформа":"Платформа",
+  "Платформа ":"Платформа ",
+  "Записів":"Записей",
+  "Редагувати":"Редактировать",
+  "Видалити":"Удалить",
+  "Зберегти ":"Сохранить ",
+  "Скасувати":"Отмена",
+  "Купив":"Купил",
+  "Продав":"Продал",
+  "Комісія":"Комиссия",
+  "Кількість":"Количество",
+  "Назва гри":"Название игры",
+  "Дата ":"Дата ",
+  "Повідомлення":"Сообщения",
+  "Нове":"Новое",
+  "Нові":"Новые",
+  "Профіль":"Профиль",
+  "Вихід":"Выход",
+  "Увійти":"Войти",
+  "Продаж":"Продажа",
+  "Продаж ":"Продажа ",
+  "Цей тиждень":"Эта неделя",
+  "Сюди потрапляють нові замовлення й повідомлення":"Сюда попадают новые заказы и сообщения",
+  "проігноруйте":"проигнорируйте",
+  "вставте":"вставьте",
+  "з кабінетів":"из кабинетов",
+  "Ще":"Ещё",
+  "Ендгейм":"Эндгейм",
+  "Збира":"Собир",
+  "Капчу проходите ви":"Капчу проходите вы",
+  "Лоти":"Лоты",
+  "Виручка":"Выручка",
+  "ДЕТАЛЬНА ТАБЛИЦЯ":"ДЕТАЛЬНАЯ ТАБЛИЦА",
+  "Дайджест":"Дайджест",
+  "Маржа":"Маржа",
+  "Згенерувати":"Сгенерировать",
+  "Доступ контролю":"Доступ контролирует",
+  "оновлюю":"обновляю",
+  "Всього":"Всего",
+  "Разом":"Итого",
+  "Сума":"Сумма",
+  "Закрити":"Закрыть",
+  "Відкрити":"Открыть",
+  "Скопійовано":"Скопировано",
+  "Завантажити":"Скачать",
+  "Завантажено":"Загружено",
+  "Помилка":"Ошибка",
+  "Успішно":"Успешно",
+  "Невірний":"Неверный",
+  "Спробуйте ще раз":"Попробуйте ещё раз",
+  "Немає":"Нет",
+  "Так":"Да",
+  "Ні":"Нет",
+  "Оберіть":"Выберите",
+  "Вибрати":"Выбрать",
+  "Введіть":"Введите",
+  "Мінімум":"Минимум",
+  "Максимум":"Максимум",
+  "Середнє":"Среднее",
+  "Період":"Период",
+  "Діапазон":"Диапазон",
+  "сюди не надходять":"сюда не поступают",
+  "не задано":"не задано",
+  "Найкраща":"Лучшая",
+  "Оновлення бази":"Обновление базы",
+  "РАЗОМ":"ИТОГО",
+  "СТАТИСТИКА":"СТАТИСТИКА",
+  "КУРС":"КУРС",
+  "Пароля":"Пароля",
+  "Логін":"Логин",
+  "Безпека":"Безопасность",
+  "Ключ":"Ключ",
+  "Ключі":"Ключи",
+  "Сервер":"Сервер",
+  "Клієнт":"Клиент",
+  "Помилки":"Ошибки",
+  "Логи":"Логи",
+  "Версія":"Версия",
+  "Розмір":"Размер",
+  "Файли":"Файлы",
+  "Записів у базі":"Записей в базе",
+  "Токени":"Токены",
+  "Склад":"Склад",
+  "замовлення з":"заказы из",
+  "не надходять":"не поступают",
+  "які трекер знайшов у пошті":"которые трекер нашёл в почте",
+  "продажів":"продаж",
+  "Угод":"Сделок",
+  "було":"было",
+  "день":"день",
+  "прибуток":"прибыль",
+  "ПАПКА":"ПАПКА",
+  "Відновити ":"Восстановить ",
+  "Місячний":"Месячный",
+  "Загальний":"Общий",
+  "або":"или",
+  "даних ще":"данных ещё",
+  "картка":"карта",
+  "лотів":"лотов",
+  "пише лише про те":"пишет только о том",
+  "Ціна":"Цена",
+  "Час":"Время",
+  "Статус":"Статус",
+  "автоматично":"автоматически",
+  "не перевіряли":"не проверяли",
+  "не продавець":"не продавец",
+  "нижче":"ниже",
+  "Ресток":"Ресток",
+  "Ручне внесення продажу в таблицю не спові":"Ручное внесение продажи в таблицу не уведом",
+  "ТОКЕН БОТА":"ТОКЕН БОТА",
+  "ціна":"цена",
+  "гри":"игры",
+  "гра":"игра",
+  "дата":"дата",
+  "платформа":"платформа",
+  "поповнення балансу":"пополнение баланса",
+  "Бот пише лише про те, що":"Бот пишет только о том, что",
+  "Ручне внесення продажу в таблицю не сповіщає":"Ручное внесение продажи в таблицу не уведомляет",
+  "Тунель":"Туннель",
+  "телефон":"телефон",
+  "часто блокує автоматичне читання сторінок":"часто блокирует автоматическое чтение страниц",
+  "через":"из-за",
+  "якщо його":"если его",
+  "Що надсилати в":"Что отправлять в",
+  "авто":"авто",
+  "агента":"агента",
+  "адресу не знайдено":"адрес не найден",
+  "акаунти":"аккаунты",
+  "баланс":"баланс",
+  "браузер попросить його після перезавантаження":"браузер попросит его после перезагрузки",
+  "Ручне внесення продажу":"Ручное внесение продажи",
+  "в таблицю не сповіщає":"в таблицу не уведомляет",
+  "будь-яка папка":"любая папка",
+  "вимкнено":"отключено",
+  "встав токен і свій":"вставь токен и свой",
+  "для прямого доступу":"для прямого доступа",
+  "сам відкриває вікно":"сам открывает окно",
+  "вікно браузера":"окно браузера",
+  "браузера":"браузера",
+  "дізнатись у":"узнать в",
+  "з НБУ":"из НБУ",
+  "дізнатись":"узнать",
+  "показує не кабінет":"показывает не кабинет",
+  "прострочений":"просрочен",
+  "зараз":"сейчас",
+  "оновлення йде":"обновление идёт",
+  "замовлення":"заказы",
+  "запам'ятовується":"запоминается",
+  "й за місяць":"и за месяц",
+  "й повідомлення":"и сообщения",
+  "кожен тип окремо":"каждый тип отдельно",
+  "за  ":"за  ",
+  "Розмір шрифту — кнопки":"Размер шрифта — кнопки",
+  "сповіщає. Створи бота у":"уведомляет. Создай бота в",
+  "якщо його немає. Капчу проходите ви — колектор чекає.":"если его нет. Капчу проходите вы — коллектор ждёт.",
+  "💬 Повідомлення покупців":"💬 Сообщения покупателей",
+  "⚠️ Watchdog сайту":"⚠️ Watchdog сайта",
+  "⚠️ Watchdog агента Taobao":"⚠️ Watchdog агента Taobao",
+  "📊 Дайджест (20:00)":"📊 Дайджест (20:00)",
+  "💾 Зберегти сповіщення":"💾 Сохранить уведомления",
+  "(тільки ваш чат):":"(только ваш чат):",
+  "— останні замовлення":"— последние заказы",
+  "— топ вигідних лотів":"— топ выгодных лотов",
+  "📧 Пошта":"📧 Почта",
+  "⚠ не налаштовано":"⚠ не настроено",
+  "✅ налаштовано":"✅ настроено",
+  "· увімкнено":"· включено",
+  "· вимкнено":"· отключено",
+  "та":"и",
+  "повідомлення":"сообщения",
+  "⚠ Gmail не налаштовано — сповіщень з пошти не буде":"⚠ Gmail не настроен — уведомлений с почты не будет",
+  "немає App Password":"нет App Password",
+  "перевірено":"проверено",
+  "⚠ увімкнено, але cert/key не знайдено — виправ і перезапусти":"⚠ включено, но cert/key не найдены — исправь и перезапусти",
+  "🌐 Тунель: адресу не знайдено (немає логу cloudflared)":"🌐 Туннель: адрес не найден (нет лога cloudflared)",
+  "боти":"боты",
+  "Сповіщення":"Уведомления",
+  "не":"не",
+  " Не":" Не",
+  "бо":"т.к.",
+  "це":"это",
+  "Місяці":"Месяцы",
+  "CSV (фільтр)":"CSV (фильтр)",
+  "фільтр":"фильтр",
+  "Price купівлі":"Цена покупки",
+  "Price продажу":"Цена продажи",
+  "Order ID (необов'язково)":"Order ID (необязательно)",
+  "Категорія (необов'язково)":"Категория (необязательно)",
+  "необов'язково":"необязательно",
+  "логін: user@mail.com":"логин: user@mail.com",
+  "пароль: 12345":"пароль: 12345",
+  "пошта: user@mail.com":"почта: user@mail.com",
+  "логін":"логин",
+  "пароль":"пароль",
+  "пошта":"почта",
+  "Оновити з НБУ":"Обновить из НБУ",
+  "КУРС USD → UAH":"КУРС · USD → UAH",
+  "КУРС (₴ за $1)":"КУРС (₴ за $1)",
+  "Записи":"Записи",
+  "Більший шрифт":"Крупнее шрифт",
+  "🆕 Новинки":"🆕 Новинки",
+  "Сервер:":"Сервер:",
+  "Токен:":"Токен:",
+  "Ще немає записів":"Записей пока нет",
+  "➕ Додати":"➕ Добавить",
+  "📥 Імпорт CSV":"📥 Импорт CSV",
+  "Завантаження…":"Загрузка…",
+  "Українська":"Украинский",
+  "Оновити сторінку":"Обновить страницу",
+  "🔍 Пошук...":"🔍 Поиск...",
+  "🔍 Пошук по назві...":"🔍 Поиск по названию...",
+  "Товари, які зникли з полиць магазинів за останні 14 днів":"Товары, которые исчезли с полок магазинов за последние 14 дней",
+  "Товари, які в іншому магазині дешевші":"Товары, которые в другом магазине дешевле",
+  "Швидка перевірка новинок через sitemap (безкоштовно)":"Быстрая проверка новинок через sitemap (бесплатно)",
+  "Повне оновлення бази (витрачає кредити ScraperAPI)":"Полное обновление базы (тратит кредиты ScraperAPI)",
+  "Прочитати cookie з відкритого вікна браузера (FunPay/ZeusX)":"Прочитать cookie из открытого окна браузера (FunPay/ZeusX)",
+  "CSV лотів зі складу (ціна = собівартість × 1.3)":"CSV лотов со склада (цена = себестоимость × 1.3)",
+  "CSV лотів із каталогу постачальників (ціна = закупівля × 1.3)":"CSV лотов из каталога поставщиков (цена = закупка × 1.3)",
+  "Доступно з (Hold → Available)":"Доступно с (Hold → Available)",
+  "Світла тема (день)":"Светлая тема (день)",
+  "Назва...":"Название...",
+  "✅ Комісії збережено":"✅ Комиссии сохранены",
+  "Пароль для зашифрованого бекапу (мін. 4 символи)":"Пароль для зашифрованного бэкапа (мин. 4 символа)",
+  "⚠ Пароль закороткий":"⚠ Пароль слишком короткий",
+  "🔒 Шифрую бекап…":"🔒 Шифрую бэкап…",
+  "✅ Зашифрований бекап завантажено":"✅ Зашифрованный бэкап загружен",
+  "Пароль від зашифрованого бекапу":"Пароль от зашифрованного бэкапа",
+  "⏳ Надсилаю тест...":"⏳ Отправляю тест...",
+  "📨 Тест надіслано в Telegram!":"📨 Тест отправлен в Telegram!",
+  "⏳ Перевіряю Gmail...":"⏳ Проверяю Gmail...",
+  "⏳ Перевіряю пошту...":"⏳ Проверяю почту...",
+  "✅ Скопійовано":"✅ Скопировано",
+  "Скопіюй:":"Скопируй:",
+  "✅ Розклад бекапів збережено":"✅ Расписание бэкапов сохранено",
+  "⚠ Введи пароль шифрування":"⚠ Введи пароль шифрования",
+  "🔒 Автошифрування увімкнено":"🔒 Автошифрование включено",
+  "🔓 Автошифрування вимкнено":"🔓 Автошифрование отключено",
+  "🧪 Тестую відновлення...":"🧪 Тестирую восстановление...",
+  "⏳ Бекап...":"⏳ Бэкап...",
+  "✅ Правила payout збережено":"✅ Правила payout сохранены",
+  "⚠ Немає колонки amount":"⚠ Нет колонки amount",
+  "Порожній файл":"Пустой файл",
+  "Введи назву і ціну продажу":"Введи название и цену продажи",
+  "✅ Продаж додано!":"✅ Продажа добавлена!",
+  "⏳ Перевіряю новинки через sitemap...":"⏳ Проверяю новинки через sitemap...",
+  "🔔 Базовий список магазинів збережено":"🔔 Базовый список магазинов сохранён",
+  "⏳ Оновлення запущено...":"⏳ Обновление запущено...",
+  "✅ Базу оновлено":"✅ База обновлена",
+  "⚠ Браузер не підтримує Notification":"⚠ Браузер не поддерживает Notification",
+  "💳 Перевірка запущена — стежте за смугою прогресу":"💳 Проверка запущена — следите за полосой прогресса",
+  "⚠ Буфер обміну недоступний":"⚠ Буфер обмена недоступен",
+  "⚠ Дозволь спливаючі вікна для PDF":"⚠ Разреши всплывающие окна для PDF",
+  "⚠ замовлення не знайдено":"⚠ заказ не найден",
+  "⚠ Сервер недоступний — показано локальну копію":"⚠ Сервер недоступен — показана локальная копия",
+  "за ":"за "
 });
 
 let _trSorted = null;

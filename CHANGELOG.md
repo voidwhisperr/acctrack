@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.51.3 — currency, RU and polish
+
+- Currency is now consistent everywhere: overview, P&L totals, analytics cards/charts/table, inventory, balances and report use the selected currency and its own rate; USD no longer multiplies by the UAH rate.
+- Catalog and Plan no longer can stay on “loading” forever: the supplier request aborts the previous one and always renders a result.
+- RU localization closed: 294 missing TR_RU entries (server/token labels, status texts, toasts), plus demo orders, 2FA, diagnostics and update-check are localized for EN/RU.
+- Demo order body is generated in the current UI language instead of always Ukrainian.
+- Money formatting adds thousands separators; long stat values no longer wrap the sign onto a second line.
+- exe now carries a Windows version resource (FileVersion 1.51.3.0, ProductName Ledger).
+- Screenshots refreshed for all 3 languages (10 screens + appearance block).
+
 ## v1.51.2 — audit fixes
 
 - Currency: no more repeated conversion for $-symbol currencies (C$ / A$ / NZ$ …); text stays stable instead of C$ → CC$ → CCC$.
