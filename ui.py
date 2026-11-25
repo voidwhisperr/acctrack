@@ -72,7 +72,7 @@ HTML = r"""<!DOCTYPE html>
 html{font-size:calc(16.5px * var(--fs));-webkit-text-size-adjust:100%}
 body{
   background:var(--bg);color:var(--tx);font-family:var(--font);
-  min-height:100vh;font-size:1rem;line-height:1.45;
+  min-height:100vh;min-height:100dvh;font-size:1rem;line-height:1.45;overflow-x:hidden;
   font-variant-numeric:tabular-nums;
 }
 body::before{
@@ -81,7 +81,7 @@ body::before{
     radial-gradient(ellipse 60% 40% at 10% 0%,color-mix(in srgb, var(--a1) 10%, transparent),transparent 60%),
     radial-gradient(ellipse 50% 45% at 95% 100%,rgba(167,139,250,.08),transparent 60%);
 }
-.w{position:relative;z-index:1;max-width:1560px;margin:0 auto;padding:0 22px 70px}
+.w{position:relative;z-index:1;max-width:none;width:100%;margin:0 auto;padding:0 clamp(12px,2.2vw,34px) 70px}
 
 .ic{width:15px;height:15px;flex:none;display:inline-block;vertical-align:-2px;
   stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}

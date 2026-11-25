@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.42.0 — fluid layout
+
+- Removed fixed 1560px content width; UI fills the window.
+- Uses dynamic viewport height; no horizontal overflow.
+- PWA window still uses browser-controlled size, but content adapts to any window.
+
 ## v1.41.0 — closable install dialog
 
 - Fixed modal close: global close handler, backdrop click and Escape.
