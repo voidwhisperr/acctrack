@@ -1308,8 +1308,9 @@ code{
 
   <div class="panel" id="dataPanel" style="margin-bottom:14px">
     <div class="ph"><span>ДАНІ Й ДІАГНОСТИКА</span>
-      <button class="btn" style="font-size:12px" onclick="diagLoad()">↻ Оновити</button></div>
+      <button class="btn" style="font-size:12px" onclick="diagLoad();tokensCheck()" data-i18n="tk.check">Перевірити токени</button></div>
     <div id="diagBox" style="font-size:12.5px;color:var(--mu);margin-bottom:12px">натисніть ↻ Оновити</div>
+    <div id="tokenStates" style="font-size:12.5px;color:var(--mu);margin-bottom:12px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       <button class="btn" onclick="demoLoad()">Завантажити демо-дані</button>
       <button class="btn" onclick="demoClear()">Стерти дані</button>
@@ -3058,12 +3059,31 @@ async function diagLoad(){
       + ' · ELDORADO '+Number(c.eldorado||0)
       + ' · '+t('bk.typeInventory')+' '+Number(c.inventory||0)
       + ' · '+(LANG==='ru'?'товаров ':LANG==='en'?'products ':'товарів ')+Number(c.suppliers||0)+'<br>'
-      + '<b>'+t('diag.tokens')+':</b> FunPay '+(tk.funpay?'✅':'❌')
-      + ' · ZeusX '+(tk.zeusx?'✅':'❌')
-      + ' · Gmail '+(tk.gmail?'✅':'❌')+'</div>';
+      + '<b>'+t('diag.tokens')+':</b> '+(LANG==='ru'?'нажмите «Проверить токены»':LANG==='en'?'press “Check tokens”':'натисніть «Перевірити токени»')+'</div>';
   }catch(e){
     box.innerHTML = '<span style="color:var(--rd)">⚠ '+esc(String(e))+'</span>';
   }
+}
+
+async function tokensCheck(){
+  const el=g('tokenStates'); if(!el) return;
+  el.innerHTML='⏳ '+t('tk.checking');
+  try{
+    const d=await fetch('/api/tokens/check').then(r=>r.json());
+    if(!d.ok) throw new Error(d.error||'');
+    const L=({uk:{valid:'активний',expired:'прострочений',missing:'не задано',error:'не вдалося перевірити'},
+             en:{valid:'active',expired:'expired',missing:'not set',error:'check failed'},
+             ru:{valid:'активен',expired:'просрочен',missing:'не задан',error:'не удалось проверить'}})[LANG]
+           || {valid:'active',expired:'expired',missing:'not set',error:'check failed'};
+    const icon={valid:'✅',expired:'⚠',missing:'—',error:'❔'};
+    const row=(name,key)=>{
+      const st=(d.states||{})[key]||'error';
+      const msg=(d.details||{})[key]||'';
+      return '<div style="margin:2px 0">'+(icon[st]||'❔')+' <b>'+name+'</b>: '+(L[st]||st)
+        + (msg?' <span style="opacity:.65">· '+esc(String(msg))+'</span>':'')+'</div>';
+    };
+    el.innerHTML=row('FunPay','funpay')+row('ZeusX','zeusx')+row('Gmail','gmail');
+  }catch(e){ el.innerHTML='<span style="color:var(--rd)">⚠ '+esc(String(e))+'</span>'; }
 }
 
 async function reloadAllData(){
@@ -7249,6 +7269,10 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
 })();
 </script>
 <script>
+Object.assign(I18N.uk, {'tk.check':'Перевірити токени','tk.checking':'Перевіряю токени…'});
+Object.assign(I18N.en, {'tk.check':'Check tokens','tk.checking':'Checking tokens…'});
+Object.assign(I18N.ru, {'tk.check':'Проверить токены','tk.checking':'Проверяю токены…'});
+
 const TR_EN = {
   "збереженими": "saved", "хвилини": "minutes", "хвилин": "minutes", "хвилину": "minute",
 

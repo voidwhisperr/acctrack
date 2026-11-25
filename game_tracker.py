@@ -4474,7 +4474,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.49.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.49.1", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4569,7 +4569,17 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             _f = os.path.join(str(_DOCS_DIR),
                               "DEMO.html" if p == "/demo" else p[len("/docs/"):])
             if not os.path.exists(_f):
-                self._send(404, "text/plain", b"404")
+                if p == "/demo":
+                    # Демо-сторінки немає в цій збірці — не віддаємо 404,
+                    # а показуємо посилання на актуальні скріншоти.
+                    _page = ("<!doctype html><meta charset=utf-8><title>Ledger — screenshots</title>"
+                             "<body style='font:16px Manrope,system-ui;background:#0d1017;color:#e9ebf2;padding:40px'>"
+                             "<h2>Скріншоти функцій</h2><p style='color:#8b95a9'>У цій збірці немає локальної демо-сторінки.</p>"
+                             "<p><a style='color:#d9a05b' href='https://github.com/voidwhisperr/ledger#screenshots'>"
+                             "Відкрити скріншоти на GitHub</a></p></body>")
+                    self._send(200, "text/html; charset=utf-8", _page.encode("utf-8"))
+                else:
+                    self._send(404, "text/plain", b"404")
             else:
                 with open(_f, "rb") as _fh:
                     _data = _fh.read()
@@ -4877,6 +4887,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                             "price": pr.get("price"), "sourceName": pr.get("sourceName"),
                             "url": pr.get("url"),
                             "history": ((_supplier_seen.get(pid) or {}).get("history") or [])})
+        elif p == "/api/tokens/check":
+            self._json(_tokens_check())
         elif p == "/api/diag":
             _sec = _read_json(SECRETS_FILE, {}) or {}
             def fsize(path):
@@ -4884,7 +4896,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.49.0",
+            self._json({"ok": True, "version": "1.49.1",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6196,6 +6208,84 @@ def _render_html():
     return ui.render_html(payload, paid, _lang)
 
 
+_TOKEN_CHECK = {"ts": 0.0, "data": None}
+
+
+def _tokens_check():
+    """Реальна перевірка токенів: valid / expired / missing / error."""
+    now = time.time()
+    if _TOKEN_CHECK["data"] and now - _TOKEN_CHECK["ts"] < 30:
+        return _TOKEN_CHECK["data"]
+    sec = _read_json(SECRETS_FILE, {}) or {}
+    out = {"ok": True, "ts": int(now), "states": {}, "details": {}}
+
+    def funpay():
+        if not sec.get("funpay_cookie"):
+            return "missing", ""
+        try:
+            d = _platform_funpay() or {}
+            if d.get("ok"):
+                return "valid", ""
+            err = str(d.get("error") or "")
+        except Exception as e:
+            err = str(e)
+        low = err.lower()
+        return ("expired" if ("cookie" in low or "простроч" in low or "login" in low) else "error"), err[:160]
+
+    def zeusx():
+        if not sec.get("zeusx_cookie"):
+            return "missing", ""
+        try:
+            d = _platform_zeusx() or {}
+            if d.get("ok"):
+                return "valid", ""
+            err = str(d.get("error") or "")
+        except Exception as e:
+            err = str(e)
+        low = err.lower()
+        return ("expired" if ("token" in low or "cookie" in low or "401" in low or "unauth" in low) else "error"), err[:160]
+
+    def gmail():
+        user, pwd = _gmail_cfg()
+        if not user or not pwd:
+            return "missing", ""
+        try:
+            import imaplib
+            box = imaplib.IMAP4_SSL("imap.gmail.com", 993, timeout=10)
+            try:
+                box.login(user, pwd)
+            finally:
+                try:
+                    box.logout()
+                except Exception:
+                    pass
+            return "valid", ""
+        except imaplib.IMAP4.error as e:
+            return "expired", str(e)[:160]
+        except Exception as e:
+            return "error", str(e)[:160]
+
+    try:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=3) as ex:
+            futs = {"funpay": ex.submit(funpay), "zeusx": ex.submit(zeusx), "gmail": ex.submit(gmail)}
+            for name, fut in futs.items():
+                try:
+                    state, msg = fut.result(timeout=18)
+                except Exception as e:
+                    state, msg = "error", str(e)[:160]
+                out["states"][name] = state
+                out["details"][name] = msg
+    except Exception:
+        for name, fn in (("funpay", funpay), ("zeusx", zeusx), ("gmail", gmail)):
+            state, msg = fn()
+            out["states"][name] = state
+            out["details"][name] = msg
+    _TOKEN_CHECK["ts"] = now
+    _TOKEN_CHECK["data"] = out
+    return out
+
+
 def _startup_supplier_refresh(allow_network=True):
     """Оновлення постачальників у фоні — вже після старту сервера."""
     global _supplier_cache
@@ -6298,7 +6388,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.49.0")
+    print("  ▲  Ledger v1.49.1")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

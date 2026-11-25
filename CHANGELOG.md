@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.49.1 — working demo link and honest token checks
+
+- “Screenshots” button in the desktop app no longer opens a 404: the docs are bundled into the exe, and a missing demo page falls back to the GitHub gallery.
+- Demo gallery images now match the v1.49 screenshot names (9/9 load, 0 broken).
+- New “Check tokens” button performs a real FunPay / ZeusX / Gmail check and shows **active / expired / not set / check failed** instead of a green tick for a non-empty cookie.
+- The diagnostics line no longer claims tokens are valid just because a value is stored.
+
 ## v1.49.0 — language, currency and desktop pass
 
 - Language switching reloads the page, so no UA/EN/RU text is left over from the previous language.
