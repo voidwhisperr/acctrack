@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.50.0 — full free-version audit
+
+- Audited the free Ledger UI end to end: 201 visible controls clicked, all links checked, downloads verified.
+- Fixed the “Вставити cookie” button on the mail page: the inline handler had a broken quote and threw “Invalid or unexpected token”.
+- 2FA setup is disabled with a hint when no login password is set (instead of returning 400).
+- Encrypted backup export now works out of the box: the cryptography package is bundled into the desktop build; export/import round-trip verified.
+- Verified imports: P&L CSV, Eldorado CSV, payout CSV, generic CSV, ZIP backup and encrypted .enc backup — all add or restore records.
+- Verified destructive actions: clear deals, clear mail queue, disconnect cookies, erase data.
+- Release notes and audit report updated with the exact results.
+
 ## v1.49.1 — working demo link and honest token checks
 
 - “Screenshots” button in the desktop app no longer opens a 404: the docs are bundled into the exe, and a missing demo page falls back to the GitHub gallery.

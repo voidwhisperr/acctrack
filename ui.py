@@ -3422,12 +3422,15 @@ async function load2FA(){
     const d=await fetch('/api/2fa/status').then(r=>r.json());
     const st=g('twofaStatus');
     if(!st) return;
+    const _btn=[...document.querySelectorAll('button')].find(b=>b.getAttribute('onclick')==='setup2FA()');
     if(!d.available){
       st.innerHTML='⚠ '+(LANG==='en'?'Enable a login password first':LANG==='ru'?'Сначала включи пароль входа':'Спочатку увімкни пароль входу');
+      if(_btn){ _btn.disabled=true; _btn.style.opacity='.5'; _btn.title=(LANG==='en'?'Enable a login password first':LANG==='ru'?'Сначала включи пароль входа':'Спочатку увімкни пароль входу'); }
       if(g('twofaSetup')) g('twofaSetup').style.display='none';
       if(g('twofaEnabled')) g('twofaEnabled').style.display='none';
       return;
     }
+    if(_btn){ _btn.disabled=false; _btn.style.opacity=''; _btn.title=''; }
     st.innerHTML = d.enabled
       ? '✅ '+(LANG==='en'?'2FA is enabled':LANG==='ru'?'2FA включена':'2FA увімкнена')
       : '○ '+(LANG==='en'?'2FA is not enabled':LANG==='ru'?'2FA не включена':'2FA не увімкнена');
@@ -6760,7 +6763,7 @@ async function mailCookieHint(){
     const st = await fetch('/api/secrets/status').then(r => r.json());
     box.innerHTML = st.funpay_cookie ? '' :
       '<div class="al warn" style="margin-bottom:12px">⚠ <b>FunPay:</b> ' + (LANG==='uk'?'cookie не задано — замовлення з FunPay сюди не надходять.':(LANG==='ru'?'cookie не задан — заказы с FunPay сюда не поступают.':'cookie is not set — FunPay orders do not arrive here.')) + ' <button class="btn" style="font-size:11px;padding:3px 9px" '
-      + 'onclick="sw(\'platforms\',document.querySelector(\'.tab[onclick*=\"platforms\"]\'))">' + (LANG==='uk'?'Вставити cookie':(LANG==='ru'?'Вставить cookie':'Paste cookie')) + '</button></div>';
+      + 'onclick="mnavGo(\'platforms\')">' + (LANG==='uk'?'Вставити cookie':(LANG==='ru'?'Вставить cookie':'Paste cookie')) + '</button></div>';
   }catch(e){}
 }
 
