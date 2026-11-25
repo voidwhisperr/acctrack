@@ -506,6 +506,7 @@ code{
   <div class="tab" onclick="sw('inventory',this);loadInventory()"><svg class="ic"><use href="#ic-layers"/></svg><span data-i18n="nav.inventory">Інвентар</span></div>
   <div class="tsep"></div>
   <div class="tab" onclick="sw('stats',this);renderStats();setTimeout(renderRevenueChart,80)"><svg class="ic"><use href="#ic-chart"/></svg><span data-i18n="nav.analytics">Аналітика</span></div>
+  <div class="tab" onclick="sw('plus',this);loadPlus()"><span style="font-size:14px;font-weight:900;color:var(--gr)">✦</span><span data-i18n="nav.plus">Ledger+</span></div>
   <div class="tab" onclick="sw('setup',this);loadBackupList();loadSettings()"><svg class="ic"><use href="#ic-gear"/></svg></div>
 </div>
 
@@ -1221,6 +1222,13 @@ code{
 </div>
 
 <!-- ⚙️ НАЛАШТУВАННЯ -->
+<div id="tab-plus" class="tc" data-no-currency>
+  <div class="panel">
+    <div class="ph"><span>LEDGER+</span><span id="plusStatus" style="font-size:12px;color:var(--mu)"></span></div>
+    <div id="plusBody"><div class="none">⏳</div></div>
+  </div>
+</div>
+
 <div id="tab-setup" class="tc">
 
   <div class="panel" id="pwaPanel" style="margin-bottom:14px">
@@ -3550,6 +3558,60 @@ async function disable2FA(){
   }catch(e){ toast('⚠ '+e, false); }
 }
 
+async function loadPlus(){
+  const box=g('plusBody'); if(!box) return;
+  try{
+    const [st,set]=await Promise.all([fetch('/api/license/status').then(r=>r.json()), fetch('/api/settings').then(r=>r.json())]);
+    const lic=st.license||null;
+    if(g('plusStatus')) g('plusStatus').textContent = lic ? (lic.plan.toUpperCase()+' · '+lic.days_left+'d') : t('plus.free');
+    const row=(k,v)=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--brd)"><span style="color:var(--mu)">'+k+'</span><b>'+esc(String(v))+'</b></div>';
+    const card=(title,price,desc)=>'<div style="background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:14px;min-width:220px;flex:1"><div style="font-weight:800">'+title+'</div><div style="font-size:22px;font-weight:800;color:var(--gr);margin:6px 0">'+price+'</div><div style="font-size:11px;color:var(--mu)">'+desc+'</div></div>';
+    const pay=(id,label,val,ph)=>'<label style="font-size:11px;color:var(--mu)">'+label+'<br><input id="'+id+'" value="'+esc(val||'')+'" placeholder="'+esc(ph||'')+'" style="width:100%;margin-top:4px;font-size:12px"></label>';
+    box.innerHTML =
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">'
+      + card(t('plus.solo'),'$7',t('plus.perMonth')) + card(t('plus.team'),'$29',t('plus.perMonth')) + card(t('plus.setup'),'$29',t('plus.once'))
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--mu);margin-bottom:14px">'+t('plus.features')+'</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'
+      + '<input id="licCode" placeholder="'+t('plus.codePh')+'" style="flex:1;min-width:260px;font-size:12px">'
+      + '<button class="btn gr" onclick="activateLicense()">'+t('plus.activate')+'</button>'
+      + (lic?'<button class="btn" onclick="deactivateLicense()">'+t('plus.deactivate')+'</button>':'')
+      + '</div>'
+      + (lic ? row(t('plus.plan'),lic.plan)+row(t('plus.expires'),lic.exp)+row(t('plus.days'),lic.days_left) : '<div class="al info">'+t('plus.needKey')+'</div>')
+      + '<div class="ph" style="margin:18px 0 8px"><span>'+t('plus.pay')+'</span></div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px">'
+      + pay('payUsdt',t('plus.usdt'),set.pay_usdt,'T... / 0x...') + pay('payBinance',t('plus.binance'),set.pay_binance,'Binance Pay ID')
+      + pay('payPayoneer',t('plus.payoneer'),set.pay_payoneer,'email@payoneer') + pay('payTg',t('plus.tg'),set.pay_tg,'@ENOUGHT285')
+      + '</div>'
+      + '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn" onclick="savePayDetails()">'+t('plus.save')+'</button><span style="font-size:11px;color:var(--mu)">'+t('plus.hint')+'</span></div>'
+      + '<div style="font-size:11px;color:var(--mu);margin-top:10px">'+t('plus.trialNote')+'</div>';
+  }catch(e){ box.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
+}
+async function activateLicense(){
+  const code=(g('licCode')&&g('licCode').value||'').trim();
+  if(!code){ toast(t('plus.codePh'), false); return; }
+  try{
+    const d=await fetch('/api/license/activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    toast(t('plus.activated')+' · '+d.license.plan);
+    setTimeout(()=>location.reload(), 700);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function deactivateLicense(){
+  if(!confirm(t('plus.deactivate')+'?')) return;
+  try{
+    await fetch('/api/license/deactivate',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    setTimeout(()=>location.reload(), 500);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function savePayDetails(){
+  try{
+    const body={pay_usdt:(g('payUsdt')&&g('payUsdt').value)||'', pay_binance:(g('payBinance')&&g('payBinance').value)||'', pay_payoneer:(g('payPayoneer')&&g('payPayoneer').value)||'', pay_tg:(g('payTg')&&g('payTg').value)||''};
+    await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    toast(t('plus.saved'));
+  }catch(e){ toast('⚠ '+e, false); }
+}
+
 async function loadSettings(){
   try{
     const d = await fetch('/api/settings').then(r=>r.json());
@@ -3639,7 +3701,7 @@ async function loadSettings(){
   try{ load2FA(); }catch(e){}
   try{ loadAudit(); }catch(e){}
   if(g('tgEnabled')) g('tgEnabled').checked = !!tg.enabled;
-  if(g('autoAddOrders')) g('autoAddOrders').checked = !!d.auto_add_orders;
+  if(g('autoAddOrders')){ g('autoAddOrders').checked = !!d.auto_add_orders; if(!GT_PAID){ g('autoAddOrders').disabled = true; g('autoAddOrders').parentElement.title = t('plus.needKey'); } }
   if(g('vaultEnabled')){ g('vaultEnabled').checked = !!d.vault_enabled; g('vaultEnabled').disabled = !d.vault_available; }
   const nt = d.notify || {};
   const map = {ntOrder:'order', ntMessage:'message', ntWatchdog:'watchdog', ntAgent:'agent',
@@ -6846,6 +6908,7 @@ async function saveVault(){
   }catch(e){ toast('⚠ '+e, false); }
 }
 async function saveAutoAddOrders(){
+  if(!GT_PAID){ toast(t('plus.needKey'), false); try{ if(g('autoAddOrders')) g('autoAddOrders').checked=false; }catch(e){} return; }
   const on = !!(g('autoAddOrders') && g('autoAddOrders').checked);
   try{
     await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -7386,6 +7449,7 @@ Object.assign(I18N.uk, {'tk.check':'Перевірити токени','tk.check
 Object.assign(I18N.en, {'fs.title':'Font size','fs.reset':'Reset'});
 Object.assign(I18N.ru, {'fs.title':'Размер шрифта','fs.reset':'Сбросить'});
 Object.assign(I18N.uk, {
+ 'nav.plus':'Ledger+','plus.free':'Безкоштовна версія','plus.solo':'Ledger+ Solo','plus.team':'Ledger+ Team','plus.setup':'Налаштування під ключ','plus.perMonth':'/міс','plus.once':'разово','plus.features':'Хостинг, Taobao-агент, автододавання замовлень, бекапи, оновлення, підтримка.','plus.activate':'Активувати ключ','plus.deactivate':'Деактивувати','plus.codePh':'LDG… або TRIAL…','plus.plan':'Тариф','plus.expires':'Діє до','plus.days':'Днів залишилось','plus.needKey':'Автододавання та Taobao доступні з ключем Ledger+.','plus.pay':'ОПЛАТА','plus.usdt':'USDT (TRC20 / BEP20)','plus.binance':'Binance Pay ID','plus.payoneer':'Payoneer email','plus.tg':'Telegram','plus.save':'Зберегти реквізити','plus.saved':'Реквізити збережено','plus.hint':'Після оплати надішли скрін + email у Telegram — отримаєш ключ.','plus.trialNote':'Тестові ключі — за запитом у Telegram @ENOUGHT285. Можливі розіграші.','plus.activated':'Ключ активовано',
  'restock.title':'ЩО ДОКУПИТИ','restock.sold':'продано за 30 днів:','restock.stock':'на складі:','restock.margin':'маржа','restock.out':'немає на складі','restock.low':'залишився 1 шт',
  'vault.label':'Шифрувати дані акаунтів','vault.hint':'Ключ у .gt_secrets.json; список показує лише маску, повний логін — по кнопці «Показати».','vault.on':'Шифрування акаунтів увімкнено','vault.off':'Шифрування акаунтів вимкнено',
  'order.autoAdd':'авто в P&L','order.autoOn':'Автододавання увімкнено — нові замовлення з сумою потраплятимуть у P&L','order.autoOff':'Автододавання вимкнено',
@@ -7405,6 +7469,7 @@ Object.assign(I18N.uk, {
  'upd.same':'✅ У тебе остання версія','upd.newer':'⬆ Доступна новіша версія','upd.open':'Відкрити release'
 });
 Object.assign(I18N.en, {
+ 'nav.plus':'Ledger+','plus.free':'Free version','plus.solo':'Ledger+ Solo','plus.team':'Ledger+ Team','plus.setup':'Done-for-you setup','plus.perMonth':'/mo','plus.once':'one-time','plus.features':'Hosting, Taobao agent, automatic order import, backups, updates, support.','plus.activate':'Activate key','plus.deactivate':'Deactivate','plus.codePh':'LDG… or TRIAL…','plus.plan':'Plan','plus.expires':'Valid until','plus.days':'Days left','plus.needKey':'Automatic orders and Taobao require a Ledger+ key.','plus.pay':'PAYMENT','plus.usdt':'USDT (TRC20 / BEP20)','plus.binance':'Binance Pay ID','plus.payoneer':'Payoneer email','plus.tg':'Telegram','plus.save':'Save payment details','plus.saved':'Payment details saved','plus.hint':'After payment send a screenshot and your email in Telegram to get the key.','plus.trialNote':'Trial keys on request in Telegram @ENOUGHT285. Giveaways are possible.','plus.activated':'Key activated',
  'restock.title':'RESTOCK SUGGESTIONS','restock.sold':'sold in 30 days:','restock.stock':'in stock:','restock.margin':'margin','restock.out':'out of stock','restock.low':'only 1 left',
  'vault.label':'Encrypt account credentials','vault.hint':'Key lives in .gt_secrets.json; the list shows only a mask, the full login is behind Show.','vault.on':'Credential encryption enabled','vault.off':'Credential encryption disabled',
  'order.autoAdd':'auto to P&L','order.autoOn':'Auto-add enabled — new orders with a price go straight to P&L','order.autoOff':'Auto-add disabled',
@@ -7424,6 +7489,7 @@ Object.assign(I18N.en, {
  'upd.same':'✅ You are up to date','upd.newer':'⬆ A newer version is available','upd.open':'Open release'
 });
 Object.assign(I18N.ru, {
+ 'nav.plus':'Ledger+','plus.free':'Бесплатная версия','plus.solo':'Ledger+ Solo','plus.team':'Ledger+ Team','plus.setup':'Настройка под ключ','plus.perMonth':'/мес','plus.once':'разово','plus.features':'Хостинг, Taobao-агент, автодобавление заказов, бэкапы, обновления, поддержка.','plus.activate':'Активировать ключ','plus.deactivate':'Деактивировать','plus.codePh':'LDG… или TRIAL…','plus.plan':'Тариф','plus.expires':'Действует до','plus.days':'Осталось дней','plus.needKey':'Автодобавление и Taobao доступны с ключом Ledger+.','plus.pay':'ОПЛАТА','plus.usdt':'USDT (TRC20 / BEP20)','plus.binance':'Binance Pay ID','plus.payoneer':'Payoneer email','plus.tg':'Telegram','plus.save':'Сохранить реквизиты','plus.saved':'Реквизиты сохранены','plus.hint':'После оплаты пришли скрин + email в Telegram — получишь ключ.','plus.trialNote':'Тестовые ключи — по запросу в Telegram @ENOUGHT285. Возможны розыгрыши.','plus.activated':'Ключ активирован',
  'restock.title':'ЧТО ДОКУПИТЬ','restock.sold':'продано за 30 дней:','restock.stock':'на складе:','restock.margin':'маржа','restock.out':'нет на складе','restock.low':'осталась 1 шт',
  'vault.label':'Шифровать данные аккаунтов','vault.hint':'Ключ в .gt_secrets.json; список показывает только маску, полный логин — по кнопке «Показать».','vault.on':'Шифрование аккаунтов включено','vault.off':'Шифрование аккаунтов выключено',
  'order.autoAdd':'авто в P&L','order.autoOn':'Автодобавление включено — новые заказы с суммой попадут в P&L','order.autoOff':'Автодобавление выключено',

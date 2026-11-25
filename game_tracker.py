@@ -56,6 +56,11 @@ except Exception:                 # модуль відсутній — без U
     ui = None
 
 try:
+    import license as lic         # офлайн-перевірка ліцензійних ключів
+except Exception:
+    lic = None
+
+try:
     import taobao_core          # чисті функції Taobao (без стану)
 except Exception:
     taobao_core = None
@@ -4561,7 +4566,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.52.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.53.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4888,6 +4893,12 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         elif p == "/api/2fa/status":
             self._json({"ok": True, "enabled": _totp_enabled(),
                         "available": AUTH_MODE != "off"})
+        elif p == "/api/license/status":
+            _inf = _license_info()
+            self._json({"ok": True, "paid": _license_paid(), "license": _inf,
+                        "features": (_inf or {}).get("features") or [],
+                        "plan": (_inf or {}).get("plan") or "free",
+                        "days_left": (_inf or {}).get("days_left")})
         elif p == "/api/settings":
             st = _read_json(SETTINGS_FILE, {}) or {}
             tg = _tg_cfg()
@@ -4935,6 +4946,11 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "currency_manual": bool(st.get("currency_manual")),
                 "auto_add_orders": bool(st.get("auto_add_orders")),
                 "vault_enabled": bool(st.get("vault_enabled")),
+                "pay_usdt": st.get("pay_usdt") or "",
+                "pay_binance": st.get("pay_binance") or "",
+                "pay_payoneer": st.get("pay_payoneer") or "",
+                "pay_tg": st.get("pay_tg") or "",
+                "pay_note": st.get("pay_note") or "",
                 "vault_available": _vault_available(),
                 "rate_ts": ts,
                 "rate_source": src,
@@ -5012,7 +5028,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.52.0",
+            self._json({"ok": True, "version": "1.53.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5462,6 +5478,37 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             _audit("2fa.disabled")
             self._json({"ok": True, "enabled": False})
             return
+        if self.path == "/api/license/activate":
+            try:
+                _code = str(body.get("code") or "").strip()
+                _inf = lic.verify(_code) if lic else None
+                if not _inf:
+                    self._json({"ok": False, "error": "Невірний або прострочений ключ"}, code=400)
+                    return
+                lic.save(_BASE_DIR, _code)
+                try:
+                    Handler.html_bytes = _render_html().encode("utf-8")
+                except Exception:
+                    pass
+                _audit("license.activate", plan=_inf.get("plan"), exp=_inf.get("exp"),
+                       features=",".join(_inf.get("features") or []))
+                self._json({"ok": True, "license": _inf, "paid": _license_paid()})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:200]}, code=400)
+            return
+        if self.path == "/api/license/deactivate":
+            try:
+                if lic:
+                    lic.clear(_BASE_DIR)
+                try:
+                    Handler.html_bytes = _render_html().encode("utf-8")
+                except Exception:
+                    pass
+                _audit("license.deactivate")
+                self._json({"ok": True, "paid": _license_paid()})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:200]}, code=400)
+            return
         if self.path == "/api/settings/save":
             try:
                 usd = body.get("usd_uah")
@@ -5478,6 +5525,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         st["onboarded"] = bool(body.get("onboarded"))
                     if "auto_add_orders" in body:
                         st["auto_add_orders"] = bool(body.get("auto_add_orders"))
+                    for _pk in ("pay_usdt", "pay_binance", "pay_payoneer", "pay_tg", "pay_note"):
+                        if _pk in body:
+                            st[_pk] = str(body.get(_pk) or "").strip()[:300]
                     if "vault_enabled" in body:
                         _want_vault = bool(body.get("vault_enabled"))
                         st["vault_enabled"] = bool(_want_vault and _vault_available())
@@ -6340,10 +6390,34 @@ def _render_html():
         return ("<h1>UI недоступний</h1><p>Не знайдено модуль ui.py — "
                 "поклади його поруч із game_tracker.py</p>")
     _st = _read_json(SETTINGS_FILE, {}) or {}
-    _env_paid = os.environ.get("GT_PAID")
-    paid = (_env_paid == "1") if _env_paid in ("0", "1") else bool(_st.get("paid_mode"))
     _lang = str(_st.get("lang") or "en")
-    return ui.render_html(payload, paid, _lang)
+    return ui.render_html(payload, _license_paid(), _lang)
+
+
+def _license_info():
+    if lic is None:
+        return None
+    try:
+        return lic.load(_BASE_DIR)
+    except Exception:
+        return None
+
+
+def _license_has(feature):
+    if os.environ.get("GT_PAID") == "1":
+        return True
+    try:
+        if bool((_read_json(SETTINGS_FILE, {}) or {}).get("paid_mode")):
+            return True
+    except Exception:
+        pass
+    info = _license_info()
+    return bool(info and feature in (info.get("features") or []))
+
+
+def _license_paid():
+    return (_license_has("auto_orders") or _license_has("taobao")
+            or _license_has("hosted") or _license_has("team"))
 
 
 _TOKEN_CHECK = {"ts": 0.0, "data": None}
@@ -6492,6 +6566,8 @@ def _maybe_auto_add_order(item):
     try:
         st = _read_json(SETTINGS_FILE, {}) or {}
         if not st.get('auto_add_orders'):
+            return False
+        if not _license_has('auto_orders'):
             return False
         if not isinstance(item, dict):
             return False
@@ -6676,7 +6752,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.52.0")
+    print("  ▲  Ledger v1.53.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
