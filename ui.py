@@ -726,6 +726,7 @@ code{
       <button class="btn" style="font-size:12px;padding:5px 11px" onclick="loadBuyList(true)"><svg class="ic"><use href="#ic-refresh"/></svg><span data-i18n="btn.refresh">Оновити</span></button>
     </div>
     <div style="font-size:12px;color:var(--mu);margin-bottom:12px" data-i18n="plan.hint">Ціна постачальника проти вашої медіани продажу по схожих лотах, комісія ZeusX 5–10% за рангом.</div>
+    <div id="restockBox" style="margin-bottom:14px"></div>
     <div id="buyList"><div class="none">⏳ Рахую...</div></div>
   </div>
 </div>
@@ -780,6 +781,7 @@ code{
         <button class="btn" style="padding:5px 10px;font-size:11px" onclick="playOrderSound()" title="Test sound">🔊</button>
         <button class="btn" style="padding:5px 10px;font-size:11px" onclick="createDemoOrder()">🧪 <span data-i18n="order.demo">Демо</span></button>
         <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="orderSound" type="checkbox" checked> <span data-i18n="order.sound">звук</span></label>
+        <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px" title="Auto-create a deal from each new order that already has a price"><input id="autoAddOrders" type="checkbox" onchange="saveAutoAddOrders()"> <span data-i18n="order.autoAdd">авто в P&L</span></label>
         <button class="btn" onclick="loadMailQueue(true)">↺ <span data-i18n="an.refresh">Оновити</span></button>
       </div>
     </div>
@@ -991,6 +993,13 @@ code{
   <div class="panel">
     <div class="ph"><span data-i18n="ph.stock">СКЛАД — куплені акаунти</span>
       <button class="btn" style="font-size:12px;padding:5px 11px" onclick="loadInventory()">↻ Оновити</button></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <label style="font-size:12px;color:var(--mu);display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input id="vaultEnabled" type="checkbox" onchange="saveVault()">
+        <span data-i18n="vault.label">Шифрувати дані акаунтів</span>
+      </label>
+      <span style="font-size:11px;color:var(--mu)" data-i18n="vault.hint">Ключ у .gt_secrets.json; список показує лише маску, повний логін — по кнопці «Показати».</span>
+    </div>
     <div style="font-size:13px;color:var(--mu);margin-bottom:14px" data-i18n="inv.intro">Bought accounts: what they cost, from whom, and whether they sold. Shows real margin and how much money is frozen.</div>
     <div id="invSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
@@ -3630,6 +3639,8 @@ async function loadSettings(){
   try{ load2FA(); }catch(e){}
   try{ loadAudit(); }catch(e){}
   if(g('tgEnabled')) g('tgEnabled').checked = !!tg.enabled;
+  if(g('autoAddOrders')) g('autoAddOrders').checked = !!d.auto_add_orders;
+  if(g('vaultEnabled')){ g('vaultEnabled').checked = !!d.vault_enabled; g('vaultEnabled').disabled = !d.vault_available; }
   const nt = d.notify || {};
   const map = {ntOrder:'order', ntMessage:'message', ntWatchdog:'watchdog', ntAgent:'agent',
                ntDigest:'digest', ntNew:'new', ntPrice:'price', ntRestock:'restock', ntDeal:'deal', ntDeadstock:'deadstock'};
@@ -5433,8 +5444,25 @@ function supQuery(page){
   return p.toString();
 }
 
+async function loadRestock(){
+  const box = g('restockBox'); if(!box) return;
+  try{
+    const d = await fetch('/api/insights/restock').then(r=>r.json());
+    if(!d.ok || !d.items || !d.items.length){ box.innerHTML=''; return; }
+    const money = v => locMoney(v);
+    box.innerHTML = '<div class="ph" style="margin:0 0 8px"><span>'+t('restock.title')+'</span></div>'
+      + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+      + d.items.map(x => '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;min-width:200px">'
+        + '<div style="font-weight:700;font-size:13px">'+esc(x.game)+'</div>'
+        + '<div style="font-size:11px;color:var(--mu);margin-top:3px">'+t('restock.sold')+' '+x.sold+' · '+t('restock.stock')+' '+x.stock+'</div>'
+        + '<div style="font-size:12px;color:'+(x.margin>=0?'var(--gr)':'var(--rd)')+';margin-top:4px">'+t('restock.margin')+' '+fmtPct(x.margin)+' · '+money(x.profit)+'</div>'
+        + '<div style="font-size:10px;color:var(--yw);margin-top:3px">'+(x.stock===0?t('restock.out'):t('restock.low'))+'</div></div>').join('')
+      + '</div>';
+  }catch(e){ box.innerHTML=''; }
+}
 async function loadBuyList(force){
   const el = g('buyList'); if(!el) return;
+  loadRestock();
   if(!force && el.dataset.loaded === '1') return;
   el.innerHTML = '<div class="none">'+t('rep.calculating')+'</div>';
   try{
@@ -6807,6 +6835,24 @@ async function loadMailQueue(force){
   }catch(e){ el.innerHTML='<div class="none">⚠ '+esc(String(e))+'</div>'; }
 }
 
+async function saveVault(){
+  const on = !!(g('vaultEnabled') && g('vaultEnabled').checked);
+  try{
+    const d = await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({vault_enabled:on})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    toast(on ? t('vault.on') : t('vault.off'));
+    setTimeout(()=>{ try{ loadInventory(); }catch(e){} }, 400);
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function saveAutoAddOrders(){
+  const on = !!(g('autoAddOrders') && g('autoAddOrders').checked);
+  try{
+    await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({auto_add_orders:on})});
+    toast(on ? t('order.autoOn') : t('order.autoOff'));
+  }catch(e){ toast('⚠ '+e, false); }
+}
 async function createDemoOrder(){
   try{
     _ensureAudio();
@@ -6847,11 +6893,11 @@ function renderMailQueue(){
     if(m.game) bits.push('🎮 '+esc(m.game));
     if(m.category) bits.push('📁 '+esc(m.category));
     const when=m.ts ? new Date(m.ts*1000).toLocaleString(dateLocale()) : '';
-    const status = m.status==='added'
-      ? `<span style="color:var(--gr);font-size:12px;font-weight:700">✓ ${LANG==='ru'?'добавлено в':LANG==='en'?'added to':'додано в'} ${esc(m.added_to||'')}</span>`
+    const status = (m.status==='added' || m.status==='auto_added')
+      ? `<span style="color:var(--gr);font-size:12px;font-weight:700">${m.status==='auto_added'?'🤖 ':'✓ '}${LANG==='ru'?'добавлено в':LANG==='en'?'added to':'додано в'} ${esc(m.added_to||'')}</span>`
       : m.status==='ignored'
         ? '<span style="color:var(--mu);font-size:12px">✕ '+(LANG==='ru'?'проигнорировано':LANG==='en'?'ignored':'проігноровано')+'</span>' : '';
-    const canAdd = m.status !== 'added';
+    const canAdd = m.status !== 'added' && m.status !== 'auto_added';
     const plat = m.platform || '';
     const canEd = canAdd && plat === 'Eldorado';
     const canPl = canAdd && plat !== 'Eldorado';
@@ -7340,6 +7386,9 @@ Object.assign(I18N.uk, {'tk.check':'Перевірити токени','tk.check
 Object.assign(I18N.en, {'fs.title':'Font size','fs.reset':'Reset'});
 Object.assign(I18N.ru, {'fs.title':'Размер шрифта','fs.reset':'Сбросить'});
 Object.assign(I18N.uk, {
+ 'restock.title':'ЩО ДОКУПИТИ','restock.sold':'продано за 30 днів:','restock.stock':'на складі:','restock.margin':'маржа','restock.out':'немає на складі','restock.low':'залишився 1 шт',
+ 'vault.label':'Шифрувати дані акаунтів','vault.hint':'Ключ у .gt_secrets.json; список показує лише маску, повний логін — по кнопці «Показати».','vault.on':'Шифрування акаунтів увімкнено','vault.off':'Шифрування акаунтів вимкнено',
+ 'order.autoAdd':'авто в P&L','order.autoOn':'Автододавання увімкнено — нові замовлення з сумою потраплятимуть у P&L','order.autoOff':'Автододавання вимкнено',
  'inv.actSell':'Продати','inv.actSold':'Продано','inv.actReturn':'Повернути на склад','inv.actOff':'Списати','inv.actDelete':'Видалити',
  'twofa.code':'КОД 6 ЦИФР','twofa.recovery':'Recovery-коди','twofa.logoutAll':'Вийти на всіх пристроях',
  'twofa.keepCodes':'Збережи ці коди. Кожен працює один раз.','twofa.copy':'Копіювати',
@@ -7356,6 +7405,9 @@ Object.assign(I18N.uk, {
  'upd.same':'✅ У тебе остання версія','upd.newer':'⬆ Доступна новіша версія','upd.open':'Відкрити release'
 });
 Object.assign(I18N.en, {
+ 'restock.title':'RESTOCK SUGGESTIONS','restock.sold':'sold in 30 days:','restock.stock':'in stock:','restock.margin':'margin','restock.out':'out of stock','restock.low':'only 1 left',
+ 'vault.label':'Encrypt account credentials','vault.hint':'Key lives in .gt_secrets.json; the list shows only a mask, the full login is behind Show.','vault.on':'Credential encryption enabled','vault.off':'Credential encryption disabled',
+ 'order.autoAdd':'auto to P&L','order.autoOn':'Auto-add enabled — new orders with a price go straight to P&L','order.autoOff':'Auto-add disabled',
  'inv.actSell':'Sell','inv.actSold':'Sold','inv.actReturn':'Return to stock','inv.actOff':'Write off','inv.actDelete':'Delete',
  'twofa.code':'6-DIGIT CODE','twofa.recovery':'Recovery codes','twofa.logoutAll':'Sign out everywhere',
  'twofa.keepCodes':'Save these codes. Each works once.','twofa.copy':'Copy',
@@ -7372,6 +7424,9 @@ Object.assign(I18N.en, {
  'upd.same':'✅ You are up to date','upd.newer':'⬆ A newer version is available','upd.open':'Open release'
 });
 Object.assign(I18N.ru, {
+ 'restock.title':'ЧТО ДОКУПИТЬ','restock.sold':'продано за 30 дней:','restock.stock':'на складе:','restock.margin':'маржа','restock.out':'нет на складе','restock.low':'осталась 1 шт',
+ 'vault.label':'Шифровать данные аккаунтов','vault.hint':'Ключ в .gt_secrets.json; список показывает только маску, полный логин — по кнопке «Показать».','vault.on':'Шифрование аккаунтов включено','vault.off':'Шифрование аккаунтов выключено',
+ 'order.autoAdd':'авто в P&L','order.autoOn':'Автодобавление включено — новые заказы с суммой попадут в P&L','order.autoOff':'Автодобавление выключено',
  'inv.actSell':'Продать','inv.actSold':'Продано','inv.actReturn':'Вернуть на склад','inv.actOff':'Списать','inv.actDelete':'Удалить',
  'twofa.code':'КОД 6 ЦИФР','twofa.recovery':'Recovery-коды','twofa.logoutAll':'Выйти на всех устройствах',
  'twofa.keepCodes':'Сохрани эти коды. Каждый работает один раз.','twofa.copy':'Копировать',

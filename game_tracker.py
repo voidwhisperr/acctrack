@@ -512,6 +512,57 @@ def _save_secrets(updates):
         pass
 
 
+_VAULT_PREFIX = "enc:v1:"
+
+
+def _vault_key():
+    """Fernet-ключ з .gt_secrets.json; створюється один раз."""
+    try:
+        from cryptography.fernet import Fernet
+    except Exception:
+        return None
+    s = _read_json(SECRETS_FILE, {}) or {}
+    k = str(s.get("vault_key") or "")
+    if not k:
+        k = Fernet.generate_key().decode()
+        _save_secrets({"vault_key": k})
+    return k.encode()
+
+
+def _vault_available():
+    try:
+        import cryptography.fernet  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+def _vault_enabled():
+    return bool((_read_json(SETTINGS_FILE, {}) or {}).get("vault_enabled"))
+
+
+def _vault_encrypt(text):
+    key = _vault_key()
+    if not key:
+        raise ValueError("cryptography не встановлено")
+    from cryptography.fernet import Fernet
+    return _VAULT_PREFIX + Fernet(key).encrypt(str(text).encode("utf-8")).decode()
+
+
+def _vault_decrypt(value):
+    s = str(value or "")
+    if not s.startswith(_VAULT_PREFIX):
+        return s
+    key = _vault_key()
+    if not key:
+        return ""
+    try:
+        from cryptography.fernet import Fernet
+        return Fernet(key).decrypt(s[len(_VAULT_PREFIX):].encode()).decode("utf-8")
+    except Exception:
+        return ""
+
+
 # ─────────────────────────────────────────────────
 # ПОСТАЧАЛЬНИКИ (Shopify — де закуповувати)
 # ─────────────────────────────────────────────────
@@ -1584,12 +1635,23 @@ def _inv_load():
     global _inventory
     d = _read_json(INVENTORY_FILE, [])
     _inventory = d if isinstance(d, list) else []
+    for x in _inventory:
+        if isinstance(x, dict) and x.get("account"):
+            x["account"] = _vault_decrypt(x.get("account"))
 
 
 def _inv_save():
     try:
         with _inv_lock:
-            _atomic_dump(INVENTORY_FILE, _inventory[-2000:])
+            data = _inventory[-2000:]
+            if _vault_enabled():
+                data = []
+                for x in _inventory[-2000:]:
+                    y = dict(x)
+                    if y.get("account") and not str(y.get("account")).startswith(_VAULT_PREFIX):
+                        y["account"] = _vault_encrypt(y.get("account"))
+                    data.append(y)
+            _atomic_dump(INVENTORY_FILE, data)
     except Exception as e:
         print(f"  ⚠ Stock: {e}", flush=True)
 
@@ -1635,7 +1697,7 @@ def _inv_public(x):
     acc = str(x.get("account") or "")
     hint = acc.strip().splitlines()[0][:40] if acc.strip() else ""
     out["has_account"] = bool(acc.strip())
-    out["account_hint"] = hint
+    out["account_hint"] = ("••••••••" if (_vault_enabled() and acc.strip()) else hint)
     return out
 
 
@@ -1859,6 +1921,7 @@ def _mailq_add(item):
         _mail_queue.append(item)
         del _mail_queue[:-200]
         _atomic_dump(MAIL_QUEUE_FILE, _mail_queue[-200:])
+    _maybe_auto_add_order(item)
     return True
 
 
@@ -4498,7 +4561,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.51.5", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.52.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4704,6 +4767,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             if not it:
                 self._json({"ok": False, "error": "запис не знайдено"}, code=404)
                 return
+            if _vault_enabled():
+                _audit("vault.reveal", id=iid)
             self._json({"ok": True, "id": iid, "title": it.get("title"),
                         "game": it.get("game"), "account": it.get("account") or ""})
         elif p == "/api/inventory/match":
@@ -4718,6 +4783,13 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._send(200, "text/csv", data.encode("utf-8"), extra={
                 "Content-Disposition": 'attachment; filename="lots_%s.csv"'
                                        % (qs.get("source") or ["inventory"])[0]})
+        elif p == "/api/insights/restock":
+            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+            try:
+                _d = int((qs.get("days") or ["30"])[0])
+            except ValueError:
+                _d = 30
+            self._json(_restock_insights(_d))
         elif p == "/api/buy-list":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             self._json(_buy_list((qs.get("limit") or ["20"])[0],
@@ -4861,6 +4933,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "usd_uah": rate,
                 "currency": str((_read_json(SETTINGS_FILE, {}) or {}).get("currency") or "USD").upper()[:3],
                 "currency_manual": bool(st.get("currency_manual")),
+                "auto_add_orders": bool(st.get("auto_add_orders")),
+                "vault_enabled": bool(st.get("vault_enabled")),
+                "vault_available": _vault_available(),
                 "rate_ts": ts,
                 "rate_source": src,
                 "cloud_dir": st.get("cloud_dir") or "",
@@ -4937,7 +5012,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.51.5",
+            self._json({"ok": True, "version": "1.52.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5401,6 +5476,12 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         st["digest_hour"] = int(_fnum(body.get("digest_hour"), "digest_hour", 0, 23))
                     if "onboarded" in body:
                         st["onboarded"] = bool(body.get("onboarded"))
+                    if "auto_add_orders" in body:
+                        st["auto_add_orders"] = bool(body.get("auto_add_orders"))
+                    if "vault_enabled" in body:
+                        _want_vault = bool(body.get("vault_enabled"))
+                        st["vault_enabled"] = bool(_want_vault and _vault_available())
+                        globals()["_vault_changed"] = True
                     if "currency" in body:
                         _c = str(body.get("currency") or "USD").upper()[:3]
                         if _c.isalpha():
@@ -5492,6 +5573,12 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     if "cloud_dir" in body:
                         st["cloud_dir"] = str(cloud_dir or "").strip()[:500]
                     _atomic_dump(SETTINGS_FILE, st)
+                    if globals().pop("_vault_changed", False):
+                        try:
+                            _inv_load()
+                            _inv_save()
+                        except Exception as _ve:
+                            print(f"  ⚠ Vault migrate: {_ve}", flush=True)
                     _audit("settings.save", keys=",".join(sorted(str(k) for k in body.keys()))[:400])
                 self._json({"ok": True, "cloud_effective": _cloud_dir()})
             except Exception as e:
@@ -6050,7 +6137,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                                     "Це замовлення Eldorado — додавайте його в "
                                     "вкладку ELDORADO (кнопка ➕ ELDORADO)"}, code=400)
                         return
-                    if item.get("status") == "added":
+                    if item.get("status") in ("added", "auto_added"):
                         self._json({"ok": False, "error": "цей лист уже додано"},
                                    code=400)
                         return
@@ -6400,6 +6487,130 @@ def _startup_supplier_refresh(allow_network=True):
         print(f"  ⚠ Suppliers: {e}", flush=True)
 
 
+def _maybe_auto_add_order(item):
+    # Auto-create a deal from a recognized order when the user enabled it.
+    try:
+        st = _read_json(SETTINGS_FILE, {}) or {}
+        if not st.get('auto_add_orders'):
+            return False
+        if not isinstance(item, dict):
+            return False
+        oid = str(item.get('id') or '')
+        if not oid or oid.startswith('demo-'):
+            return False
+        if item.get('status') in ('added', 'auto_added'):
+            return False
+        try:
+            price = round(float(item.get('price') or 0), 2)
+        except (TypeError, ValueError):
+            price = 0.0
+        if price <= 0:
+            return False
+        platform = str(item.get('platform') or '')
+        today = datetime.date.today().isoformat()
+        title = str(item.get('game') or item.get('subject') or platform or 'Продаж')[:200]
+        if platform == 'Eldorado':
+            fee = round(price * ED_FEE, 2)
+            rec = {'id': int(time.time() * 1000), 'date': today, 'title': title,
+                   'price': price, 'buy': 0.0, 'fee': fee,
+                   'profit': round(price - fee, 2),
+                   'orderId': item.get('orderId') or '',
+                   'category': platform}
+            data = _read_json(ED_FILE, []) or []
+            if not isinstance(data, list):
+                data = []
+            data.append(rec)
+            _atomic_dump(ED_FILE, _clean_ed(data))
+            item['added_to'] = 'ELDORADO'
+        else:
+            src = {'ZeusX': 'zeusx', 'FunPay': 'funpay'}.get(platform, 'other')
+            rec = {'id': int(time.time() * 1000), 'date': today, 'title': title,
+                   'src': src, 'srcName': platform or 'Інше',
+                   'buy': 0.0, 'sell': price,
+                   'orderId': item.get('orderId') or '',
+                   'qty': 1, 'platform': src}
+            data = _read_json(PL_FILE, []) or []
+            if not isinstance(data, list):
+                data = []
+            data.append(rec)
+            _atomic_dump(PL_FILE, _clean_pl(data))
+            item['added_to'] = 'P&L'
+        item['status'] = 'auto_added'
+        item['auto_added_at'] = int(time.time())
+        _mailq_save()
+        try:
+            _imported_mark([oid])
+        except Exception:
+            pass
+        _audit('orders.auto_add', id=oid, platform=platform, price=price)
+        print('  🤖 Auto-added order ' + oid + ' -> ' + str(item.get('added_to')) + ' ($' + str(price) + ')', flush=True)
+        return True
+    except Exception as e:
+        print('  ⚠ Auto-add order: ' + str(e), flush=True)
+        return False
+
+
+def _restock_insights(days=30):
+    # Simple restock hints: games that sell but have no stock left.
+    try:
+        days = max(7, min(180, int(days)))
+        cutoff = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+        pl = _read_json(PL_FILE, []) or []
+        ed = _read_json(ED_FILE, []) or []
+        inv = _read_json(INVENTORY_FILE, []) or []
+        if not isinstance(pl, list): pl = []
+        if not isinstance(ed, list): ed = []
+        if not isinstance(inv, list): inv = []
+        games = {}
+        for x in inv:
+            g = str(x.get('game') or '').strip()
+            if g:
+                games.setdefault(g, {'stock': 0, 'sold': 0, 'profit': 0.0, 'revenue': 0.0})
+                if x.get('status') == 'in_stock':
+                    games[g]['stock'] += 1
+        def norm(s):
+            return re.sub(r'[^a-z0-9а-яіїєґ]+', ' ', str(s or '').lower()).strip()
+        for r in pl:
+            if str(r.get('date') or '')[:10] < cutoff:
+                continue
+            title = norm(r.get('title') or r.get('game') or '')
+            if not title:
+                continue
+            for g in games:
+                if norm(g) and norm(g) in title:
+                    games[g]['sold'] += 1
+                    games[g]['revenue'] += float(r.get('sell') or 0)
+                    games[g]['profit'] += float(r.get('afterFee') or 0) - float(r.get('expenses') or 0)
+                    break
+        for r in ed:
+            if str(r.get('date') or '')[:10] < cutoff:
+                continue
+            title = norm(r.get('title') or '')
+            if not title:
+                continue
+            for g in games:
+                if norm(g) and norm(g) in title:
+                    games[g]['sold'] += 1
+                    games[g]['revenue'] += float(r.get('price') or 0)
+                    games[g]['profit'] += float(r.get('profit') or 0)
+                    break
+        items = []
+        for g, s in games.items():
+            if s['sold'] <= 0:
+                continue
+            margin = (s['profit'] / s['revenue'] * 100) if s['revenue'] > 0 else 0
+            score = s['profit'] * (1.0 if s['stock'] == 0 else 0.5)
+            reason = 'out_of_stock' if s['stock'] == 0 else ('low_stock' if s['stock'] <= 1 else '')
+            items.append({'game': g, 'sold': s['sold'], 'stock': s['stock'],
+                          'profit': round(s['profit'], 2), 'revenue': round(s['revenue'], 2),
+                          'margin': round(margin, 1), 'reason': reason, 'score': round(score, 2)})
+        items = [x for x in items if x['reason']]
+        items.sort(key=lambda x: -x['score'])
+        return {'ok': True, 'days': days, 'items': items[:5]}
+    except Exception as e:
+        return {'ok': False, 'error': str(e)[:200]}
+
+
 def main():
     global AUTH_MODE, BIND
     # Старі інсталяції (без auth_enabled), але з паролем у .gt_secrets.json,
@@ -6465,7 +6676,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.51.5")
+    print("  ▲  Ledger v1.52.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
