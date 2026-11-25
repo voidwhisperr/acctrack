@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.41.0 — closable install dialog
+
+- Fixed modal close: global close handler, backdrop click and Escape.
+- Copy-link and download-shortcut handlers exposed globally for inline buttons.
+
 ## v1.40.0 — Opera install help
 
 - Opera detected: install button opens a clear help dialog instead of a silent no-op.

@@ -1224,17 +1224,17 @@ code{
     <div style="font-size:11px;color:var(--mu);margin-top:7px" data-i18n="app.hint">Android/Chrome: кнопка вище або меню ⋮ → «Встановити застосунок». iPhone/Safari: «Поділитися» → «На екран Домівки».</div>
   </div>
 
-  <div id="pwaHelpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div id="pwaHelpModal" onclick="if(event.target===this)closePwaHelp()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
     <div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:18px;width:min(560px,96vw);max-height:88vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px">
         <div style="font-size:15px;font-weight:800" id="pwaHelpTitle">⬇</div>
-        <button class="btn" onclick="closePwaHelp()" style="padding:4px 10px">✕</button>
+        <button type="button" class="btn" onclick="closePwaHelp();return false" style="padding:4px 10px">✕</button>
       </div>
       <div id="pwaHelpBody" style="font-size:12.5px;line-height:1.6;color:var(--mu)"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
         <button class="btn gr" onclick="pwaDownloadShortcut()" id="pwaShortcutBtn">⬇</button>
         <button class="btn" onclick="pwaCopyLink()" id="pwaCopyBtn">📋</button>
-        <button class="btn" onclick="closePwaHelp()" id="pwaCloseBtn">OK</button>
+        <button type="button" class="btn" onclick="closePwaHelp();return false" id="pwaCloseBtn">OK</button>
       </div>
     </div>
   </div>
@@ -7126,7 +7126,14 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
     const ios=/iphone|ipad|ipod/i.test(ua);
     openPwaHelp(ios?'ios':'manual');
   }
-  function closePwaHelp(){ const m=g('pwaHelpModal'); if(m) m.style.display='none'; }
+  function closePwaHelp(){
+    const m=g('pwaHelpModal');
+    if(m){ m.style.display='none'; m.setAttribute('aria-hidden','true'); }
+  }
+  window.closePwaHelp=closePwaHelp;
+  window.pwaCopyLink=pwaCopyLink;
+  window.pwaDownloadShortcut=pwaDownloadShortcut;
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ try{ closePwaHelp(); }catch(_){} } });
   function pwaCopyLink(){
     const u=location.origin+'/';
     (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('📋 '+(LANG==='ru'?'Ссылка скопирована':LANG==='en'?'Link copied':'Посилання скопійовано'))).catch(()=>{ prompt('URL',u); });
