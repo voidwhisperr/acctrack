@@ -100,3 +100,26 @@ $env:GT_LICENSE_SERVER='http://127.0.0.1:8766'
 ```
 
 Offline key tokens (`LDG.` / `TRIAL.`) are only **claim codes** now; the app accepts the bound token returned by the server. Old unbound tokens stop working for paid features until activated online.
+
+
+---
+
+## Telegram Stars checkout
+
+The bot accepts `/buy` (Solo) and `/buy team` (Team). It sends an XTR invoice; after a successful payment it generates a one-device claim key, records the payment in `.gt_payments.json` and sends the key to the buyer.
+
+Prices (Stars): `stars_solo` default 500, `stars_team` default 1500. Override in `.gt_settings.json`.
+
+## Admin panel
+
+Open `/admin?token=<license_admin_token>` on the license server.
+
+- keys: plan, expiry, state (free/bound/revoked), instance, revoke link
+- payments: time, platform, plan, amount, key prefix
+- total keys/bound/revoked and revenue by currency
+
+The panel and the license register/release endpoints are public (no dashboard password) but protected by the key signature or the admin token. Admin API also works with `X-Admin-Token`.
+
+## Team roles
+
+Team plan entitlement is reserved; multi-user roles (owner/manager/viewer) are the next step and currently not enforced.

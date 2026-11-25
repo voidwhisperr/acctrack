@@ -3584,7 +3584,8 @@ async function loadPlus(){
       + pay('payPayoneer',t('plus.payoneer'),set.pay_payoneer,'email@payoneer') + pay('payTg',t('plus.tg'),set.pay_tg,'@ENOUGHT285')
       + '</div>'
       + '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn" onclick="savePayDetails()">'+t('plus.save')+'</button><span style="font-size:11px;color:var(--mu)">'+t('plus.hint')+'</span></div>'
-      + '<div style="font-size:11px;color:var(--mu);margin-top:10px">'+t('plus.trialNote')+'</div>';
+      + '<div style="font-size:11px;color:var(--mu);margin-top:10px">'+t('plus.trialNote')+'</div>'
+      + '<div style="font-size:11px;color:var(--mu);margin-top:4px">'+t('plus.stars')+'</div>';
   }catch(e){ box.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
 }
 async function activateLicense(){
@@ -7449,6 +7450,7 @@ Object.assign(I18N.uk, {'tk.check':'Перевірити токени','tk.check
 Object.assign(I18N.en, {'fs.title':'Font size','fs.reset':'Reset'});
 Object.assign(I18N.ru, {'fs.title':'Размер шрифта','fs.reset':'Сбросить'});
 Object.assign(I18N.uk, {
+ 'plus.stars':'Telegram Stars: команда /buy у боті Ledger — ключ прийде автоматично.',
  'nav.plus':'Ledger+','plus.free':'Безкоштовна версія','plus.solo':'Ledger+ Solo','plus.team':'Ledger+ Team','plus.setup':'Налаштування під ключ','plus.perMonth':'/міс','plus.once':'разово','plus.features':'Хостинг, Taobao-агент, автододавання замовлень, бекапи, оновлення, підтримка.','plus.activate':'Активувати ключ','plus.deactivate':'Деактивувати','plus.codePh':'LDG… або TRIAL…','plus.plan':'Тариф','plus.expires':'Діє до','plus.days':'Днів залишилось','plus.needKey':'Автододавання та Taobao доступні з ключем Ledger+.','plus.pay':'ОПЛАТА','plus.usdt':'USDT (TRC20 / BEP20)','plus.binance':'Binance Pay ID','plus.payoneer':'Payoneer email','plus.tg':'Telegram','plus.save':'Зберегти реквізити','plus.saved':'Реквізити збережено','plus.hint':'Після оплати надішли скрін + email у Telegram — отримаєш ключ.','plus.trialNote':'Тестові ключі — за запитом у Telegram @ENOUGHT285. Можливі розіграші.','plus.activated':'Ключ активовано',
  'restock.title':'ЩО ДОКУПИТИ','restock.sold':'продано за 30 днів:','restock.stock':'на складі:','restock.margin':'маржа','restock.out':'немає на складі','restock.low':'залишився 1 шт',
  'vault.label':'Шифрувати дані акаунтів','vault.hint':'Ключ у .gt_secrets.json; список показує лише маску, повний логін — по кнопці «Показати».','vault.on':'Шифрування акаунтів увімкнено','vault.off':'Шифрування акаунтів вимкнено',
@@ -7469,6 +7471,7 @@ Object.assign(I18N.uk, {
  'upd.same':'✅ У тебе остання версія','upd.newer':'⬆ Доступна новіша версія','upd.open':'Відкрити release'
 });
 Object.assign(I18N.en, {
+ 'plus.stars':'Telegram Stars: /buy in the Ledger bot — the key arrives automatically.',
  'nav.plus':'Ledger+','plus.free':'Free version','plus.solo':'Ledger+ Solo','plus.team':'Ledger+ Team','plus.setup':'Done-for-you setup','plus.perMonth':'/mo','plus.once':'one-time','plus.features':'Hosting, Taobao agent, automatic order import, backups, updates, support.','plus.activate':'Activate key','plus.deactivate':'Deactivate','plus.codePh':'LDG… or TRIAL…','plus.plan':'Plan','plus.expires':'Valid until','plus.days':'Days left','plus.needKey':'Automatic orders and Taobao require a Ledger+ key.','plus.pay':'PAYMENT','plus.usdt':'USDT (TRC20 / BEP20)','plus.binance':'Binance Pay ID','plus.payoneer':'Payoneer email','plus.tg':'Telegram','plus.save':'Save payment details','plus.saved':'Payment details saved','plus.hint':'After payment send a screenshot and your email in Telegram to get the key.','plus.trialNote':'Trial keys on request in Telegram @ENOUGHT285. Giveaways are possible.','plus.activated':'Key activated',
  'restock.title':'RESTOCK SUGGESTIONS','restock.sold':'sold in 30 days:','restock.stock':'in stock:','restock.margin':'margin','restock.out':'out of stock','restock.low':'only 1 left',
  'vault.label':'Encrypt account credentials','vault.hint':'Key lives in .gt_secrets.json; the list shows only a mask, the full login is behind Show.','vault.on':'Credential encryption enabled','vault.off':'Credential encryption disabled',
@@ -7489,6 +7492,7 @@ Object.assign(I18N.en, {
  'upd.same':'✅ You are up to date','upd.newer':'⬆ A newer version is available','upd.open':'Open release'
 });
 Object.assign(I18N.ru, {
+ 'plus.stars':'Telegram Stars: команда /buy в боте Ledger — ключ придёт автоматически.',
  'nav.plus':'Ledger+','plus.free':'Бесплатная версия','plus.solo':'Ledger+ Solo','plus.team':'Ledger+ Team','plus.setup':'Настройка под ключ','plus.perMonth':'/мес','plus.once':'разово','plus.features':'Хостинг, Taobao-агент, автодобавление заказов, бэкапы, обновления, поддержка.','plus.activate':'Активировать ключ','plus.deactivate':'Деактивировать','plus.codePh':'LDG… или TRIAL…','plus.plan':'Тариф','plus.expires':'Действует до','plus.days':'Осталось дней','plus.needKey':'Автодобавление и Taobao доступны с ключом Ledger+.','plus.pay':'ОПЛАТА','plus.usdt':'USDT (TRC20 / BEP20)','plus.binance':'Binance Pay ID','plus.payoneer':'Payoneer email','plus.tg':'Telegram','plus.save':'Сохранить реквизиты','plus.saved':'Реквизиты сохранены','plus.hint':'После оплаты пришли скрин + email в Telegram — получишь ключ.','plus.trialNote':'Тестовые ключи — по запросу в Telegram @ENOUGHT285. Возможны розыгрыши.','plus.activated':'Ключ активирован',
  'restock.title':'ЧТО ДОКУПИТЬ','restock.sold':'продано за 30 дней:','restock.stock':'на складе:','restock.margin':'маржа','restock.out':'нет на складе','restock.low':'осталась 1 шт',
  'vault.label':'Шифровать данные аккаунтов','vault.hint':'Ключ в .gt_secrets.json; список показывает только маску, полный логин — по кнопке «Показать».','vault.on':'Шифрование аккаунтов включено','vault.off':'Шифрование аккаунтов выключено',

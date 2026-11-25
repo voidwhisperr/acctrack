@@ -100,6 +100,7 @@ NEWS_STATE_FILE = str(_BASE_DIR / ".gt_sitemap.json")
 TAOBAO_FILE = str(_BASE_DIR / ".gt_taobao.json")
 INVENTORY_FILE = str(_BASE_DIR / ".gt_inventory.json")
 SETTINGS_FILE = str(_BASE_DIR / ".gt_settings.json")
+PAYMENTS_FILE = str(_BASE_DIR / ".gt_payments.json")
 CASHFLOW_FILE = str(_BASE_DIR / ".gt_cashflow.json")
 AUDIT_FILE    = str(_BASE_DIR / ".gt_audit.json")
 TG_FILE       = str(_BASE_DIR / ".gt_tg.json")
@@ -1592,6 +1593,7 @@ def _tg_bot_loop():
     offset = 0
     try:
         _tg_api("setMyCommands", {"commands": [
+            {"command": "buy", "description": "Ledger+ Solo — оплатити зірками"},
             {"command": "stats", "description": "Продажі сьогодні й за місяць"},
             {"command": "balance", "description": "Баланс ZeusX / FunPay / Eldorado"},
             {"command": "new", "description": "Останні замовлення"},
@@ -1605,9 +1607,32 @@ def _tg_bot_loop():
     while True:
         try:
             resp = _tg_api("getUpdates", {"offset": offset, "timeout": 25,
-                                          "allowed_updates": ["message"]}, timeout=40)
+                                          "allowed_updates": ["message", "pre_checkout_query"]},
+                           timeout=40)
             for upd in (resp.get("result") or []):
                 offset = max(offset, int(upd.get("update_id") or 0) + 1)
+                if upd.get("pre_checkout_query"):
+                    _q = upd["pre_checkout_query"]
+                    _ok = str(_q.get("invoice_payload") or "").startswith("ledger:")
+                    try:
+                        _tg_api("answerPreCheckoutQuery", {
+                            "pre_checkout_query_id": _q.get("id"), "ok": _ok,
+                            "error_message": "" if _ok else "Unknown invoice"})
+                    except Exception as _qe:
+                        print(f"  ⚠ pre-checkout: {_qe}", flush=True)
+                    continue
+                _msg = upd.get("message") or {}
+                if _msg.get("successful_payment"):
+                    _tg_stars_fulfilled(_msg)
+                    continue
+                _txt = (_msg.get("text") or "").strip().lower()
+                if _txt.startswith("/buy"):
+                    try:
+                        _tg_send_invoice(str((_msg.get("chat") or {}).get("id") or allowed),
+                                         "team" if "team" in _txt else "solo")
+                    except Exception as _be:
+                        print(f"  ⚠ invoice: {_be}", flush=True)
+                    continue
                 reply = _tg_bot_handle(upd, allowed)
                 if reply:
                     try:
@@ -4502,7 +4527,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.split("?")[0] in ("/icon.svg", "/icon.png", "/ledger.svg")
                 or self.path.startswith("/logo/") or self.path.startswith("/app-icon") or self.path.split("?")[0] == "/demo"
                 or self.path.startswith("/docs/")
-                or self.path.split("?")[0] in ("/api/license/register", "/api/license/release")):
+                or self.path.split("?")[0] in ("/api/license/register", "/api/license/release",
+                                                "/admin", "/admin/revoke",
+                                                "/api/license/admin/list", "/api/license/admin/revoke")):
             return True      # публічні статичні файли
         if (self.path.startswith("/api/taobao")
                 or self.path.startswith("/api/secrets/")) and self._collector_ok():
@@ -4567,7 +4594,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.54.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.55.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -4896,6 +4923,24 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         elif p == "/api/2fa/status":
             self._json({"ok": True, "enabled": _totp_enabled(),
                         "available": AUTH_MODE != "off"})
+        elif p == "/admin":
+            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+            _tok = (qs.get("token") or [""])[0]
+            self._send(200, "text/html; charset=utf-8", _admin_page(_tok).encode("utf-8"))
+        elif p == "/admin/revoke":
+            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+            _tok = (qs.get("token") or [""])[0]
+            _kid = (qs.get("key_id") or [""])[0]
+            if _tok == _license_admin_token() and _kid:
+                d = _lic_registry()
+                rec = d["keys"].get(_kid)
+                if rec:
+                    rec["revoked"] = True
+                    rec["instance"] = ""
+                    _lic_registry_save(d)
+                    _audit("license.revoke", key_id=_kid)
+            self._send(200, "text/html; charset=utf-8",
+                       ("<!doctype html><meta http-equiv='refresh' content='0;url=/admin?token=%s'>" % _tok).encode("utf-8"))
         elif p == "/api/license/status":
             _inf = _license_info()
             self._json({"ok": True, "paid": _license_paid(), "license": _inf,
@@ -5031,7 +5076,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.54.0",
+            self._json({"ok": True, "version": "1.55.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6522,6 +6567,47 @@ def _license_server_url():
     return (url or "https://ledger.70-34-243-50.sslip.io").rstrip("/")
 
 
+def _admin_page(token):
+    if not token or token != _license_admin_token():
+        return ("<!doctype html><meta charset='utf-8'><title>Ledger admin</title>"
+                "<body style='font:14px system-ui;background:#0d1017;color:#e9ebf2;padding:40px'>"
+                "<h2>Ledger admin</h2><form method='get' action='/admin'>"
+                "<input name='token' placeholder='admin token' style='padding:8px;width:320px'>"
+                "<button style='padding:8px 14px'>Open</button></form></body>")
+    d = _lic_registry()
+    pays = _payments_load()
+    bound = sum(1 for x in d["keys"].values() if x.get("instance"))
+    revoked = sum(1 for x in d["keys"].values() if x.get("revoked"))
+    total = {}
+    for x in pays:
+        cur = str(x.get("currency") or "?")
+        total[cur] = total.get(cur, 0) + int(x.get("amount") or 0)
+    rows = []
+    for kid, rec in sorted(d["keys"].items(), key=lambda kv: kv[1].get("activated_at") or 0, reverse=True):
+        state = "revoked" if rec.get("revoked") else ("bound" if rec.get("instance") else "free")
+        rows.append("<tr><td><code>%s</code></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
+                    "<td><a style='color:#ff7a59' href='/admin/revoke?token=%s&key_id=%s'>revoke</a></td></tr>"
+                    % (_html_mod.escape(kid), _html_mod.escape(str(rec.get("plan"))),
+                       _html_mod.escape(str(rec.get("exp"))), _html_mod.escape(state),
+                       _html_mod.escape(str(rec.get("instance") or "")[:16]), token, kid))
+    prows = []
+    for x in pays[-50:]:
+        prows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><code>%s</code></td></tr>"
+                     % (time.strftime("%Y-%m-%d %H:%M", time.localtime(int(x.get("ts") or 0))),
+                        _html_mod.escape(str(x.get("platform"))), _html_mod.escape(str(x.get("plan"))),
+                        "%s %s" % (x.get("amount"), x.get("currency")),
+                        _html_mod.escape(str(x.get("key") or "")[:32] + "…")))
+    return ("<!doctype html><meta charset='utf-8'><title>Ledger admin</title>"
+            "<body style='font:13px system-ui;background:#0d1017;color:#e9ebf2;padding:24px'>"
+            "<h2>Ledger admin</h2>"
+            "<p>keys: <b>%d</b> · bound: <b>%d</b> · revoked: <b>%d</b> · revenue: <b>%s</b></p>"
+            "<h3>Keys</h3><table border='1' cellpadding='6' style='border-collapse:collapse;border-color:#2a2f37'>"
+            "<tr><th>key id</th><th>plan</th><th>exp</th><th>state</th><th>instance</th><th></th></tr>%s</table>"
+            "<h3>Payments</h3><table border='1' cellpadding='6' style='border-collapse:collapse;border-color:#2a2f37'>"
+            "<tr><th>time</th><th>platform</th><th>plan</th><th>amount</th><th>key</th></tr>%s</table>"
+            "</body>") % (len(d["keys"]), bound, revoked, total, "".join(rows), "".join(prows))
+
+
 def _license_register_remote(key, instance_id):
     """Ask the license server (our VPS) to bind this key to this instance."""
     import urllib.request
@@ -6611,6 +6697,77 @@ def _license_claim():
             return str(json.load(fh).get("claim") or "")
     except Exception:
         return ""
+
+
+def _license_make_claim(plan="plus", days=30):
+    """Create a claim key (to be bound on activation)."""
+    if plan == "trial":
+        feats = ["auto_orders", "taobao", "hosted"]
+    elif plan == "team":
+        feats = ["auto_orders", "taobao", "hosted", "team"]
+    else:
+        feats = ["auto_orders", "taobao", "hosted"]
+    payload = lic.pack_payload(plan, int(days), feats)
+    prefix = "TRIAL" if plan == "trial" else "LDG"
+    return lic.make_code(payload, _license_sign(payload), prefix)
+
+
+def _payments_load():
+    d = _read_json(PAYMENTS_FILE, []) or []
+    return d if isinstance(d, list) else []
+
+
+def _payment_add(rec):
+    data = _payments_load()
+    data.append(rec)
+    _atomic_dump(PAYMENTS_FILE, data[-1000:])
+
+
+def _stars_price(plan):
+    st = _read_json(SETTINGS_FILE, {}) or {}
+    if plan == "team":
+        return max(1, int(st.get("stars_team") or 1500))
+    return max(1, int(st.get("stars_solo") or 500))
+
+
+def _tg_send_invoice(chat, plan="solo"):
+    plan = "team" if str(plan).lower().startswith("team") else "solo"
+    amount = _stars_price(plan)
+    title = "Ledger+ Team — 30 days" if plan == "team" else "Ledger+ Solo — 30 days"
+    return _tg_api("sendInvoice", {
+        "chat_id": chat,
+        "title": title,
+        "description": "Hosting, Taobao agent, automatic order import, backups and support for 30 days.",
+        "payload": "ledger:%s:30" % plan,
+        "currency": "XTR",
+        "prices": [{"label": title, "amount": amount}],
+    })
+
+
+def _tg_stars_fulfilled(msg):
+    try:
+        sp = msg.get("successful_payment") or {}
+        chat = str((msg.get("chat") or {}).get("id") or "")
+        payload = str(sp.get("invoice_payload") or "")
+        parts = payload.split(":")
+        if len(parts) < 3 or parts[0] != "ledger":
+            return
+        plan = "team" if parts[1] == "team" else "plus"
+        days = int(parts[2]) if str(parts[2]).isdigit() else 30
+        key = _license_make_claim(plan, days)
+        _payment_add({"ts": int(time.time()), "platform": "telegram_stars",
+                      "plan": plan, "days": days, "amount": sp.get("total_amount"),
+                      "currency": sp.get("currency"), "chat": chat,
+                      "charge_id": sp.get("telegram_payment_charge_id") or "",
+                      "key": key})
+        text = ("✅ <b>Оплату отримано</b>\n\n"
+                "Ключ Ledger+ (%s, %d днів):\n<code>%s</code>\n\n"
+                "Встав його у Ledger → Ledger+ → Активувати ключ.\n"
+                "Ключ прив’язується до одного пристрою." % (plan, days, key))
+        _tg_api("sendMessage", {"chat_id": chat, "text": text, "parse_mode": "HTML"})
+        print("  ⭐ Stars payment: %s %s" % (plan, sp.get("total_amount")), flush=True)
+    except Exception as e:
+        print("  ⚠ Stars payment: %s" % e, flush=True)
 
 
 def _license_admin_token():
@@ -6971,7 +7128,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.54.0")
+    print("  ▲  Ledger v1.55.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
