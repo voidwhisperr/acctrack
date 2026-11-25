@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.43.0 — desktop application
+
+- Native Windows app `Ledger.exe` (WebView2 + embedded Python server).
+- No browser tab and no PWA installation; data stored next to the exe.
+- Fluid full-width layout.
+
 ## v1.42.0 — fluid layout
 
 - Removed fixed 1560px content width; UI fills the window.

@@ -82,6 +82,9 @@ try:
     _BASE_DIR.mkdir(parents=True, exist_ok=True)
 except OSError:
     pass
+_CODE_DIR = pathlib.Path(getattr(sys, "_MEIPASS", pathlib.Path(__file__).resolve().parent))
+_ASSETS_DIR = (_BASE_DIR / "assets") if (_BASE_DIR / "assets").exists() else (_CODE_DIR / "assets")
+_DOCS_DIR = (_BASE_DIR / "docs") if (_BASE_DIR / "docs").exists() else (_CODE_DIR / "docs")
 PL_FILE       = str(_BASE_DIR / ".gt_pl.json")
 ED_FILE       = str(_BASE_DIR / ".gt_eldorado.json")
 GOAL_FILE     = str(_BASE_DIR / ".gt_goal.json")
@@ -4455,7 +4458,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.42.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.43.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4523,11 +4526,11 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                      "/app-icon-192.png", "/app-icon-512.png"):
             _nm, _letter, _tag = _app_brand()
             if p == "/app-icon.svg":
-                _f = os.path.join(_BASE_DIR, "assets", f"icon-{_tag}.svg")
+                _f = os.path.join(str(_ASSETS_DIR), f"icon-{_tag}.svg")
                 _ct = "image/svg+xml"
             else:
                 _sz = p.rsplit("-", 1)[1].split(".")[0]
-                _f = os.path.join(_BASE_DIR, "assets", f"icon-{_tag}-{_sz}.png")
+                _f = os.path.join(str(_ASSETS_DIR), f"icon-{_tag}-{_sz}.png")
             if not os.path.exists(_f):
                 _alt = os.path.join(_BASE_DIR, os.path.basename(_f))
                 if os.path.exists(_alt):
@@ -4544,7 +4547,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             # короткий кеш: іконки оновлюються разом з релізом
             self._send(200, ct, data, extra={"Cache-Control": "public, max-age=300"})
         elif p == "/demo" or p.startswith("/docs/"):
-            _f = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs",
+            _f = os.path.join(str(_DOCS_DIR),
                               "DEMO.html" if p == "/demo" else p[len("/docs/"):])
             if not os.path.exists(_f):
                 self._send(404, "text/plain", b"404")
@@ -4862,7 +4865,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.42.0",
+            self._json({"ok": True, "version": "1.43.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6261,7 +6264,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.42.0")
+    print("  ▲  AccTrack v1.43.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
