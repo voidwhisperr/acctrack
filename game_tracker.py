@@ -6265,10 +6265,28 @@ def _tokens_check():
         except Exception as e:
             return "error", str(e)[:160]
 
+    def telegram():
+        try:
+            cfg = _tg_cfg() or {}
+        except Exception:
+            cfg = {}
+        tok = str(cfg.get("token") or "").strip()
+        if not tok:
+            return "missing", ""
+        try:
+            with urllib.request.urlopen("https://api.telegram.org/bot" + tok + "/getMe", timeout=10) as r:
+                d = json.loads(r.read().decode("utf-8", "replace") or "{}")
+            if d.get("ok"):
+                return "valid", ""
+            return "expired", str(d.get("description") or "")[:160]
+        except Exception as e:
+            return "error", str(e)[:160]
+
     try:
         from concurrent.futures import ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=3) as ex:
-            futs = {"funpay": ex.submit(funpay), "zeusx": ex.submit(zeusx), "gmail": ex.submit(gmail)}
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            futs = {"funpay": ex.submit(funpay), "zeusx": ex.submit(zeusx),
+                    "gmail": ex.submit(gmail), "telegram": ex.submit(telegram)}
             for name, fut in futs.items():
                 try:
                     state, msg = fut.result(timeout=18)
@@ -6277,7 +6295,7 @@ def _tokens_check():
                 out["states"][name] = state
                 out["details"][name] = msg
     except Exception:
-        for name, fn in (("funpay", funpay), ("zeusx", zeusx), ("gmail", gmail)):
+        for name, fn in (("funpay", funpay), ("zeusx", zeusx), ("gmail", gmail), ("telegram", telegram)):
             state, msg = fn()
             out["states"][name] = state
             out["details"][name] = msg

@@ -3082,7 +3082,7 @@ async function tokensCheck(){
       return '<div style="margin:2px 0">'+(icon[st]||'❔')+' <b>'+name+'</b>: '+(L[st]||st)
         + (msg?' <span style="opacity:.65">· '+esc(String(msg))+'</span>':'')+'</div>';
     };
-    el.innerHTML=row('FunPay','funpay')+row('ZeusX','zeusx')+row('Gmail','gmail');
+    el.innerHTML=row('FunPay','funpay')+row('ZeusX','zeusx')+row('Gmail','gmail')+row('Telegram','telegram');
   }catch(e){ el.innerHTML='<span style="color:var(--rd)">⚠ '+esc(String(e))+'</span>'; }
 }
 
