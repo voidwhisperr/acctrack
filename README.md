@@ -36,6 +36,7 @@ The free edition is in this repository. Ledger+ is the hosted automation edition
 - **Catalog** — supplier products from Shopify `/products.json`, price history, "cheaper elsewhere" comparison and a lot price calculator.
 - **Buy plan** — compares supplier prices with your own median sale price and ranks lots by ROI.
 - **Backups** — automatic snapshots, manual runs, ZIP export/import, optional cloud-folder copy and restore.
+- **Token check** — FunPay, ZeusX, Gmail and Telegram are validated live: active, expired, not set or check failed.
 - **3 languages** — Ukrainian, English, Russian. Currency follows the language: ₴, $, ₽. 5 themes. Responsive layout.
 
 ### Ledger+ (hosted)
