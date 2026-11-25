@@ -4,7 +4,7 @@
 
 - The green dot was the plus badge: its arms were too thin and disappeared at 32–53 px.
 - It is now a larger badge with a bold plus, in the app accent gradient (indigo → cyan).
-- The “+” next to the wordmark follows the selected interface theme instead of a fixed gold.
+- The “+” next to the wordmark is now a plain accent character that follows the theme, so it does not duplicate the badge inside the icon.
 
 ## v1.51.0 — new mark and cleaner header
 
