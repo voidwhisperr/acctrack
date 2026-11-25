@@ -1,7 +1,8 @@
 FROM python:3.12-slim
 
 WORKDIR /app
-COPY game_tracker.py ui.py platforms.py taobao.py taobao_core.py /app/
+COPY game_tracker.py ui.py license.py platforms.py taobao.py taobao_core.py taobao_collector.py remote_proxy.py /app/
+COPY assets /app/assets
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends tzdata ca-certificates \

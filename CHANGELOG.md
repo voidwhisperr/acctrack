@@ -1,5 +1,35 @@
 # Changelog
 
+## v1.60.0 — client monitor
+- Provisioned clients are checked every 5 minutes; Telegram alerts on down/recovered transitions.
+- Hosting page shows down count and a “check all” action.
+
+## v1.59.0 — client backups and public pricing
+- Per-client backups to `/root/backups/<id>` (latest 7), daily loop and restore-latest with a safety copy of the current data dir.
+- Public `/pricing?lang=uk|en|ru` landing with plans and payment details from settings.
+
+## v1.58.0 — one-click client provisioning
+- Provision a real client instance: app copy, data dir, random password, systemd unit, optional Caddy subdomain with validate/rollback, health check.
+- Delete stops/removes the unit, Caddy block and optionally data.
+
+## v1.57.0 — hosting clients panel
+- `/hosting?token=...` client registry with plan, paid-until, health, days-left and expiring-in-7-days summary.
+
+## v1.56.0 — team seats
+- One-time invite links `/join?token=...` with owner/manager/viewer roles; team API and panel in the Ledger+ tab.
+
+## v1.55.0 — Telegram Stars and admin panel
+- `/buy` and `/buy team` Stars invoices; successful payment auto-generates a one-device key.
+- `/admin?token=...` keys, bindings, revocations and payments.
+
+## v1.54.0 — one key, one instance
+- Offline claim keys are bound to a single instance by the license server; second device gets 409; release/transfer and admin revoke.
+
+## v1.53.0 — Ledger+ licenses
+- Ed25519 license keys (`LDG.`/`TRIAL.`), activation page, plans ($7 Solo, $29 Team, $29 setup), auto-add gated to Ledger+.
+
+## v1.52.0 — automation, vault, restock
+- Auto-add priced orders to P&L/Eldorado (toggle), encrypted account vault with masked credentials, restock suggestions.
 ## v1.51.4 — polish pass
 
 - Action log no longer shows raw `id=… title=… cost=…`: labels are localized and prices are formatted.

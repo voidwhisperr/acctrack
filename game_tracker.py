@@ -4575,6 +4575,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                 "/admin", "/admin/revoke", "/join", "/hosting",
                                                 "/hosting/save", "/hosting/check", "/hosting/delete",
                                                 "/hosting/provision", "/hosting/backup", "/hosting/restore",
+                                                "/hosting/monitor",
                                                 "/pricing",
                                                 "/api/license/admin/list", "/api/license/admin/revoke")):
             return True      # публічні статичні файли
@@ -4641,7 +4642,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.59.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.60.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5000,6 +5001,17 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     cookie += "; Secure"
                 _audit("team.join", member=mid, role=role)
                 self._send(302, "text/html", b"", extra={"Location": "/", "Set-Cookie": cookie})
+        elif p == "/hosting/monitor":
+            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+            _tok = (qs.get("token") or [""])[0]
+            if _tok == _license_admin_token():
+                try:
+                    _monitor_clients(alert=False)
+                except Exception as e:
+                    print("  ⚠ monitor: %s" % e, flush=True)
+                self._send(302, "text/html", b"", extra={"Location": "/hosting?token=" + _tok})
+            else:
+                self._send(403, "text/plain", b"403 forbidden")
         elif p == "/pricing":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             _lang = (qs.get("lang") or [""])[0] or str((_read_json(SETTINGS_FILE, {}) or {}).get("lang") or "uk")
@@ -5242,7 +5254,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.59.0",
+            self._json({"ok": True, "version": "1.60.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6989,6 +7001,44 @@ def _client_disk(cid):
     return out.strip() if rc == 0 and out.strip() else "—"
 
 
+def _monitor_clients(alert=True):
+    clients = _clients_load()
+    changed = False
+    for c in clients:
+        if not c.get("service"):
+            continue
+        prev = c.get("last_ok")
+        url = c.get("url") or ("http://127.0.0.1:%s" % c.get("port"))
+        ok, ver = _client_health(url)
+        c["last_ok"] = ok
+        c["last_check"] = int(time.time())
+        if ver:
+            c["version"] = ver
+        if prev is not None and bool(prev) != bool(ok):
+            changed = True
+            name = c.get("name") or c.get("id")
+            if not ok and alert:
+                _tg_send("🔴 <b>Клієнт недоступний</b>\n%s\n%s" % (_html_mod.escape(str(name)), _html_mod.escape(str(url))))
+            elif ok and alert:
+                _tg_send("🟢 <b>Клієнт знову працює</b>\n%s\n%s" % (_html_mod.escape(str(name)), _html_mod.escape(str(url))))
+        if prev is None:
+            changed = True
+    if changed:
+        _clients_save(clients)
+    return clients
+
+
+def _monitor_loop():
+    """Checks provisioned clients and alerts on up/down transitions."""
+    while True:
+        try:
+            if _license_server_mode():
+                _monitor_clients()
+        except Exception as e:
+            print("  ⚠ monitor: %s" % e, flush=True)
+        time.sleep(300)
+
+
 def _client_backup_loop():
     """Daily backup of provisioned clients; keeps 7 per client."""
     while True:
@@ -7098,6 +7148,7 @@ def _hosting_page(token):
     import datetime as _dt
     today = _dt.date.today()
     rows, expiring = [], 0
+    down = sum(1 for x in clients if x.get("last_ok") is False)
     for c in sorted(clients, key=lambda x: str(x.get("paid_until") or "")):
         try:
             left = (_dt.date.fromisoformat(str(c.get("paid_until"))) - today).days
@@ -7155,10 +7206,12 @@ def _hosting_page(token):
     return ("<!doctype html><meta charset='utf-8'><title>Hosting admin</title>"
             "<body style='font:13px system-ui;background:#0d1017;color:#e9ebf2;padding:24px'>"
             "<h2>Hosting clients</h2>"
-            "<p>clients: <b>%d</b> · expiring in 7 days: <b>%d</b> · <a style='color:#7ad3a1' href='/admin?token=%s'>keys/payments</a></p>"
+            "<p>clients: <b>%d</b> · down: <b>%d</b> · expiring in 7 days: <b>%d</b> · "
+            "<a style='color:#7ad3a1' href='/hosting/monitor?token=%s'>check all</a> · "
+            "<a style='color:#7ad3a1' href='/admin?token=%s'>keys/payments</a></p>"
             "%s<h3>Clients</h3><table border='1' cellpadding='6' style='border-collapse:collapse;border-color:#2a2f37'>"
             "<tr><th>name</th><th>plan</th><th>paid until</th><th>days left</th><th>url</th><th>health</th><th>notes</th><th></th></tr>%s</table>%s</body>"
-            ) % (len(clients), expiring, token, form, "".join(rows), hint)
+            ) % (len(clients), down, expiring, token, token, form, "".join(rows), hint)
 
 
 def _admin_page(token):
@@ -7767,7 +7820,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.59.0")
+    print("  ▲  Ledger v1.60.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
@@ -7834,6 +7887,7 @@ def main():
     threading.Thread(target=_currency_rate_loop, daemon=True).start()
     threading.Thread(target=_funpay_orders_loop, daemon=True).start()
     threading.Thread(target=_client_backup_loop, daemon=True).start()
+    threading.Thread(target=_monitor_loop, daemon=True).start()
     threading.Thread(target=_startup_supplier_refresh,
                      kwargs={"allow_network": os.environ.get("GT_NO_SUPPLIERS") != "1"},
                      daemon=True).start()

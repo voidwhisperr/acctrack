@@ -16,10 +16,19 @@
 | Where it runs | Your PC or your own server | Managed server, always online |
 | Price | Free, MIT | Paid subscription |
 | Desktop app | `Ledger.exe` — portable, data next to the exe | `LedgerPlus.exe` — native window, tray and order notifications |
-| Automation | Manual mode; optional FunPay/ZeusX/Taobao connectors | Taobao collection, order import, notifications, backups — configured and maintained |
+| Automation | Manual mode; optional FunPay/ZeusX/Taobao connectors | Taobao collection, automatic order import, backup/restore, team seats, monitoring |
 | Data | Yours, on your disk | Hosted for you; the desktop app and browser share the same account |
 
 The free edition is in this repository. Ledger+ is the hosted automation edition — [contact the author](https://github.com/voidwhisperr) for access.
+
+### Ledger+ and pricing
+
+- **Solo** — $7/month: hosted instance, Taobao agent, automatic order import, backups, updates.
+- **Team** — $29/month: the same plus team seats (owner / manager / viewer) via one-time invite links.
+- **Done-for-you setup** — $29 one-time: installation, Telegram bot, channels, Taobao, data import, training.
+- **Trial** — 14 days; keys are one-device and activated online, with deactivate-to-move.
+
+Pricing page: `/pricing?lang=uk|en|ru` on the hosted instance. Releases: [github.com/voidwhisperr/ledger/releases](https://github.com/voidwhisperr/ledger/releases/latest).
 
 ---
 
