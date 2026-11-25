@@ -4574,6 +4574,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.split("?")[0] in ("/api/license/register", "/api/license/release",
                                                 "/admin", "/admin/revoke", "/join", "/hosting",
                                                 "/hosting/save", "/hosting/check", "/hosting/delete",
+                                                "/hosting/provision",
                                                 "/api/license/admin/list", "/api/license/admin/revoke")):
             return True      # публічні статичні файли
         if (self.path.startswith("/api/taobao")
@@ -4639,7 +4640,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.57.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.58.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5002,7 +5003,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             self._send(200, "text/html; charset=utf-8",
                        _hosting_page((qs.get("token") or [""])[0]).encode("utf-8"))
-        elif p in ("/hosting/save", "/hosting/check", "/hosting/delete"):
+        elif p in ("/hosting/save", "/hosting/check", "/hosting/delete", "/hosting/provision"):
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             _tok = (qs.get("token") or [""])[0]
             if _tok != _license_admin_token():
@@ -5020,8 +5021,31 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         rec[k] = str(qs[k][0])[:300]
                 _clients_save(clients)
                 _audit("hosting.save", client=rec.get("id"))
+            elif p == "/hosting/provision":
+                _name = (qs.get("name") or [""])[0].strip() or "Client"
+                _port = int((qs.get("port") or ["0"])[0] or 0)
+                _sub = (qs.get("subdomain") or [""])[0].strip()
+                _plan = (qs.get("plan") or ["solo"])[0]
+                _paid = (qs.get("paid_until") or [""])[0]
+                try:
+                    rec = _provision_instance(_name, _port, _sub, _plan, _paid)
+                except Exception as e:
+                    self._send(500, "text/html; charset=utf-8",
+                               ("<h3>Provision failed</h3><pre>%s</pre>"
+                                "<a href='/hosting?token=%s'>back</a>"
+                                % (_html_mod.escape(str(e)[:800]), _tok)).encode("utf-8"))
+                    return
+                clients.append(rec)
+                _clients_save(clients)
+                _audit("hosting.provision", client=rec.get("id"), port=rec.get("port"))
             elif p == "/hosting/delete":
                 _id = (qs.get("id") or [""])[0]
+                _rec = next((c for c in clients if c.get("id") == _id), None)
+                if _rec and _rec.get("service"):
+                    try:
+                        _deprovision_instance(_id, purge=bool(qs.get("purge")))
+                    except Exception as e:
+                        print("  ⚠ deprovision: %s" % e, flush=True)
                 _clients_save([c for c in clients if c.get("id") != _id])
                 _audit("hosting.delete", client=_id)
             else:
@@ -5197,7 +5221,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.57.0",
+            self._json({"ok": True, "version": "1.58.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6753,6 +6777,129 @@ def _client_health(url):
         return False, str(e)[:80]
 
 
+def _run(cmd, timeout=90):
+    import subprocess
+    try:
+        p = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+        return p.returncode, (p.stdout or "")[-2000:], (p.stderr or "")[-2000:]
+    except Exception as e:
+        return 1, "", str(e)[:300]
+
+
+def _caddyfile():
+    return os.environ.get("GT_CADDYFILE") or "/etc/caddy/Caddyfile"
+
+
+def _provision_instance(name, port, subdomain, plan, paid_until):
+    """Create an isolated Ledger instance as a systemd service + Caddy site."""
+    if os.name != "posix" or not shutil.which("systemctl"):
+        raise ValueError("provisioning requires Linux with systemd")
+    cid = os.urandom(4).hex()
+    port = int(port or 0)
+    if port < 1024 or port > 65000:
+        port = 8800 + (int(cid[:4], 16) % 1000)
+    root = os.environ.get("GT_CLIENTS_ROOT") or "/root/clients"
+    app = os.path.join(root, cid, "app")
+    data = os.path.join(root, cid, "data")
+    os.makedirs(app, exist_ok=True)
+    os.makedirs(data, exist_ok=True)
+    src = str(_BASE_DIR)
+    for f in ("game_tracker.py", "ui.py", "license.py", "platforms.py",
+              "taobao.py", "taobao_core.py", "taobao_collector.py", "remote_proxy.py"):
+        sp = os.path.join(src, f)
+        if os.path.exists(sp):
+            shutil.copy2(sp, os.path.join(app, f))
+    if os.path.isdir(os.path.join(src, "assets")):
+        shutil.copytree(os.path.join(src, "assets"), os.path.join(app, "assets"), dirs_exist_ok=True)
+    password = os.urandom(9).hex()
+    unit = ("[Unit]\nDescription=Ledger client %s\nAfter=network.target\n\n"
+            "[Service]\nType=simple\nWorkingDirectory=%s\n"
+            "Environment=PORT=%d GT_DATA_DIR=%s GT_BIND=127.0.0.1 GT_PAID=0 "
+            "GT_AUTH=basic GT_AUTH_PASS=%s GT_NO_BROWSER=1 GT_LICENSE_SERVER_MODE=0\n"
+            "ExecStart=/usr/bin/python3 %s/game_tracker.py\nRestart=always\nRestartSec=3\n\n"
+            "[Install]\nWantedBy=multi-user.target\n"
+            % (cid, app, port, data, password, app))
+    upath = "/etc/systemd/system/gametracker-%s.service" % cid
+    with open(upath, "w", encoding="utf-8") as fh:
+        fh.write(unit)
+    rc, out, err = _run("systemctl daemon-reload && systemctl enable --now gametracker-%s" % cid)
+    if rc != 0:
+        raise ValueError("systemd failed: " + (err or out))
+    url = "http://127.0.0.1:%d" % port
+    caddy_done = False
+    domain = (subdomain or "").strip()
+    if domain:
+        block = ("\n# ledger-client:%s\n%s {\n    reverse_proxy 127.0.0.1:%d\n}\n# /ledger-client:%s\n"
+                 % (cid, domain, port, cid))
+        cf = _caddyfile()
+        backup = None
+        try:
+            with open(cf, encoding="utf-8") as fh:
+                old = fh.read()
+            backup = old
+            with open(cf + ".ledger-bak", "w", encoding="utf-8") as fh:
+                fh.write(old)
+            with open(cf, "a", encoding="utf-8") as fh:
+                fh.write(block)
+            rc, out, err = _run("caddy validate --config %s" % cf)
+            if rc != 0:
+                with open(cf, "w", encoding="utf-8") as fh:
+                    fh.write(old)
+                raise ValueError("caddy validate failed: " + (err or out))
+            rc, out, err = _run("systemctl reload caddy")
+            if rc != 0:
+                with open(cf, "w", encoding="utf-8") as fh:
+                    fh.write(old)
+                raise ValueError("caddy reload failed: " + (err or out))
+            caddy_done = True
+            url = "https://" + domain
+        except Exception:
+            if backup is not None:
+                try:
+                    with open(cf, "w", encoding="utf-8") as fh:
+                        fh.write(backup)
+                    _run("systemctl reload caddy")
+                except Exception:
+                    pass
+            raise
+    ok, ver = _client_health(url if not domain else "http://127.0.0.1:%d" % port)
+    return {"id": cid, "name": name, "port": port, "url": url,
+            "subdomain": domain, "plan": plan, "password": password,
+            "service": "gametracker-%s" % cid, "created": int(time.time()),
+            "paid_until": paid_until, "caddy": caddy_done,
+            "last_ok": ok, "last_check": int(time.time()), "version": ver,
+            "status": "active" if ok else "starting"}
+
+
+def _deprovision_instance(cid, purge=False):
+    if os.name != "posix":
+        raise ValueError("deprovisioning requires Linux")
+    _run("systemctl disable --now gametracker-%s" % cid)
+    try:
+        os.remove("/etc/systemd/system/gametracker-%s.service" % cid)
+    except OSError:
+        pass
+    _run("systemctl daemon-reload")
+    cf = _caddyfile()
+    try:
+        with open(cf, encoding="utf-8") as fh:
+            text = fh.read()
+        start = text.find("# ledger-client:%s" % cid)
+        end = text.find("# /ledger-client:%s" % cid)
+        if start >= 0 and end > start:
+            end += len("# /ledger-client:%s" % cid)
+            with open(cf + ".ledger-bak", "w", encoding="utf-8") as fh:
+                fh.write(text)
+            with open(cf, "w", encoding="utf-8") as fh:
+                fh.write(text[:start] + text[end:])
+            _run("systemctl reload caddy")
+    except OSError:
+        pass
+    if purge:
+        root = os.environ.get("GT_CLIENTS_ROOT") or "/root/clients"
+        shutil.rmtree(os.path.join(root, cid), ignore_errors=True)
+
+
 def _hosting_page(token):
     if not token or token != _license_admin_token():
         return ("<!doctype html><meta charset='utf-8'><title>Hosting admin</title>"
@@ -6783,7 +6930,23 @@ def _hosting_page(token):
                        _html_mod.escape(str(c.get("url") or "")),
                        _html_mod.escape(state),
                        _html_mod.escape(str(c.get("notes") or "")[:60]), token, c.get("id"), token, c.get("id")))
-    form = ("<h3>Add client</h3><form method='get' action='/hosting/save'>"
+        if c.get("password"):
+            rows.append("<tr><td colspan='8' style='color:#8b93a1;font-size:11px'>"
+                        "service: <code>%s</code> · port: %s · password: <code>%s</code></td></tr>"
+                        % (_html_mod.escape(str(c.get("service") or "")),
+                           _html_mod.escape(str(c.get("port") or "")),
+                           _html_mod.escape(str(c.get("password")))))
+    form = ("<h3>Provision new instance</h3><form method='get' action='/hosting/provision'>"
+            "<input type='hidden' name='token' value='%s'>"
+            "<input name='name' placeholder='Client name' required style='padding:6px;margin:2px'>"
+            "<input name='subdomain' placeholder='client1.70-34-243-50.sslip.io' style='padding:6px;margin:2px;width:300px'>"
+            "<input name='port' placeholder='port (auto)' style='padding:6px;margin:2px;width:90px'>"
+            "<input name='plan' placeholder='solo/team' value='solo' style='padding:6px;margin:2px;width:90px'>"
+            "<input name='paid_until' placeholder='YYYY-MM-DD' style='padding:6px;margin:2px;width:120px'>"
+            "<button style='padding:7px 12px'>Provision</button></form>"
+            "<p style='color:#8b93a1'>Creates /root/clients/&lt;id&gt;, a systemd unit gametracker-&lt;id&gt;.service, "
+            "and (with subdomain) a Caddy reverse-proxy site. Client gets its own password shown after creation.</p>"
+            "<h3>Manual record</h3><form method='get' action='/hosting/save'>"
             "<input type='hidden' name='token' value='%s'>"
             "<input name='name' placeholder='Name' required style='padding:6px;margin:2px'>"
             "<input name='contact' placeholder='Telegram/email' style='padding:6px;margin:2px'>"
@@ -6791,7 +6954,7 @@ def _hosting_page(token):
             "<input name='url' placeholder='https://...' style='padding:6px;margin:2px;width:280px'>"
             "<input name='paid_until' placeholder='YYYY-MM-DD' style='padding:6px;margin:2px;width:120px'>"
             "<input name='notes' placeholder='notes' style='padding:6px;margin:2px'>"
-            "<button style='padding:7px 12px'>Add</button></form>") % token
+            "<button style='padding:7px 12px'>Add</button></form>") % (token, token)
     hint = ("<p style='color:#8b93a1'>Suggested instance: <code>GT_DATA_DIR=/root/client-&lt;id&gt; PORT=&lt;port&gt; "
             "python3 game_tracker.py</code>, then a Caddy block for &lt;subdomain&gt;. Health check uses <code>/api/health</code>.</p>")
     return ("<!doctype html><meta charset='utf-8'><title>Hosting admin</title>"
@@ -7409,7 +7572,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.57.0")
+    print("  ▲  Ledger v1.58.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

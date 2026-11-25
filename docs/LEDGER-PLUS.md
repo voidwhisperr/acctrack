@@ -135,3 +135,19 @@ Roles:
 - **viewer** — read-only; no exports, no mutations.
 
 Removing a member sets `active: false`; their cookie stops working on the next request.
+
+
+## One-click provisioning
+
+Hosting admin → "Provision new instance": name, subdomain, port (optional), plan, paid until.
+
+The server:
+
+1. copies the app to `/root/clients/<id>/app` and creates `/root/clients/<id>/data`;
+2. generates a random client password and a systemd unit `gametracker-<id>.service` (PORT, GT_DATA_DIR, GT_AUTH=basic, GT_AUTH_PASS);
+3. with a subdomain, appends a Caddy block `<subdomain> { reverse_proxy 127.0.0.1:<port> }`, validates the Caddyfile and reloads Caddy (rolls back on failure);
+4. checks `/api/health` and stores the record.
+
+Delete stops and removes the unit, removes the Caddy block, reloads Caddy and optionally purges the data dir. Caddyfile backups are written next to it as `.ledger-bak`.
+
+Requires Linux + systemd + root; on Windows/desktop provisioning returns an error.
