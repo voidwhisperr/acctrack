@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.47.0 — larger logo
+
+- L mark fills more of the icon tile.
+- Header mark 30px instead of 22px.
+- Ledger+ plus badge larger and high-contrast.
+
 ## v1.46.0 — chosen Ledger mark
 
 - Base Ledger icon: L monogram (variant 1).

@@ -147,7 +147,8 @@ h1 span{
   letter-spacing:.10em;margin-top:3px;text-transform:uppercase;
 }
 h1 span b{color:var(--a1);font-weight:700}
-#hdrTitle #hdrName,#hdrTitle #planBadge{display:inline;font-size:inherit;font-weight:inherit;color:inherit;letter-spacing:inherit;margin:0;text-transform:none;vertical-align:top}
+#hdrTitle #hdrName{display:inline;font-size:inherit;font-weight:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
+#hdrTitle #planBadge{display:none;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:var(--gr);color:#07110d;font-size:15px;font-weight:900;line-height:1;letter-spacing:0;margin-left:4px;vertical-align:1px;text-transform:none}
 
 /* ── tabs ── */
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--brd);margin-bottom:20px;overflow-x:auto;padding-bottom:2px}
@@ -468,8 +469,8 @@ code{
 <div class="w">
 <header>
   <div class="logo">
-    <img id="brandMark" src="/app-icon-192.png" width="22" height="22" style="border-radius:6px;flex:none" alt="Ledger">
-    <h1 id="hdrTitle"><span id="hdrName">Ledger</span><span id="planBadge" style="display:none;font-size:10px;font-weight:800;color:var(--gr);letter-spacing:.02em;vertical-align:top">+</span><span data-i18n="hdr.sub">v5 · УГОДИ · КАНАЛИ · ПОШТА</span></h1>
+    <img id="brandMark" src="/app-icon-192.png" width="30" height="30" style="border-radius:8px;flex:none" alt="Ledger">
+    <h1 id="hdrTitle"><span id="hdrName">Ledger</span><span id="planBadge" style="display:none">+</span><span data-i18n="hdr.sub">v5 · УГОДИ · КАНАЛИ · ПОШТА</span></h1>
   </div>
   <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
     <span id="fsVal" style="font-size:12px;color:var(--mu);min-width:38px;text-align:right"></span>
@@ -2672,7 +2673,7 @@ function applyAppName(){
   const nameEl = g('hdrName');
   if(nameEl) nameEl.textContent = nm;
   const badge = g('planBadge');
-  if(badge) badge.style.display = (typeof GT_PAID!=='undefined' && GT_PAID) ? 'inline' : 'none';
+  if(badge) badge.style.display = (typeof GT_PAID!=='undefined' && GT_PAID) ? 'inline-flex' : 'none';
   document.title = _brandTitle();
   try{ setDefaultFavicon(); }catch(e){}
 }
@@ -5952,7 +5953,7 @@ let _favTimer=null, _titleTimer=null, _alertCount=0, _favTick=0;
 function _favFrame(phase){
   const c = phase%2 ? '%2310b981' : '%23f59e0b';
   const r = phase%2 ? 15 : 11;
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M20 12h7v32h19v7H20z" fill="%23f2f2f2"/><circle cx="50" cy="14" r="'+r+'" fill="'+c+'" stroke="%230b0c0e" stroke-width="3"/><circle cx="50" cy="14" r="22" fill="none" stroke="'+c+'" stroke-width="2" opacity=".5"/></svg>';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M9.4 7.5h11.3v31.9h30.6v11.3H9.4z" fill="%23f2f2f2"/><circle cx="50" cy="14" r="'+r+'" fill="'+c+'" stroke="%230b0c0e" stroke-width="3"/><circle cx="50" cy="14" r="22" fill="none" stroke="'+c+'" stroke-width="2" opacity=".5"/></svg>';
 }
 function _favLinks(){ return Array.from(document.querySelectorAll('link[rel~="icon"]')); }
 function setDefaultFavicon(){
