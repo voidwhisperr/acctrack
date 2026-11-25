@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.34.0 — update and backup translations
+
+- Update panel, P&L backup and cloud backup fully localized UA/EN/RU.
+- Removed English buttons (`Check`, `Run now`, `Restore-test`, `Save`) from translated UI.
+- Auto-backup status follows the selected language.
+
 ## v1.33.1 — launcher paths
 
 - Agent setup path updated to `launchers/install_taobao_agent.bat`.

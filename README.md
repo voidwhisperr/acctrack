@@ -218,7 +218,7 @@ python taobao_collector.py
 python taobao_collector.py --once
 ```
 
-On Windows you can use **`taobao_agent.bat`** instead.
+On Windows you can use **`launchers/taobao_agent.bat`** instead.
 
 Taobao may block automated access; manual lots and manual marks remain available.
 

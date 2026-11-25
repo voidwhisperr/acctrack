@@ -1267,10 +1267,10 @@ code{
 
   <div class="panel" id="updatePanel" style="margin-bottom:14px">
     <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
-      <span>ОНОВЛЕННЯ</span>
-      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="checkUpdates()">↻ Перевірити</button>
+      <span data-i18n="upd.title">ОНОВЛЕННЯ</span>
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="checkUpdates()">↻ <span data-i18n="upd.check">Перевірити</span></button>
     </div>
-    <div id="updateInfo" style="font-size:12px;color:var(--mu)">Натисни «Перевірити», щоб дізнатися останню версію.</div>
+    <div id="updateInfo" style="font-size:12px;color:var(--mu)" data-i18n="upd.hint">Натисни «Перевірити», щоб дізнатися останню версію.</div>
   </div>
 
   <div class="panel" id="dataPanel" style="margin-bottom:14px">
@@ -1349,19 +1349,19 @@ code{
     <div style="font-size:12px;color:var(--mu)">Розмір шрифту — кнопки <b>A−</b> / <b>A+</b> у шапці сторінки (запам'ятовується).</div>
   </div>
   <div class="panel" style="margin-bottom:14px">
-    <div class="ph">БЕКАП P&L
-      <button class="btn" style="font-size:10px;padding:3px 10px" onclick="runBackup()">↺ Зробити зараз</button>
+    <div class="ph"><span data-i18n="bk.panelTitle">БЕКАП P&L</span>
+      <button class="btn" style="font-size:10px;padding:3px 10px" onclick="runBackup()">↺ <span data-i18n="bk.runNow">Зробити зараз</span></button>
     </div>
-    <div style="font-size:11px;color:var(--mu);margin-bottom:10px">Авто-бекап раз на день у папку <code>gt_backups/</code> поруч з трекером. Зберігаються останні 30 файлів (P&L, ELDORADO, ціль).</div>
-    <div id="backupList" style="font-size:11px;color:var(--mu)">⏳ Завантаження...</div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="bk.hint">Авто-бекап раз на день у папку gt_backups/ поруч з трекером. Зберігаються останні 30 файлів (P&L, ELDORADO, ціль).</div>
+    <div id="backupList" style="font-size:11px;color:var(--mu)" data-i18n="bk.loading">⏳ Завантаження...</div>
     <div style="border-top:1px solid var(--brd);margin:12px 0"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <a class="btn gr" href="/api/backup/export" download style="text-decoration:none">⬇ Експорт усіх даних (zip)</a>
-      <button class="btn" onclick="exportEncrypted()">🔒 Експорт зашифрований</button>
-      <label class="btn" style="cursor:pointer">⬆ Імпорт zip / .enc
+      <a class="btn gr" href="/api/backup/export" download style="text-decoration:none">⬇ <span data-i18n="bk.exportZip">Експорт усіх даних (zip)</span></a>
+      <button class="btn" onclick="exportEncrypted()">🔒 <span data-i18n="bk.exportEnc">Експорт зашифрований</span></button>
+      <label class="btn" style="cursor:pointer">⬆ <span data-i18n="bk.import">Імпорт zip / .enc</span>
         <input type="file" id="importZip" accept=".zip,.enc" style="display:none" onchange="importBackup(this)">
       </label>
-      <span style="font-size:10px;color:var(--mu)">P&amp;L + ELDORADO + ціль + налаштування · без паролів і токенів · sha256-перевірка</span>
+      <span style="font-size:10px;color:var(--mu)" data-i18n="bk.note">P&L + ELDORADO + ціль + налаштування · без паролів і токенів · sha256-перевірка</span>
     </div>
   </div>
   <div class="panel" style="margin-bottom:14px">
@@ -1473,21 +1473,21 @@ code{
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="set.folder">ПАПКА</div>
         <input id="cloudDir" placeholder="C:/Users/User/OneDrive/GameTrackerBackups" style="width:100%">
       </div>
-      <button class="btn gr" onclick="saveCloud()">✓ Зберегти</button>
+      <button class="btn gr" onclick="saveCloud()">✓ <span data-i18n="cloud.save">Зберегти</span></button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:10px">
-      <label style="font-size:11px;color:var(--mu)">Кожні <input id="backupHours" type="number" min="1" max="168" style="width:64px"> год</label>
-      <label style="font-size:11px;color:var(--mu)">Тримати <input id="backupKeep" type="number" min="1" max="365" style="width:64px"> копій</label>
-      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="saveBackupSettings()">✓ Зберегти</button>
-      <button class="btn gr" style="font-size:11px;padding:5px 10px" onclick="backupNow()">💾 Бекап зараз</button>
-      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="backupVerify()">🔍 Перевірити</button>
-      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="backupRestoreTest()">🧪 Restore-test</button>
+      <label style="font-size:11px;color:var(--mu)"><span data-i18n="cloud.every">Кожні</span> <input id="backupHours" type="number" min="1" max="168" style="width:64px"> <span data-i18n="cloud.hours">год</span></label>
+      <label style="font-size:11px;color:var(--mu)"><span data-i18n="cloud.keep">Тримати</span> <input id="backupKeep" type="number" min="1" max="365" style="width:64px"> <span data-i18n="cloud.copies">копій</span></label>
+      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="saveBackupSettings()">✓ <span data-i18n="cloud.save">Зберегти</span></button>
+      <button class="btn gr" style="font-size:11px;padding:5px 10px" onclick="backupNow()">💾 <span data-i18n="cloud.now">Бекап зараз</span></button>
+      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="backupVerify()">🔍 <span data-i18n="cloud.verify">Перевірити</span></button>
+      <button class="btn" style="font-size:11px;padding:5px 10px" onclick="backupRestoreTest()">🧪 <span data-i18n="cloud.restoreTest">Тест відновлення</span></button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:9px">
-      <label style="font-size:11px;display:flex;align-items:center;gap:5px"><input id="backupEncrypt" type="checkbox"> 🔒 Шифрувати автоматичні бекапи</label>
-      <input id="backupPass" type="password" placeholder="Пароль шифрування" autocomplete="new-password" style="width:190px;font-size:11px">
-      <button class="btn" style="font-size:11px;padding:4px 9px" onclick="saveBackupEncryption()">Зберегти</button>
-      <span style="font-size:10px;color:var(--mu)">Пароль зберігається в secrets; без нього бекап не відкрити.</span>
+      <label style="font-size:11px;display:flex;align-items:center;gap:5px"><input id="backupEncrypt" type="checkbox"> 🔒 <span data-i18n="cloud.encrypt">Шифрувати автоматичні бекапи</span></label>
+      <input id="backupPass" type="password" placeholder="Пароль шифрування" data-i18n-ph="cloud.password" autocomplete="new-password" style="width:190px;font-size:11px">
+      <button class="btn" style="font-size:11px;padding:4px 9px" onclick="saveBackupEncryption()" data-i18n="cloud.save">Зберегти</button>
+      <span style="font-size:10px;color:var(--mu)" data-i18n="cloud.passwordHint">Пароль зберігається в secrets; без нього бекап не відкрити.</span>
     </div>
     <div id="backupInfo" style="font-size:11px;color:var(--mu);margin-top:7px">—</div>
     <div id="cloudInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
@@ -2484,6 +2484,30 @@ Object.assign(I18N.ru, {
   'f.currencyHint':'Суммы — в валюте сделки. Курс — сколько единиц этой валюты за 1 USD; он сохраняется для истории.',
   'b.add':'+ ДОБАВИТЬ','b.sync':'СИНХРОНИЗИРОВАТЬ','b.bulk':'МАССОВО','b.bulkFee':'КОМИССИЯ'
 });
+Object.assign(I18N.uk, {
+  'upd.title':'ОНОВЛЕННЯ','upd.check':'Перевірити','upd.hint':'Натисни «Перевірити», щоб дізнатися останню версію.',
+  'bk.panelTitle':'БЕКАП P&L','bk.runNow':'Зробити зараз','bk.hint':'Авто-бекап раз на день у папку gt_backups/ поруч з трекером. Зберігаються останні 30 файлів (P&L, ELDORADO, ціль).','bk.loading':'⏳ Завантаження...',
+  'bk.exportZip':'Експорт усіх даних (zip)','bk.exportEnc':'Експорт зашифрований','bk.import':'Імпорт zip / .enc','bk.note':'P&L + ELDORADO + ціль + налаштування · без паролів і токенів · sha256-перевірка',
+  'ph.cloud':'ХМАРНИЙ БЕКАП','set.cloudHint':'Копія бекапів у OneDrive (або будь-яка папка). Порожнє поле = авто: OneDrive/GameTrackerBackups.','set.folder':'ПАПКА',
+  'cloud.save':'Зберегти','cloud.every':'Кожні','cloud.hours':'год','cloud.keep':'Тримати','cloud.copies':'копій','cloud.now':'Бекап зараз','cloud.verify':'Перевірити','cloud.restoreTest':'Тест відновлення',
+  'cloud.encrypt':'Шифрувати автоматичні бекапи','cloud.password':'Пароль шифрування','cloud.passwordHint':'Пароль зберігається в secrets; без нього бекап не відкрити.'
+});
+Object.assign(I18N.en, {
+  'upd.title':'UPDATES','upd.check':'Check','upd.hint':'Press Check to see the latest version.',
+  'bk.panelTitle':'P&L BACKUP','bk.runNow':'Run now','bk.hint':'Auto-backup once a day to gt_backups/ next to the tracker. The latest 30 files are kept (P&L, ELDORADO, goal).','bk.loading':'⏳ Loading...',
+  'bk.exportZip':'Export all data (zip)','bk.exportEnc':'Export encrypted','bk.import':'Import zip / .enc','bk.note':'P&L + ELDORADO + goal + settings · no passwords or tokens · sha256 verification',
+  'ph.cloud':'CLOUD BACKUP','set.cloudHint':'Copy backups to OneDrive (or any folder). Empty field = auto: OneDrive/GameTrackerBackups.','set.folder':'FOLDER',
+  'cloud.save':'Save','cloud.every':'Every','cloud.hours':'h','cloud.keep':'Keep','cloud.copies':'copies','cloud.now':'Backup now','cloud.verify':'Check','cloud.restoreTest':'Restore test',
+  'cloud.encrypt':'Encrypt automatic backups','cloud.password':'Encryption password','cloud.passwordHint':'The password is stored in secrets; without it the backup cannot be opened.'
+});
+Object.assign(I18N.ru, {
+  'upd.title':'ОБНОВЛЕНИЯ','upd.check':'Проверить','upd.hint':'Нажми «Проверить», чтобы узнать последнюю версию.',
+  'bk.panelTitle':'БЭКАП P&L','bk.runNow':'Сделать сейчас','bk.hint':'Авто-бэкап раз в день в папку gt_backups/ рядом с трекером. Хранятся последние 30 файлов (P&L, ELDORADO, цель).','bk.loading':'⏳ Загрузка...',
+  'bk.exportZip':'Экспорт всех данных (zip)','bk.exportEnc':'Экспорт зашифрованный','bk.import':'Импорт zip / .enc','bk.note':'P&L + ELDORADO + цель + настройки · без паролей и токенов · sha256-проверка',
+  'ph.cloud':'ОБЛАЧНЫЙ БЭКАП','set.cloudHint':'Копия бэкапов в OneDrive (или любая папка). Пустое поле = авто: OneDrive/GameTrackerBackups.','set.folder':'ПАПКА',
+  'cloud.save':'Сохранить','cloud.every':'Каждые','cloud.hours':'ч','cloud.keep':'Хранить','cloud.copies':'копий','cloud.now':'Бэкап сейчас','cloud.verify':'Проверить','cloud.restoreTest':'Тест восстановления',
+  'cloud.encrypt':'Шифровать автоматические бэкапы','cloud.password':'Пароль шифрования','cloud.passwordHint':'Пароль хранится в secrets; без него бэкап не открыть.'
+});
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
   n = Math.abs(Number(n) || 0);
@@ -3427,7 +3451,7 @@ async function loadSettings(){
     if(g('backupEncrypt')) g('backupEncrypt').checked = !!d.backup_encrypt;
     if(g('backupInfo')) g('backupInfo').textContent = d.backup_last_ts
       ? ('Останній бекап: '+new Date(d.backup_last_ts*1000).toLocaleString(dateLocale())+' · '+(d.backup_last_status||'')+(d.backup_last_verify?(' · перевірка: '+d.backup_last_verify):'')+(d.backup_last_restore_test?(' · restore: '+d.backup_last_restore_test):'')+(d.backup_password_protected?' · 🔐 DPAPI':''))
-      : 'Автобекап ще не запускався';
+      : (LANG==='ru'?'Автобэкап ещё не запускался':LANG==='en'?'Auto-backup has not run yet':'Автобекап ще не запускався');
     if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
     ['g2g','gameflip','pa','zeusx','funpay','eldorado','other'].forEach(k=>{
       const el=g('pd_'+k); if(el) el.value=(d.payout_days&&d.payout_days[k]!=null)?d.payout_days[k]:3;
