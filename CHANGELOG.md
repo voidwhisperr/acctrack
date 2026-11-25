@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.44.0 — one brand: Ledger and Ledger+
+
+- Public product renamed to **Ledger** everywhere.
+- Paid/automation instance shows **Ledger+** badge and window title.
+- GitHub repository renamed to `ledger`; old links redirect.
+- Desktop app rebuilt as Ledger+.
+
 ## v1.43.0 — desktop application
 
 - Native Windows app `Ledger.exe` (WebView2 + embedded Python server).

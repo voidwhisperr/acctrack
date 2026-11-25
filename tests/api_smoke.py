@@ -1,4 +1,4 @@
-"""Повний API-тест публічного білда AccTrack (без токенів каналів)."""
+"""Повний API-тест публічного білда Ledger (без токенів каналів)."""
 import base64
 import json
 import os
@@ -51,13 +51,13 @@ def check(name, cond, info=""):
 print("=== 1. ПУБЛІЧНЕ / АВТОРИЗАЦІЯ ===")
 st, d = call("/api/health", auth=False)
 check("health без пароля", st == 200 and d.get("ok"), st)
-check("версія 1.43.0", d.get("version") == "1.43.0", d)
+check("версія 1.44.0", d.get("version") == "1.44.0", d)
 st, d = call("/api/settings", auth=False)
 auth_open = (st == 200)
 check("API: режим без пароля (або 401, якщо пароль увімкнено)", st in (200, 401), st)
 st, d = call("/login", auth=False, raw=True)
 if st == 200:
-    check("сторінка входу показує AccTrack", b"AccTrack" in d, st)
+    check("сторінка входу показує Ledger", b"Ledger" in d, st)
 else:
     check("вхід вимкнено — сторінки логіну немає (404)", st == 404, st)
 if not auth_open:
@@ -151,7 +151,7 @@ st, d = call("/api/settings/save", "POST", {"lang": "ru"})
 check("мова ru", st == 200, st)
 st, d = call("/api/settings")
 check("мова збережена", d.get("lang") == "ru", d.get("lang"))
-call("/api/settings/save", "POST", {"app_name": "AccTrack", "lang": "en"})
+call("/api/settings/save", "POST", {"app_name": "Ledger", "lang": "en"})
 
 print("=== 11. КАНАЛИ БЕЗ ТОКЕНІВ ===")
 call("/api/secrets/save", "POST", {"funpay_cookie": "", "zeusx_cookie": ""})   # чистий стан

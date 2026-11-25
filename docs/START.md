@@ -5,14 +5,14 @@
 ### A. Windows / ПК (найпростіше)
 
 1. Встановіть **Python 3.11+** з [python.org](https://python.org) (галочка «Add to PATH»).
-2. Розпакуйте папку з AccTrack, наприклад `C:\AccTrack`.
+2. Розпакуйте папку з Ledger, наприклад `C:\Ledger`.
 3. Двічі клікніть **`start.bat`** (у PowerShell: `.\start.bat`).
 4. Відкрийте **http://127.0.0.1:8766**
 
 У консолі побачите:
 
 ```
-▲ AccTrack v1.0
+▲ Ledger v1.0
 🔓 No password — open access (set one in ⚙ → Password)
 🌐  http://localhost:8766
 ```
@@ -57,7 +57,7 @@ sudo mkdir -p /opt/acctrack && sudo chown $USER /opt/acctrack
 
 sudo tee /etc/systemd/system/acctrack.service >/dev/null <<'EOF'
 [Unit]
-Description=AccTrack
+Description=Ledger
 After=network.target
 [Service]
 WorkingDirectory=/opt/acctrack
@@ -91,7 +91,7 @@ Caddy: `your-domain.example { reverse_proxy 127.0.0.1:8766 }`
 
 | # | Що зробити | Що має бути |
 |---|---|---|
-| 1 | Відкрити `/login` | ▲ AccTrack, «Sign in», кнопка «Continue», перемикач UA/EN/RU |
+| 1 | Відкрити `/login` | ▲ Ledger, «Sign in», кнопка «Continue», перемикач UA/EN/RU |
 | 2 | Ввести неправильний пароль | «Wrong password (401)», вхід не відбувається |
 | 3 | Ввести правильний пароль | Заходьте, з'являється Онбординг |
 | 4 | Пройти онбординг, змінивши назву | Назва в шапці й у вкладці браузера змінилась |

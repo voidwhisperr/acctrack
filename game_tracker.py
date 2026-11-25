@@ -565,8 +565,8 @@ def _totp_new_secret():
 
 
 def _totp_uri(secret):
-    label = urllib.parse.quote("AccTrack:" + str(AUTH_USER or "admin"))
-    return ("otpauth://totp/%s?secret=%s&issuer=AccTrack&digits=6&period=30"
+    label = urllib.parse.quote("Ledger:" + str(AUTH_USER or "admin"))
+    return ("otpauth://totp/%s?secret=%s&issuer=Ledger&digits=6&period=30"
             % (label, secret))
 
 
@@ -1105,7 +1105,7 @@ def _mail_notification(kind, platform, subject, body, test=False):
 # ─────────────────────────────────────────────────
 LOGIN_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign in · AccTrack</title>
+<title>Sign in · Ledger</title>
 <link rel="icon" href="/ledger.svg?v=2" type="image/svg+xml">
 <style>
 :root{--bg:#0b0c0e;--card:#111214;--brd:#26282c;--tx:#edeef0;--mu:#8a8f98;--a1:#edeef0}
@@ -1138,7 +1138,7 @@ button:disabled{opacity:.55;cursor:default}
 <form class="box" onsubmit="return go(event)">
   <div class="brand">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.6 21 20.4H3L12 3.6Z" fill="#edeef0"/></svg>
-    <b>AccTrack</b>
+    <b>Ledger</b>
   </div>
   <h1 id="t1">Sign in</h1>
   <p id="t2">Enter the password. This device stays signed in for a year.</p>
@@ -4187,7 +4187,7 @@ def _cl(uk, en, ru=None):
 
 def _app_brand():
     st = _read_json(SETTINGS_FILE, {}) or {}
-    nm = (str(st.get("app_name") or "AccTrack").strip()[:32] or "AccTrack")
+    nm = (str(st.get("app_name") or "Ledger").strip()[:32] or "Ledger")
     letter = (nm[0] if nm else "A").upper()
     tag = "l" if letter == "L" else "a"
     return nm, letter, tag
@@ -4458,7 +4458,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.43.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.44.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4725,7 +4725,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         elif p == "/api/update/check":
             try:
                 req = urllib.request.Request(
-                    "https://api.github.com/repos/voidwhisperr/acctrack/releases/latest",
+                    "https://api.github.com/repos/voidwhisperr/ledger/releases/latest",
                     headers={"User-Agent": "Ledger-update-check",
                              "Accept": "application/vnd.github+json"})
                 with urllib.request.urlopen(req, timeout=8) as r:
@@ -4776,7 +4776,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                            for k, v in _TG_DEFAULTS.items()},
                 "lang": str(st.get("lang") or "en")[:2],
                 "onboarded": bool(st.get("onboarded")),
-                "app_name": str(st.get("app_name") or "AccTrack")[:32],
+                "app_name": str(st.get("app_name") or "Ledger")[:32],
                 "zeusx_tier": str(st.get("zeusx_tier") or "iron")[:16],
                 "fee_profiles": {
                     "funpay": round(float(st.get("fee_profiles", {}).get("funpay", PLATFORM_FEES["funpay"])), 6),
@@ -4865,7 +4865,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.43.0",
+            self._json({"ok": True, "version": "1.44.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5336,7 +5336,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     if "currency_manual" in body:
                         st["currency_manual"] = bool(body.get("currency_manual"))
                     if "app_name" in body:
-                        st["app_name"] = (str(body.get("app_name") or "").strip()[:32] or "AccTrack")
+                        st["app_name"] = (str(body.get("app_name") or "").strip()[:32] or "Ledger")
                     if "zeusx_tier" in body:
                         _zt = str(body.get("zeusx_tier") or "iron").lower()[:16]
                         st["zeusx_tier"] = _zt if _zt in {t["id"] for t in ZEUSX_TIERS} else "iron"
@@ -6264,7 +6264,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.43.0")
+    print("  ▲  Ledger v1.44.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

@@ -147,6 +147,7 @@ h1 span{
   letter-spacing:.10em;margin-top:3px;text-transform:uppercase;
 }
 h1 span b{color:var(--a1);font-weight:700}
+#hdrTitle #hdrName,#hdrTitle #planBadge{display:inline;font-size:inherit;font-weight:inherit;color:inherit;letter-spacing:inherit;margin:0;text-transform:none;vertical-align:top}
 
 /* ── tabs ── */
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--brd);margin-bottom:20px;overflow-x:auto;padding-bottom:2px}
@@ -467,8 +468,8 @@ code{
 <div class="w">
 <header>
   <div class="logo">
-    <svg id="brandMark" width="20" height="22" viewBox="0 0 24 24" style="color:var(--tx);flex:none" aria-label="AccTrack"><use href="#ic-mark"/></svg>
-    <h1>AccTrack<span data-i18n="hdr.sub">v5 · УГОДИ · КАНАЛИ · ПОШТА</span></h1>
+    <svg id="brandMark" width="20" height="22" viewBox="0 0 24 24" style="color:var(--tx);flex:none" aria-label="Ledger"><use href="#ic-mark"/></svg>
+    <h1 id="hdrTitle"><span id="hdrName">Ledger</span><span id="planBadge" style="display:none;font-size:10px;font-weight:800;color:var(--gr);letter-spacing:.02em;vertical-align:top">+</span><span data-i18n="hdr.sub">v5 · УГОДИ · КАНАЛИ · ПОШТА</span></h1>
   </div>
   <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
     <span id="fsVal" style="font-size:12px;color:var(--mu);min-width:38px;text-align:right"></span>
@@ -485,7 +486,7 @@ code{
 <div id="onb" class="onb" style="display:none">
   <div class="onb-card">
     <div class="onb-step" id="onbStepInfo">1 / 3</div>
-    <h2 id="onbTitle">Welcome to AccTrack</h2>
+    <h2 id="onbTitle">Welcome to Ledger</h2>
     <div id="onbBody"></div>
     <div class="onb-actions">
       <button class="btn" onclick="onbSkip()" id="onbSkip">Skip</button>
@@ -2384,7 +2385,7 @@ Object.assign(I18N.en, {'cur.auto':'The rate refreshes automatically every 6 hou
 Object.assign(I18N.ru, {'cur.auto':'Курс обновляется автоматически раз в 6 часов. Кнопка ↻ — принудительное обновление.','cur.manualHint':'Можно выбрать любую валюту вручную. После этого смена языка не будет менять валюту.'});
 Object.assign(I18N.uk, {
   'tb.heroBadge':'АВТОМАТИЗАЦІЯ TAOBAO','tb.heroTitle':'Вигідні акаунти з Taobao — до того, як їх розкуплять',
-  'tb.heroSub':'AccTrack сам збирає лоти, показує ціну в юанях і доларах та одразу рахує маржу. Вам залишається вибрати найкращий лот і купити.',
+  'tb.heroSub':'Ledger сам збирає лоти, показує ціну в юанях і доларах та одразу рахує маржу. Вам залишається вибрати найкращий лот і купити.',
   'tb.stat1':'Економія часу','tb.stat1u':'год/день','tb.stat2':'Ціни','tb.stat3':'Оновлення','tb.stat3v':'у фоні','tb.stat4':'Маржа','tb.stat4v':'відразу',
   'tb.ben1t':'Збір на автопілоті','tb.ben1d':'Агент відкриває Taobao, оновлює лоти й чекає, поки ви пройдете капчу. Без ручного копіювання.',
   'tb.ben2t':'Маржа видна одразу','tb.ben2d':'Ціна в юанях, орієнтовний долар, ваша ціна продажу й прибуток — в одному рядку.',
@@ -2395,7 +2396,7 @@ Object.assign(I18N.uk, {
 });
 Object.assign(I18N.en, {
   'tb.heroBadge':'TAOBAO AUTOMATION','tb.heroTitle':'Find underpriced Taobao accounts before they’re gone',
-  'tb.heroSub':'AccTrack collects lots for you, shows yuan and dollar prices, and calculates margin on the spot. All you do is pick the best lot and buy.',
+  'tb.heroSub':'Ledger collects lots for you, shows yuan and dollar prices, and calculates margin on the spot. All you do is pick the best lot and buy.',
   'tb.stat1':'Time saved','tb.stat1u':'h/day','tb.stat2':'Prices','tb.stat3':'Refresh','tb.stat3v':'in background','tb.stat4':'Margin','tb.stat4v':'instantly',
   'tb.ben1t':'Collection on autopilot','tb.ben1d':'The agent opens Taobao, refreshes lots and waits while you solve the captcha. No manual copying.',
   'tb.ben2t':'Margin at a glance','tb.ben2d':'Yuan price, estimated dollars, your sale price and profit — all in one row.',
@@ -2406,7 +2407,7 @@ Object.assign(I18N.en, {
 });
 Object.assign(I18N.ru, {
   'tb.heroBadge':'АВТОМАТИЗАЦИЯ TAOBAO','tb.heroTitle':'Выгодные аккаунты с Taobao — раньше, чем их разберут',
-  'tb.heroSub':'AccTrack сам собирает лоты, показывает цену в юанях и долларах и сразу считает маржу. Вам остаётся выбрать лучший лот и купить.',
+  'tb.heroSub':'Ledger сам собирает лоты, показывает цену в юанях и долларах и сразу считает маржу. Вам остаётся выбрать лучший лот и купить.',
   'tb.stat1':'Экономия времени','tb.stat1u':'ч/день','tb.stat2':'Цены','tb.stat3':'Обновление','tb.stat3v':'в фоне','tb.stat4':'Маржа','tb.stat4v':'сразу',
   'tb.ben1t':'Сбор на автопилоте','tb.ben1d':'Агент открывает Taobao, обновляет лоты и ждёт, пока вы пройдёте капчу. Без ручного копирования.',
   'tb.ben2t':'Маржа видна сразу','tb.ben2d':'Цена в юанях, примерный доллар, ваша цена продажи и прибыль — в одной строке.',
@@ -2659,15 +2660,20 @@ window.confirm = function(m){ return _nativeConfirm(trDialog(m)); };
 window.prompt = function(m, d){ return _nativePrompt(trDialog(m), d); };
 window.alert = function(m){ return _nativeAlert(trDialog(m)); };
 
+function _brandName(){
+  return String(window._appName || 'Ledger').replace(/\+$/,'');
+}
+function _brandTitle(){
+  const nm=_brandName();
+  return (typeof GT_PAID!=='undefined' && GT_PAID) ? nm+'+' : nm;
+}
 function applyAppName(){
-  const nm = (window._appName || 'AccTrack');
-  const h = document.querySelector('header h1');
-  if(h){
-    const span = h.querySelector('span');
-    h.textContent = nm;
-    if(span) h.appendChild(span);
-  }
-  document.title = nm;
+  const nm = _brandName();
+  const nameEl = g('hdrName');
+  if(nameEl) nameEl.textContent = nm;
+  const badge = g('planBadge');
+  if(badge) badge.style.display = (typeof GT_PAID!=='undefined' && GT_PAID) ? 'inline' : 'none';
+  document.title = _brandTitle();
   try{ setDefaultFavicon(); }catch(e){}
 }
 
@@ -2683,7 +2689,7 @@ function applyLang(){
   if(g('langUk')) g('langUk').classList.toggle('on', LANG==='uk');
   if(g('langEn')) g('langEn').classList.toggle('on', LANG==='en');
   if(g('langRu')) g('langRu').classList.toggle('on', LANG==='ru');
-  document.title = (window._appName || 'AccTrack');
+  document.title = _brandTitle();
   try{ syncDemoLink(); }catch(e){}
 }
 async function refreshActiveTab(){
@@ -5579,15 +5585,15 @@ function renderSupCards(list){
 // ═══════════════ ОНБОРДИНГ (3 кроки) ═══════════════
 let _onbStep = 0;
 const ONB = {
-  uk: { t1:'Вітання в AccTrack', t2:'Назва й тема', t3:'Підключення кабінетів',
+  uk: { t1:'Вітання в Ledger', t2:'Назва й тема', t3:'Підключення кабінетів',
         lng:'Оберіть мову інтерфейсу', nm:'Назва застосунку', th:'Тема оформлення',
         tok:'Вставте свої токени (можна пропустити й працювати вручну)',
         next:'Далі →', fin:'Готово', skip:'Пропустити' },
-  en: { t1:'Welcome to AccTrack', t2:'Name & theme', t3:'Connect your accounts',
+  en: { t1:'Welcome to Ledger', t2:'Name & theme', t3:'Connect your accounts',
         lng:'Choose interface language', nm:'App name', th:'Theme',
         tok:'Paste your tokens (or skip — manual mode works fine)',
         next:'Next →', fin:'Done', skip:'Skip' },
-  ru: { t1:'Добро пожаловать в AccTrack', t2:'Название и тема', t3:'Подключение кабинетов',
+  ru: { t1:'Добро пожаловать в Ledger', t2:'Название и тема', t3:'Подключение кабинетов',
         lng:'Выберите язык интерфейса', nm:'Название приложения', th:'Тема оформления',
         tok:'Вставьте свои токены (можно пропустить — ручной режим работает)',
         next:'Далее →', fin:'Готово', skip:'Пропустить' }
@@ -5950,7 +5956,7 @@ function _favFrame(phase){
 }
 function _favLinks(){ return Array.from(document.querySelectorAll('link[rel~="icon"]')); }
 function _defaultFavSvg(){
-  const nm=window._appName||'AccTrack';
+  const nm=window._appName||'Ledger';
   const letter=(nm.trim()[0]||'A').toUpperCase().replace(/[<>&"]/g,'');
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 9 55 54H9Z" fill="%23e8e8e8"/><text x="32" y="46" text-anchor="middle" font-family="Arial,sans-serif" font-size="23" font-weight="800" fill="%230b0c0e">'+letter+'</text></svg>';
 }
@@ -5975,7 +5981,7 @@ function setFaviconBadge(show){
   if(_favTimer) return;
   _favTick=0; _paintFavicon(0);
   _favTimer=setInterval(()=>{ _favTick++; _paintFavicon(_favTick); }, 450);
-  const nm=window._appName||'AccTrack';
+  const nm=window._appName||'Ledger';
   _titleTimer=setInterval(()=>{
     document.title = (document.title.indexOf('🔔')>=0)
       ? '('+_alertCount+') '+nm
@@ -6028,7 +6034,7 @@ async function enableOrderNotifications(){
 function orderNotify(n){
   try{
     if(Notification.permission==='granted'){
-      const note=new Notification('🔔 '+t('order.new'), {body:n+' · '+(window._appName||'AccTrack'), icon:'/icon-192.png', tag:'acctrack-orders', requireInteraction:true});
+      const note=new Notification('🔔 '+t('order.new'), {body:n+' · '+(window._appName||'Ledger'), icon:'/icon-192.png', tag:'acctrack-orders', requireInteraction:true});
       note.onclick=()=>{ try{ window.focus(); goOrders(); note.close(); }catch(e){} };
     }
   }catch(e){}
@@ -6037,7 +6043,7 @@ function orderNotify(n){
 function notifyNewOrder(n){
   const mark=g('brandMark'); if(mark) mark.classList.add('order-alert');
   _alertCount=n;
-  document.title='('+n+') '+(window._appName||'AccTrack');
+  document.title='('+n+') '+(window._appName||'Ledger');
   setFaviconBadge(true);
   const b=g('orderBanner'); if(b){ b.style.display='flex'; const bt=g('orderBannerText'); if(bt) bt.textContent=t('order.new')+': '+n; }
   orderNotify(n);
@@ -6049,7 +6055,7 @@ function goOrders(){
 }
 function clearOrderAlert(){
   const mark=g('brandMark'); if(mark) mark.classList.remove('order-alert');
-  document.title=(window._appName||'AccTrack');
+  document.title=(window._appName||'Ledger');
   setFaviconBadge(false);
   const b=g('orderBanner'); if(b) b.style.display='none';
 }
@@ -7173,6 +7179,7 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
   function applyPaidMode(){
     const hero=g('tbHero'), work=g('tbWorkPanel'), bar=g('tbPaidBar');
     const paid=(typeof GT_PAID!=='undefined' && GT_PAID);
+    try{ applyAppName(); }catch(e){}
     document.querySelectorAll('[data-paid-only]').forEach(el=>{ el.style.display=paid?'':'none'; });
     document.querySelectorAll('[data-free-only]').forEach(el=>{ el.style.display=paid?'none':''; });
     if(!paid){

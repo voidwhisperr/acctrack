@@ -76,7 +76,7 @@ def main():
         return
 
     webview.create_window(
-        "Ledger — Game Account Tracker",
+        "Ledger+ — Game Account Tracker",
         url,
         width=1500,
         height=950,

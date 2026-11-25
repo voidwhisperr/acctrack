@@ -1,4 +1,4 @@
-# AccTrack
+# Ledger
 
 **A self-hosted bookkeeping tracker for game-account resellers** — deals, inventory, sales channels, mailbox orders, analytics, and backups in one dashboard.
 
@@ -6,7 +6,7 @@ Runs locally with Python's standard library. No tokens are required: every core 
 
 [Українська версія](README.uk.md)
 
-![AccTrack overview](docs/demo/en/01-overview.png)
+![Ledger overview](docs/demo/en/01-overview.png)
 
 ---
 

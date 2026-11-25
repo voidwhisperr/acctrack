@@ -2,15 +2,15 @@
 chcp 65001 >nul
 setlocal
 cd /d "%~dp0"
-title AccTrack
+title Ledger
 
 echo.
 echo        /\
-echo       /  \        A C C T R A C K
+echo       /  \        L E D G E R
 echo      /____\       deals . channels . stock
 echo.
 echo ============================================================
-echo   Starting AccTrack
+echo   Starting Ledger
 echo ============================================================
 echo   URL:  http://localhost:8766
 echo   Stop: close this window or press Ctrl+C
@@ -18,16 +18,16 @@ echo.
 
 rem create shortcut with icon on first run
 
-if not exist "AccTrack.lnk" if exist "assets\acctrack.ico" (
+if not exist "Ledger.lnk" if exist "assets\acctrack.ico" (
   powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$d = '%~dp0'.TrimEnd('\');" ^
     "$w = New-Object -ComObject WScript.Shell;" ^
-    "$s = $w.CreateShortcut((Join-Path $d 'AccTrack.lnk'));" ^
+    "$s = $w.CreateShortcut((Join-Path $d 'Ledger.lnk'));" ^
     "$s.TargetPath = Join-Path $env:WINDIR 'System32\cmd.exe';" ^
     "$s.Arguments = '/c \"\"' + (Join-Path $d 'start.bat') + '\"\"';" ^
     "$s.WorkingDirectory = $d;" ^
     "$s.IconLocation = (Join-Path $d 'assets\acctrack.ico') + ',0';" ^
-    "$s.Description = 'AccTrack - deals, channels, stock';" ^
+    "$s.Description = 'Ledger - deals, channels, stock';" ^
     "$s.Save()" >nul 2>&1
 )
 
