@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.38.0 — working install button
+
+- Install button explains the HTTPS requirement and opens the secure URL on HTTP.
+- Added valid HTTPS endpoint `ledger.70-34-243-50.sslip.io`.
+- PWA status shows installability and HTTPS hint.
+
 ## v1.37.0 — updated screenshots and demo fix
 
 - `/demo?lang=...` is public and no longer returns 404 behind auth.

@@ -7083,6 +7083,16 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
     if(window.matchMedia('(display-mode: standalone)').matches){
       toast(LANG==='ru'?'Уже открыто как приложение':LANG==='en'?'Already running as an app':'Вже відкрито як застосунок'); return;
     }
+    if(!window.isSecureContext){
+      const _h=location.hostname;
+      const secure=(_h==='70-34-243-50.sslip.io'||/^[0-9.]+$/.test(_h))?'https://ledger.70-34-243-50.sslip.io/':('https://'+_h+'/');
+      const s=g('pwaStatus');
+      if(s) s.textContent=LANG==='ru'?'🔒 Нужен HTTPS — открываю защищённую версию…':LANG==='en'?'🔒 HTTPS required — opening the secure version…':'🔒 Потрібен HTTPS — відкриваю захищену версію…';
+      if(confirm(LANG==='ru'?'Установка приложения работает только по HTTPS. Открыть защищённую версию?':LANG==='en'?'App installation only works over HTTPS. Open the secure version?':'Встановлення застосунку працює лише через HTTPS. Відкрити захищену версію?')){
+        location.href=secure;
+      }
+      return;
+    }
     if(_pwaPrompt){
       _pwaPrompt.prompt();
       _pwaPrompt.userChoice.then(c=>{
@@ -7099,6 +7109,7 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
   try{
     const s=g('pwaStatus');
     if(s && window.matchMedia('(display-mode: standalone)').matches) s.textContent='✅ '+(LANG==='ru'?'Установлено':LANG==='en'?'Installed':'Встановлено');
+    else if(s && !window.isSecureContext) s.textContent='🔒 '+(LANG==='ru'?'Для установки открой по HTTPS':LANG==='en'?'Open over HTTPS to install':'Для встановлення відкрий через HTTPS');
   }catch(e){}
 
   // Paid Ledger: без продажної сторінки Taobao, тільки робочий інтерфейс
