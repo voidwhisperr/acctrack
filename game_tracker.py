@@ -647,7 +647,18 @@ def _auth_from_settings():
         _st = _read_json(SETTINGS_FILE, {}) or {}
     except Exception:
         _st = {}
-    AUTH_MODE = "basic" if _st.get("auth_enabled") else "off"
+    if "auth_enabled" in _st:
+        AUTH_MODE = "basic" if _st.get("auth_enabled") else "off"
+        return
+    # Старі інсталяції не мали auth_enabled: якщо пароль уже заданий у
+    # .gt_secrets.json, вхід лишається обовʼязковим (інакше оновлення
+    # відкривало б дані в інтернет без пароля).
+    try:
+        _sec = _read_json(SECRETS_FILE, {}) or {}
+    except Exception:
+        _sec = {}
+    _has_pass = bool((os.environ.get("GT_AUTH_PASS") or "").strip()) or bool(_sec.get("auth_pass"))
+    AUTH_MODE = "basic" if _has_pass else "off"
 
 
 _auth_from_settings()
@@ -6231,6 +6242,17 @@ def _startup_supplier_refresh(allow_network=True):
 
 
 def main():
+    global AUTH_MODE
+    # Старі інсталяції (без auth_enabled), але з паролем у .gt_secrets.json,
+    # мусять лишатися закритими після оновлення.
+    if not (os.environ.get("GT_AUTH") or "").strip():
+        try:
+            _st0 = _read_json(SETTINGS_FILE, {}) or {}
+            _sec0 = _read_json(SECRETS_FILE, {}) or {}
+            if "auth_enabled" not in _st0 and str(_sec0.get("auth_pass") or "").strip():
+                AUTH_MODE = "basic"
+        except Exception:
+            pass
     try:
         _apply_fee_profiles(_read_json(SETTINGS_FILE, {}) or {})
     except Exception:
