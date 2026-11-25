@@ -7,10 +7,13 @@ services:
     build: .
     container_name: ledger
     restart: unless-stopped
+    # Host side is localhost-only: this demo container has no password.
+    # For LAN/internet access set auth_pass in /app/data/.gt_secrets.json first.
     ports:
-      - "8766:8766"
+      - "127.0.0.1:8766:8766"
     environment:
       GT_BIND: "0.0.0.0"
+      GT_ALLOW_OPEN: "1"
       GT_PORT: "8766"
       GT_DATA_DIR: "/app/data"
       TZ: "Europe/Kyiv"

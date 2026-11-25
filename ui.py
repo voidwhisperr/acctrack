@@ -470,7 +470,7 @@ code{
 <div class="w">
 <header>
   <div class="logo">
-    <img id="brandMark" src="/app-icon-192.png" width="50" height="50" style="border-radius:14px;flex:none;box-shadow:0 6px 18px rgba(0,0,0,.45)" alt="Ledger">
+    <img id="brandMark" src="/brand-icon.png" width="50" height="50" style="border-radius:14px;flex:none;box-shadow:0 6px 18px rgba(0,0,0,.45)" alt="Ledger">
     <h1 id="hdrTitle"><span id="hdrName">Ledger</span><span id="planBadge" style="display:none">+</span><span data-i18n="hdr.sub">УГОДИ · КАНАЛИ · ПОШТА</span></h1>
   </div>
   <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
@@ -833,10 +833,10 @@ code{
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
       <div style="font-size:15px;font-weight:800;margin-bottom:10px">🏦 Де вигідніше продавати</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
-        <label style="font-size:13px;color:var(--mu)">Ціна продажу, $<br>
+        <label style="font-size:13px;color:var(--mu)">Ціна продажу, USD<br>
           <input id="mpPrice" type="number" min="0" step="1" value="10" oninput="calcMarkets()" style="width:120px;margin-top:4px">
         </label>
-        <label style="font-size:13px;color:var(--mu)">Собівартість, $<br>
+        <label style="font-size:13px;color:var(--mu)">Собівартість, USD<br>
           <input id="mpCost" type="number" min="0" step="1" value="5" oninput="calcMarkets()" style="width:120px;margin-top:4px">
         </label>
         <span style="font-size:12px;color:var(--mu)">Комісії орієнтовні — уточнюйте тарифи майданчика</span>
@@ -996,7 +996,7 @@ code{
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
       <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.name">Назва</span><br><input id="invTitle" placeholder="Arknights starter" style="width:220px;margin-top:4px"></label>
       <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.game">Гра</span><br><input id="invGame" placeholder="Arknights" style="width:130px;margin-top:4px"></label>
-      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.cost">Собівартість, $</span><br><input id="invCost" type="number" min="0" step="0.01" value="0" style="width:110px;margin-top:4px"></label>
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.cost">Собівартість, USD</span><br><input id="invCost" type="number" min="0" step="0.01" value="0" style="width:110px;margin-top:4px"></label>
       <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.source">Джерело</span><br><input id="invSource" placeholder="Taobao / store name" style="width:150px;margin-top:4px"></label>
       <label style="font-size:12px;color:var(--mu);flex:1;min-width:260px"><span data-i18n="inv.account">Дані акаунта (логін / пароль / пошта)</span><br>
         <textarea id="invAccount" data-i18n-ph="inv.ph" placeholder="логін: user@mail.com&#10;пароль: 12345&#10;пошта: user@mail.com" style="width:100%;height:64px;margin-top:4px;font-family:var(--font);font-size:12px"></textarea>
@@ -1269,23 +1269,23 @@ code{
       <code id="twofaSecret" style="display:block;background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:8px 10px;font-size:13px;word-break:break-all;margin-bottom:6px"></code>
       <div style="font-size:10px;color:var(--mu);word-break:break-all;margin-bottom:10px" id="twofaUri"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-        <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">КОД 6 ЦИФР</div>
+        <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="twofa.code">КОД 6 ЦИФР</div>
           <input id="twofaCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:120px;letter-spacing:.2em"></div>
         <button class="btn gr" onclick="enable2FA()">✓ <span data-i18n="twofa.enable">Увімкнути 2FA</span></button>
       </div>
     </div>
     <div id="twofaEnabled" style="display:none">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-        <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">КОД 6 ЦИФР</div>
+        <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="twofa.code">КОД 6 ЦИФР</div>
           <input id="twofaDisableCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:120px;letter-spacing:.2em"></div>
         <button class="btn rd" onclick="disable2FA()">✕ <span data-i18n="twofa.disable">Вимкнути 2FA</span></button>
-        <button class="btn" onclick="regenRecovery()">🔑 Recovery-коди</button>
-        <button class="btn rd" onclick="logoutAll()">Вийти на всіх пристроях</button>
+        <button class="btn" onclick="regenRecovery()">🔑 <span data-i18n="twofa.recovery">Recovery-коди</span></button>
+        <button class="btn rd" onclick="logoutAll()" data-i18n="twofa.logoutAll">Вийти на всіх пристроях</button>
       </div>
       <div id="twofaRecovery" style="display:none;margin-top:10px;padding:10px;border:1px solid var(--yw);border-radius:8px;background:color-mix(in srgb,var(--yw) 8%,transparent)">
-        <div style="font-size:11px;color:var(--yw);margin-bottom:6px">Збережи ці коди. Кожен працює один раз.</div>
+        <div style="font-size:11px;color:var(--yw);margin-bottom:6px" data-i18n="twofa.keepCodes">Збережи ці коди. Кожен працює один раз.</div>
         <pre id="twofaRecoveryList" style="margin:0;white-space:pre-wrap;font-size:13px;line-height:1.6"></pre>
-        <button class="btn" style="margin-top:8px;font-size:11px;padding:5px 10px" onclick="copyRecovery()">📋 Копіювати</button>
+        <button class="btn" style="margin-top:8px;font-size:11px;padding:5px 10px" onclick="copyRecovery()">📋 <span data-i18n="twofa.copy">Копіювати</span></button>
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -1304,9 +1304,9 @@ code{
   </div>
 
   <div class="panel" id="dataPanel" style="margin-bottom:14px">
-    <div class="ph"><span>ДАНІ Й ДІАГНОСТИКА</span>
+    <div class="ph"><span data-i18n="diag.title">ДАНІ Й ДІАГНОСТИКА</span>
       <button class="btn" style="font-size:12px" onclick="diagLoad();tokensCheck()" data-i18n="tk.check">Перевірити токени</button></div>
-    <div id="diagBox" style="font-size:12.5px;color:var(--mu);margin-bottom:12px">натисніть ↻ Оновити</div>
+    <div id="diagBox" style="font-size:12.5px;color:var(--mu);margin-bottom:12px" data-i18n="diag.press">натисніть ↻ Оновити</div>
     <div id="tokenStates" style="font-size:12.5px;color:var(--mu);margin-bottom:12px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       <button class="btn" onclick="demoLoad()">Завантажити демо-дані</button>
@@ -1422,7 +1422,7 @@ code{
         </select>
       </div>
       <div>
-        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" id="rateLbl" data-i18n="cur.rate">RATE (₴ per $1)</div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" id="rateLbl" data-no-currency data-i18n="cur.rate">RATE (₴ per $1)</div>
         <input id="rateVal" type="number" step="0.01" min="0" placeholder="41.50" style="width:120px;font-family:var(--font)">
       </div>
       <div style="font-size:11px;color:var(--mu);padding-bottom:9px" id="rateInfo">—</div>
@@ -1941,7 +1941,7 @@ const EXTRA_I18N = {
     "an.thisVsLast":"ЦЕЙ МІСЯЦЬ ПРОТИ МИНУЛОГО","an.profitPL":"Прибуток P&L",
     "an.revenuePL":"Виторг P&L","an.profitED":"Прибуток ELDORADO",
     "an.totalProfit":"Разом прибуток","an.was":"було","an.new":"новий",
-    "an.revenueChart":"Виторг $","an.profitChart":"Прибуток $","an.noData":"Немає даних",
+    "an.revenueChart":"Виторг","an.profitChart":"Прибуток","an.noData":"Немає даних",
     "rep.count":"Продажів","rep.revenue":"Виторг","rep.fees":"Комісії",
     "rep.cogs":"Собівартість проданого","rep.profit":"Прибуток",
     "rep.purchases":"Закупівлі за місяць","rep.cash":"Касовий потік",
@@ -2054,7 +2054,7 @@ const EXTRA_I18N = {
     "an.profitCol":"PROFIT","an.marginCol":"MARGIN",
     "an.thisVsLast":"THIS MONTH VS LAST","an.profitPL":"Profit P&L","an.revenuePL":"Revenue P&L",
     "an.profitED":"Profit ELDORADO","an.totalProfit":"Total profit","an.was":"was","an.new":"new",
-    "an.revenueChart":"Revenue $","an.profitChart":"Profit $","an.noData":"No data",
+    "an.revenueChart":"Revenue","an.profitChart":"Profit","an.noData":"No data",
     "rep.count":"Sales","rep.revenue":"Revenue","rep.fees":"Fees",
     "rep.cogs":"Cost of goods sold","rep.profit":"Profit","rep.purchases":"Purchases this month",
     "rep.cash":"Cash flow","rep.stock":"In stock now",
@@ -2167,7 +2167,7 @@ const EXTRA_I18N = {
     "an.thisVsLast":"ЭТОТ МЕСЯЦ ПРОТИВ ПРОШЛОГО","an.profitPL":"Прибыль P&L",
     "an.revenuePL":"Выручка P&L","an.profitED":"Прибыль ELDORADO",
     "an.totalProfit":"Итого прибыль","an.was":"было","an.new":"новый",
-    "an.revenueChart":"Выручка $","an.profitChart":"Прибыль $","an.noData":"Нет данных",
+    "an.revenueChart":"Выручка","an.profitChart":"Прибыль","an.noData":"Нет данных",
     "rep.count":"Продаж","rep.revenue":"Выручка","rep.fees":"Комиссии",
     "rep.cogs":"Себестоимость проданного","rep.profit":"Прибыль",
     "rep.purchases":"Закупки за месяц","rep.cash":"Денежный поток",
@@ -3303,6 +3303,10 @@ function initCurrencySelects(){
 function fmtUah(usd){
   return _rate ? curSym()+(usd*_rate).toFixed(2) : '';
 }
+function locMoney(usd){
+  const v=Number(usd||0);
+  return _rate ? curSym()+(v*_rate).toFixed(2) : '$'+v.toFixed(2);
+}
 let _moneyNodes=[];
 let _moneyOrig=new WeakMap();
 let _moneyTimer=null;
@@ -3318,16 +3322,20 @@ function _moneyConvertNode(node){
   if(txt.indexOf('$') < 0) return;
   const rate=parseFloat(_rate)||0;
   if(!rate || _cur==='USD') return;
-  const re=/\$(\d[\d,]*(?:\.\d+)?)/g;
+  // вже перераховано для цієї валюти — не чіпаємо (інакше C$ → CC$ → CCC$)
+  if(node.__moneyCur === _cur) return;
+  // $ не має бути частиною C$, A$, NZ$, S$, R$, HK$ тощо
+  const re=/(^|[^A-Za-z])\$(\d[\d,]*(?:\.\d+)?)/g;
   if(!re.test(txt)) return;
   // Оригінал тримаємо на самому вузлі: після перерендеру WeakMap втрачав
   // звʼязок, і сума лишалася перерахованою за старим курсом.
   if(node.__moneyOrig === undefined) node.__moneyOrig = txt;
   _moneyNodes.push(node);
-  node.nodeValue=txt.replace(re,(m,num)=>{
+  node.nodeValue=txt.replace(re,(m,pre,num)=>{
     const v=(parseFloat(num.replace(/,/g,''))||0)*rate;
-    return curSym()+v.toFixed(2);
+    return pre+curSym()+v.toFixed(2);
   });
+  node.__moneyCur=_cur;
 }
 function convertMoneyText(root){
   if(_cur==='USD' || !_rate) return;
@@ -3344,7 +3352,7 @@ function restoreMoneyText(){
     while((n=w.nextNode())){
       if(n.__moneyOrig !== undefined){
         try{ n.nodeValue=n.__moneyOrig; }catch(e){}
-        delete n.__moneyOrig;
+        delete n.__moneyOrig; delete n.__moneyCur;
       }
     }
   }catch(e){}
@@ -3394,16 +3402,16 @@ async function pickCurrency(){
 }
 
 async function checkUpdates(){
-  const el=g('updateInfo'); if(el) el.innerHTML='⏳ Перевіряю GitHub…';
+  const el=g('updateInfo'); if(el) el.innerHTML=t('upd.checking');
   try{
     const d=await fetch('/api/update/check').then(r=>r.json());
-    if(!d.ok){ el.innerHTML='⚠ '+esc(d.error||'Не вдалося перевірити'); return; }
+    if(!d.ok){ el.innerHTML=t('upd.fail')+' '+esc(d.error||''); return; }
     const same=String(d.latest||'').replace(/^v/,'')===String(d.current||'').replace(/^v/,'');
-    el.innerHTML='<div>Поточна: <b>v'+esc(d.current||'?')+'</b> · Остання на GitHub: <b>'+esc(d.latest||'?')+'</b></div>'+
-      '<div style="margin-top:4px;color:'+(same?'var(--gr)':'var(--yw)')+'">'+(same?'✅ У тебе остання версія':'⬆ Доступна новіша версія')+'</div>'+
-      (d.url?'<div style="margin-top:8px"><a class="btn" style="text-decoration:none" href="'+esc(d.url)+'" target="_blank" rel="noopener">Відкрити release</a></div>':'')+
+    el.innerHTML='<div>'+t('upd.current')+': <b>v'+esc(d.current||'?')+'</b> · '+t('upd.latest')+': <b>'+esc(d.latest||'?')+'</b></div>'+
+      '<div style="margin-top:4px;color:'+(same?'var(--gr)':'var(--yw)')+'">'+(same?t('upd.same'):t('upd.newer'))+'</div>'+
+      (d.url?'<div style="margin-top:8px"><a class="btn" style="text-decoration:none" href="'+esc(d.url)+'" target="_blank" rel="noopener">'+t('upd.open')+'</a></div>':'')+
       (d.body?'<pre style="margin-top:8px;max-height:180px;overflow:auto;white-space:pre-wrap;font-size:11px">'+esc(d.body)+'</pre>':'');
-  }catch(e){ el.innerHTML='⚠ '+esc(String(e)); }
+  }catch(e){ el.innerHTML=t('upd.fail')+' '+esc(String(e)); }
 }
 
 async function loadAudit(){
@@ -3460,7 +3468,7 @@ async function setup2FA(){
     g('twofaSetup').style.display='block';
     g('twofaEnabled').style.display='none';
     if(g('twofaCode')) g('twofaCode').value='';
-    toast('🔐 Секрет створено — додай його в Authenticator');
+    toast(t('twofa.secretCreated'));
   }catch(e){ toast('⚠ '+e, false); }
 }
 function showRecovery(codes){
@@ -3472,7 +3480,7 @@ function showRecovery(codes){
 }
 function copyRecovery(){
   const txt=g('twofaRecoveryList')?.textContent||'';
-  navigator.clipboard.writeText(txt).then(()=>toast('📋 Recovery-коди скопійовано')).catch(()=>toast('⚠ Буфер недоступний', false));
+  navigator.clipboard.writeText(txt).then(()=>toast(t('twofa.copied'))).catch(()=>toast(t('twofa.clipboardFail'), false));
 }
 async function enable2FA(){
   const code=(g('twofaCode')?.value||'').trim();
@@ -3480,22 +3488,22 @@ async function enable2FA(){
     const d=await fetch('/api/2fa/enable',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
-    toast('✅ 2FA увімкнено'); await load2FA(); showRecovery(d.recovery);
+    toast(t('twofa.enabledToast')); await load2FA(); showRecovery(d.recovery);
   }catch(e){ toast('⚠ '+e, false); }
 }
 async function regenRecovery(){
-  const code=prompt('Введи поточний 6-значний код 2FA');
+  const code=prompt(t('twofa.regenPrompt'));
   if(!code) return;
   try{
     const d=await fetch('/api/2fa/recovery',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     showRecovery(d.recovery);
-    toast('🔑 Нові recovery-коди створено');
+    toast(t('twofa.regenDone'));
   }catch(e){ toast('⚠ '+e, false); }
 }
 async function logoutAll(){
-  if(!confirm('Вийти на всіх пристроях? Потрібно буде увійти заново.')) return;
+  if(!confirm(t('twofa.logoutConfirm'))) return;
   try{
     const d=await fetch('/api/logout/all',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
@@ -3509,7 +3517,7 @@ async function disable2FA(){
     const d=await fetch('/api/2fa/disable',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
-    toast('2FA вимкнено'); await load2FA();
+    toast(t('twofa.disabledToast')); await load2FA();
   }catch(e){ toast('⚠ '+e, false); }
 }
 
@@ -4701,10 +4709,10 @@ function renderStats(){
         '<th style="text-align:right">'+t('an.netPct')+'</th></tr></thead><tbody>'+
         rows.map(r=>'<tr><td style="font-weight:600">'+esc(r.name)+'</td>'+
           '<td style="text-align:right;color:var(--mu)">'+r.n+'</td>'+
-          '<td style="text-align:right;font-family:var(--font);font-size:11px">$'+r.rev.toFixed(2)+'</td>'+
-          '<td style="text-align:right;font-family:var(--font);font-size:11px;color:var(--rd)">-$'+r.fee.toFixed(2)+'</td>'+
-          '<td style="text-align:right;font-family:var(--font);font-size:11px;color:var(--yw)">-$'+r.exp.toFixed(2)+'</td>'+
-          '<td style="text-align:right;font-family:var(--font);font-size:12px;font-weight:700;color:'+(r.net>=0?'var(--gr)':'var(--rd)')+'">'+(r.net>=0?'+':'')+'$'+r.net.toFixed(2)+'</td>'+
+          '<td style="text-align:right;font-family:var(--font);font-size:11px">'+locMoney(r.rev)+'</td>'+
+          '<td style="text-align:right;font-family:var(--font);font-size:11px;color:var(--rd)">-'+locMoney(r.fee)+'</td>'+
+          '<td style="text-align:right;font-family:var(--font);font-size:11px;color:var(--yw)">-'+locMoney(r.exp)+'</td>'+
+          '<td style="text-align:right;font-family:var(--font);font-size:12px;font-weight:700;color:'+(r.net>=0?'var(--gr)':'var(--rd)')+'">'+(r.net>=0?'+':'-')+locMoney(Math.abs(r.net))+'</td>'+
           '<td style="text-align:right;font-size:11px;color:var(--mu)">'+r.margin.toFixed(1)+'%</td></tr>').join('')+
         '</tbody></table>';
     }
@@ -4714,14 +4722,16 @@ function renderStats(){
   if(_statsChart){_statsChart.destroy();_statsChart=null;}
   const ctx = g('statsChart');
   if(ctx && top.length){
+    const _cm = _rate ? Number(_rate) : 1;
+    const _cs = _rate ? curSym() : '$';
     _statsChart = new Chart(ctx,{
       type:'bar',
       data:{
         labels: top.map(g=>g.name.length>15?g.name.substring(0,15)+'…':g.name),
         datasets:[
-          {label:t('an.profitChart'), data:top.map(g=>parseFloat(g.profit.toFixed(2))),
+          {label:t('an.profitChart'), data:top.map(g=>parseFloat((g.profit*_cm).toFixed(2))),
            backgroundColor:'rgba(16,185,129,.5)',borderColor:'rgba(16,185,129,.9)',borderWidth:1,borderRadius:4},
-          {label:t('an.revenueChart'),  data:top.map(g=>parseFloat(g.revenue.toFixed(2))),
+          {label:t('an.revenueChart'),  data:top.map(g=>parseFloat((g.revenue*_cm).toFixed(2))),
            backgroundColor:'rgba(99,102,241,.35)',borderColor:'rgba(99,102,241,.8)',borderWidth:1,borderRadius:4},
         ]
       },
@@ -4730,7 +4740,7 @@ function renderStats(){
         plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
         scales:{
           x:{ticks:{color:'#64748b',font:{size:9},maxRotation:35},grid:{color:'rgba(255,255,255,.04)'}},
-          y:{ticks:{color:'#64748b',callback:v=>'$'+v},grid:{color:'rgba(255,255,255,.05)'}},
+          y:{ticks:{color:'#64748b',callback:v=>_cs+v},grid:{color:'rgba(255,255,255,.05)'}},
         }
       }
     });
@@ -4808,23 +4818,25 @@ function renderRevenueChart(){
     profits.push(dayRecs.reduce((s,p)=>s+(p.afterFee||0),0));
   }
   if(_chartInst){ _chartInst.destroy(); _chartInst=null; }
+  const _cm = _rate ? Number(_rate) : 1;
+  const _cs = _rate ? curSym() : '$';
   const ctx=el.getContext('2d');
   _chartInst=new Chart(ctx,{
     type:'bar',
     data:{
       labels,
       datasets:[
-        {label:(LANG==='uk'?'Виторг $':(LANG==='ru'?'Выручка $':'Revenue $')),data:revenues,backgroundColor:'rgba(99,102,241,.35)',borderColor:'rgba(99,102,241,.8)',borderWidth:1,borderRadius:3},
-        {label:(LANG==='uk'?'Прибуток $':(LANG==='ru'?'Прибыль $':'Profit $')),data:profits,backgroundColor:'rgba(16,185,129,.35)',borderColor:'rgba(16,185,129,.8)',borderWidth:1,borderRadius:3},
+        {label:t('an.revenueChart'),data:revenues.map(v=>parseFloat((v*_cm).toFixed(2))),backgroundColor:'rgba(99,102,241,.35)',borderColor:'rgba(99,102,241,.8)',borderWidth:1,borderRadius:3},
+        {label:t('an.profitChart'),data:profits.map(v=>parseFloat((v*_cm).toFixed(2))),backgroundColor:'rgba(16,185,129,.35)',borderColor:'rgba(16,185,129,.8)',borderWidth:1,borderRadius:3},
       ]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}},
-        tooltip:{callbacks:{label:ctx=>'$'+ctx.raw.toFixed(2)}}},
+        tooltip:{callbacks:{label:ctx=>_cs+ctx.raw.toFixed(2)}}},
       scales:{
         x:{ticks:{color:'#64748b',font:{size:9},maxRotation:45},grid:{color:'rgba(255,255,255,.04)'}},
-        y:{ticks:{color:'#64748b',font:{size:10},callback:v=>'$'+v},grid:{color:'rgba(255,255,255,.06)'}}
+        y:{ticks:{color:'#64748b',font:{size:10},callback:v=>_cs+v},grid:{color:'rgba(255,255,255,.06)'}}
       }
     }
   });
@@ -6424,7 +6436,7 @@ function renderInventory(){
       + '<div class="bub-acts">' + acts + '</div>'
       + '</div>'
       + '<div class="bub-stats">'
-      + '<span class="bs">'+t('inv.costShort')+' <b style="color:var(--gr)">$' + Number(x.cost || 0).toFixed(2) + '</b></span>'
+      + '<span class="bs">'+t('inv.costShort')+' <b style="color:var(--gr)">' + locMoney(x.cost) + '</b></span>'
       + '<span class="bs">'+t('inv.status')+' ' + badge(x.status) + '</span>'
       + (x.source ? '<span class="bs">'+t('inv.sourceShort')+' <b>' + esc(x.source) + '</b></span>' : '')
       + (x.has_account ? '<span class="bs">🔑 <b>' + esc(x.account_hint || 'дані') + '</b>'
@@ -7287,6 +7299,51 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
 Object.assign(I18N.uk, {'tk.check':'Перевірити токени','tk.checking':'Перевіряю токени…','fs.title':'Розмір шрифту','fs.reset':'Скинути'});
 Object.assign(I18N.en, {'fs.title':'Font size','fs.reset':'Reset'});
 Object.assign(I18N.ru, {'fs.title':'Размер шрифта','fs.reset':'Сбросить'});
+Object.assign(I18N.uk, {
+ 'twofa.code':'КОД 6 ЦИФР','twofa.recovery':'Recovery-коди','twofa.logoutAll':'Вийти на всіх пристроях',
+ 'twofa.keepCodes':'Збережи ці коди. Кожен працює один раз.','twofa.copy':'Копіювати',
+ 'twofa.secretCreated':'🔐 Секрет створено — додай його в Authenticator',
+ 'twofa.copied':'📋 Recovery-коди скопійовано','twofa.clipboardFail':'⚠ Буфер недоступний',
+ 'twofa.enabledToast':'✅ 2FA увімкнено','twofa.regenPrompt':'Введи поточний 6-значний код 2FA',
+ 'twofa.regenDone':'🔑 Нові recovery-коди створено',
+ 'twofa.logoutConfirm':'Вийти на всіх пристроях? Потрібно буде увійти заново.',
+ 'twofa.disabledToast':'2FA вимкнено',
+ 'inv.cost':'Собівартість, USD',
+ 'diag.title':'ДАНІ Й ДІАГНОСТИКА','diag.press':'натисніть ↻ Оновити',
+ 'upd.checking':'⏳ Перевіряю GitHub…','upd.fail':'⚠ Не вдалося перевірити',
+ 'upd.current':'Поточна','upd.latest':'Остання на GitHub',
+ 'upd.same':'✅ У тебе остання версія','upd.newer':'⬆ Доступна новіша версія','upd.open':'Відкрити release'
+});
+Object.assign(I18N.en, {
+ 'twofa.code':'6-DIGIT CODE','twofa.recovery':'Recovery codes','twofa.logoutAll':'Sign out everywhere',
+ 'twofa.keepCodes':'Save these codes. Each works once.','twofa.copy':'Copy',
+ 'twofa.secretCreated':'🔐 Secret created — add it to your authenticator',
+ 'twofa.copied':'📋 Recovery codes copied','twofa.clipboardFail':'⚠ Clipboard unavailable',
+ 'twofa.enabledToast':'✅ 2FA enabled','twofa.regenPrompt':'Enter the current 6-digit 2FA code',
+ 'twofa.regenDone':'🔑 New recovery codes created',
+ 'twofa.logoutConfirm':'Sign out everywhere? You will need to sign in again.',
+ 'twofa.disabledToast':'2FA disabled',
+ 'inv.cost':'Cost, USD',
+ 'diag.title':'DATA & DIAGNOSTICS','diag.press':'click ↻ Refresh',
+ 'upd.checking':'⏳ Checking GitHub…','upd.fail':'⚠ Could not check',
+ 'upd.current':'Current','upd.latest':'Latest on GitHub',
+ 'upd.same':'✅ You are up to date','upd.newer':'⬆ A newer version is available','upd.open':'Open release'
+});
+Object.assign(I18N.ru, {
+ 'twofa.code':'КОД 6 ЦИФР','twofa.recovery':'Recovery-коды','twofa.logoutAll':'Выйти на всех устройствах',
+ 'twofa.keepCodes':'Сохрани эти коды. Каждый работает один раз.','twofa.copy':'Копировать',
+ 'twofa.secretCreated':'🔐 Секрет создан — добавь его в Authenticator',
+ 'twofa.copied':'📋 Recovery-коды скопированы','twofa.clipboardFail':'⚠ Буфер недоступен',
+ 'twofa.enabledToast':'✅ 2FA включена','twofa.regenPrompt':'Введи текущий 6-значный код 2FA',
+ 'twofa.regenDone':'🔑 Новые recovery-коды созданы',
+ 'twofa.logoutConfirm':'Выйти на всех устройствах? Нужно будет войти заново.',
+ 'twofa.disabledToast':'2FA выключена',
+ 'inv.cost':'Себестоимость, USD',
+ 'diag.title':'ДАННЫЕ И ДИАГНОСТИКА','diag.press':'нажмите ↻ Обновить',
+ 'upd.checking':'⏳ Проверяю GitHub…','upd.fail':'⚠ Не удалось проверить',
+ 'upd.current':'Текущая','upd.latest':'Последняя на GitHub',
+ 'upd.same':'✅ У тебя последняя версия','upd.newer':'⬆ Доступна более новая версия','upd.open':'Открыть release'
+});
 Object.assign(I18N.en, {'tk.check':'Check tokens','tk.checking':'Checking tokens…'});
 Object.assign(I18N.ru, {'tk.check':'Проверить токены','tk.checking':'Проверяю токены…'});
 
@@ -7319,7 +7376,7 @@ const TR_EN = {
   "Eldorado не має публічного API — дані беруться з пошти та вашого ручного обліку.":
     "Eldorado has no public API — data comes from mail and your manual entry.",
   "Де вигідніше продавати": "Where it is more profitable to sell",
-  "Ціна продажу, $": "Sale price, $", "Собівартість, $": "Cost, $",
+  "Ціна продажу, $": "Sale price, $", "Собівартість, $": "Cost, $", "Ціна продажу, USD": "Sale price, USD", "Собівартість, USD": "Cost, USD",
   "Комісії орієнтовні — уточнюйте тарифи майданчика":
     "Fees are approximate — confirm the marketplace rates",
   "МАЙДАНЧИК": "MARKETPLACE", "КОМІСІЯ": "FEE", "НА РУКИ": "NET", "МАРЖА": "MARGIN",
@@ -7765,7 +7822,7 @@ const TR_RU = {
   "Eldorado не має публічного API — дані беруться з пошти та вашого ручного обліку.":
     "У Eldorado нет публичного API — данные берутся из почты и вашего ручного учёта.",
   "Де вигідніше продавати": "Где выгоднее продавать",
-  "Ціна продажу, $": "Цена продажи, $", "Собівартість, $": "Себестоимость, $",
+  "Ціна продажу, $": "Цена продажи, $", "Собівартість, $": "Себестоимость, $", "Ціна продажу, USD": "Цена продажи, USD", "Собівартість, USD": "Себестоимость, USD",
   "Комісії орієнтовні — уточнюйте тарифи майданчика":
     "Комиссии ориентировочные — уточняйте тарифы площадки",
   "МАЙДАНЧИК": "ПЛОЩАДКА", "КОМІСІЯ": "КОМИССИЯ", "НА РУКИ": "НА РУКИ",

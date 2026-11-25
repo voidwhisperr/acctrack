@@ -184,7 +184,8 @@ def main():
         pass
 
     try:
-        webview.start(debug=False, private_mode=False, storage_path=str(storage), icon=str(ASSET_DIR / "acctrack-l.ico"))
+        _win_icon = ASSET_DIR / ("ledger-plus.ico" if (ASSET_DIR / "ledger-plus.ico").exists() else "ledger.ico")
+        webview.start(debug=False, private_mode=False, storage_path=str(storage), icon=str(_win_icon))
     except Exception:
         log("webview failed:\n" + traceback.format_exc())
     finally:

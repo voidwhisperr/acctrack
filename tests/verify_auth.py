@@ -99,7 +99,7 @@ try:
     print("\n── пристрій запам'ятовано ──")
     st, body, _ = req("/", headers={"Cookie": "gt_device=" + dev})
     html = body.decode("utf-8", "replace")
-    ok("GET / з cookie → 200 (застосунок)", st == 200 and "ACCOUNT TRACKER" in html, st)
+    ok("GET / з cookie → 200 (застосунок)", st == 200 and "Ledger" in html, st)
     st, _b, _h = req("/api/pl", headers={"Cookie": "gt_device=" + dev})
     ok("API з cookie → 200", st == 200, st)
     st, _b, _h = req("/api/taobao?agent=1", headers={"X-GT-TOKEN": "tok-test-123"})

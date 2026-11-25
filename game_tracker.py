@@ -4169,20 +4169,21 @@ _LOGOS = {
 }
 
 
-_ICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0B0C0E"/>
-  <path d="M256 96L440 416H72L256 96z" fill="#EDEEF0"/>
+_ICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<defs>
+<linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F9FBFE"/><stop offset="1" stop-color="#B2BCCC"/></linearGradient>
+<linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#CED6E4"/><stop offset="1" stop-color="#7E8A9E"/></linearGradient>
+<clipPath id="sq"><rect x="14.5" y="14.5" width="35" height="35" rx="6"/></clipPath>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="13.5" fill="#0E1014" stroke="#2C3139" stroke-width="1.2"/>
+<g clip-path="url(#sq)">
+<rect x="14.5" y="14.5" width="35" height="35" fill="url(#a)"/>
+<path d="M49.5 14.5 L49.5 49.5 L14.5 49.5 Z" fill="url(#b)"/>
+<line x1="11.9" y1="50.6" x2="51.9" y2="10.6" stroke="#0E1014" stroke-width="4.4"/>
+</g>
 </svg>"""
 
-_LEDGER_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0B0C0E"/>
-  <rect x="12" y="12" width="488" height="488" rx="100" fill="none" stroke="#26282C" stroke-width="4"/>
-  <path d="M150 104h52v246h132v54H150V104z" fill="#EDEEF0"/>
-  <rect x="148" y="402" width="216" height="18" rx="9" fill="#34D399"/>
-  <rect x="372" y="148" width="34" height="10" rx="5" fill="#34D399"/>
-  <rect x="372" y="196" width="28" height="10" rx="5" fill="#34D399"/>
-  <rect x="372" y="244" width="22" height="10" rx="5" fill="#34D399"/>
-</svg>"""
+_LEDGER_SVG = _ICON_SVG
 
 def _console_lang():
     try:
@@ -4225,9 +4226,30 @@ _ICONS_B64.update({
 _icons_cache = {}
 
 
+_ICON_FILE_MAP = {
+    "favicon.ico": "ledger.ico",
+    "favicon-32.png": "ledger-32.png",
+    "apple-touch-icon.png": "ledger-180.png",
+    "icon-192.png": "ledger-192.png",
+    "icon-512.png": "ledger-512.png",
+    "ledger-512.png": "ledger-512.png",
+    "ledger-192.png": "ledger-192.png",
+    "ledger-touch.png": "ledger-180.png",
+    "ledger-32.png": "ledger-32.png",
+}
+
+
 def _icon_bytes(name):
-    """Декодує PNG/ICO з base64 один раз."""
+    """PNG/ICO з assets (актуальний знак), base64 — лише якщо файлу немає."""
     if name not in _icons_cache:
+        fn = _ICON_FILE_MAP.get(name)
+        if fn:
+            fp = os.path.join(str(_ASSETS_DIR), fn)
+            if os.path.exists(fp):
+                ct = "image/x-icon" if fn.endswith(".ico") else "image/png"
+                with open(fp, "rb") as fh:
+                    _icons_cache[name] = (ct, fh.read())
+                return _icons_cache[name]
         ct, b64 = _ICONS_B64[name]
         _icons_cache[name] = (ct, base64.b64decode(b64))
     return _icons_cache[name]
@@ -4254,6 +4276,8 @@ def _log_error(where, exc):
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
+    server_version = "Ledger"
+    sys_version = ""
     html_bytes = b""
 
     # Ліміт тіла запиту та таймаут з'єднання (захист від «важких» POST і slowloris)
@@ -4474,7 +4498,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.51.1", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.51.2", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4538,6 +4562,13 @@ self.addEventListener('push', e => {
 self.addEventListener('notificationclick', e => { e.notification.close(); clients.openWindow('/'); });
 """
             self._send(200, "application/javascript", sw)
+        elif p == "/brand-icon.png":
+            _f = os.path.join(str(_ASSETS_DIR), "ledger-192.png")
+            if not os.path.exists(_f):
+                self._send(404, "text/plain", b"404"); return
+            with open(_f, "rb") as _fh:
+                _data = _fh.read()
+            self._send(200, "image/png", _data, extra={"Cache-Control": "public, max-age=300"})
         elif p in ("/app-icon.svg", "/app-icon-32.png", "/app-icon-180.png",
                      "/app-icon-192.png", "/app-icon-512.png"):
             _nm, _letter, _tag = _app_brand()
@@ -4594,8 +4625,18 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._send(200, "image/png", __import__("base64").b64decode(data),
                            extra={"Cache-Control": "max-age=86400"})
         elif p in ("/icon.png", "/icon.svg", "/ledger.svg"):
-            self._send(200, "image/svg+xml", _LEDGER_SVG if p == "/ledger.svg" else _ICON_SVG,
-                       extra={"Cache-Control": "public, max-age=604800"})
+            if p == "/icon.png":
+                _f = os.path.join(str(_ASSETS_DIR), "ledger-192.png"); _ct = "image/png"
+            else:
+                _f = os.path.join(str(_ASSETS_DIR), "ledger.svg"); _ct = "image/svg+xml"
+            if os.path.exists(_f):
+                with open(_f, "rb") as _fh:
+                    _data = _fh.read()
+            else:
+                _data = (_LEDGER_SVG if p != "/icon.png" else b"")
+            if not _data:
+                self._send(404, "text/plain", b"404"); return
+            self._send(200, _ct, _data, extra={"Cache-Control": "public, max-age=604800"})
         elif p == "/api/backup/run":
             # мутація через GET = CSRF без перевірки Origin → тільки POST
             self._json({"ok": False, "error": "use POST /api/backup/run"}, code=405)
@@ -4896,7 +4937,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.51.1",
+            self._json({"ok": True, "version": "1.51.2",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6350,7 +6391,7 @@ def _startup_supplier_refresh(allow_network=True):
 
 
 def main():
-    global AUTH_MODE
+    global AUTH_MODE, BIND
     # Старі інсталяції (без auth_enabled), але з паролем у .gt_secrets.json,
     # мусять лишатися закритими після оновлення.
     if not (os.environ.get("GT_AUTH") or "").strip():
@@ -6383,12 +6424,20 @@ def main():
 
     public_bind = BIND not in ("127.0.0.1", "localhost", "::1")
     if AUTH_MODE == "off" and public_bind:
-        # не блокуємо запуск — лише голосно попереджаємо
-        print("=" * 60)
-        print("  ⚠  No password + listening on " + str(BIND) + " — anyone on your network can open it.")
-        print("     For internet access set a password: ⚙ → Password.")
-        print("     For local-only access use: GT_BIND=127.0.0.1")
-        print("=" * 60)
+        if os.environ.get("GT_ALLOW_OPEN") == "1":
+            print("=" * 60)
+            print("  ⚠  No password + GT_ALLOW_OPEN=1 on " + str(BIND) + " — anyone who reaches this port can open it.")
+            print("     Use only on a trusted local network.")
+            print("=" * 60)
+        else:
+            # Безпечний дефолт: без пароля назовні не слухаємо.
+            BIND = "127.0.0.1"
+            public_bind = False
+            print("=" * 60)
+            print("  ❌ No password + public bind requested — refusing to expose the dashboard.")
+            print("     Listening on 127.0.0.1 only. Set a password in ⚙ → Password,")
+            print("     or force open access on a trusted LAN with GT_ALLOW_OPEN=1.")
+            print("=" * 60)
     elif not AUTH_PASS:
         print("  ❌ Empty password in .gt_secrets.json — that opens the dashboard to everyone.")
         print("     Set auth_pass (min 8 chars) and start again.")
@@ -6406,16 +6455,21 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.51.1")
+    print("  ▲  Ledger v1.51.2")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
     print("=" * 60 + "\n")
 
     if AUTH_MODE == "off":
-        print("  🔓 " + _cl("Без пароля — відкритий доступ (задай у ⚙ → Пароль)",
-                        "No password — open access (set one in ⚙ → Password)",
-                        "Без пароля — открытый доступ (задай в ⚙ → Пароль)")
+        _open_msg = (_cl("Без пароля — відкритий доступ (задай у ⚙ → Пароль)",
+                         "No password — open access (set one in ⚙ → Password)",
+                         "Без пароля — открытый доступ (задай в ⚙ → Пароль)")
+                     if public_bind else
+                     _cl("Без пароля — лише локально, назовні не слухаємо",
+                         "No password — local access only, not exposed",
+                         "Без пароля — только локально, наружу не слушаем"))
+        print("  🔓 " + _open_msg
               + (" · " + _cl("заголовок Access обов'язковий", "Access header required", "заголовок Access обязателен") if REQUIRE_ACCESS else ""))
     else:
         print("  🔓 " + _cl("Без пароля — відкритий доступ (увімкни: ⚙ → Пароль входу)",

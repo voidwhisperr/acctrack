@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.51.2 — audit fixes
+
+- Currency: no more repeated conversion for $-symbol currencies (C$ / A$ / NZ$ …); text stays stable instead of C$ → CC$ → CCC$.
+- Security: a public bind without a password now refuses to expose the dashboard and listens on 127.0.0.1 only; GT_ALLOW_OPEN=1 overrides for a trusted LAN. Docker publishes on 127.0.0.1 by default.
+- Branding: legacy /favicon.ico, /favicon-32.png, /apple-touch-icon.png, /icon-192.png, /icon-512.png, /icon.svg and /ledger.svg now serve the new mark; the desktop window icon uses ledger-plus.ico; ICO files contain 16–256 px frames; unreferenced AcctTrack/old-icon assets removed.
+- Ledger+: the header uses the plain mark and a text “+”, so the icon badge and the wordmark no longer show two pluses.
+- i18n: 2FA panel, diagnostics block and update-check are translated to EN/RU; inventory cost labels say USD instead of $.
+- Analytics: chart legend, axis, tooltips and the platform table use the selected currency and symbol.
+- Tests: verify_auth and api_smoke updated for the Ledger brand and 1.51.2.
+
 ## v1.51.1 — readable Ledger+ badge
 
 - The green dot was the plus badge: its arms were too thin and disappeared at 32–53 px.
@@ -10,7 +20,7 @@
 
 - New monochrome mark: a metal tile split by a diagonal blade (no letter, no gold, no LoL resemblance).
 - Ledger+ uses the same mark with a green plus badge.
-- The mark is larger in the header (46 px instead of 36 px) and the wordmark is bigger.
+- The mark is larger in the header (50 px instead of 36 px) and the wordmark is bigger.
 - Font size controls moved out of every page header into Settings → Interface theme → Font size (with a reset button).
 - New favicon, PWA icons, tray icon and exe icon built from the same geometry.
 
