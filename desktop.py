@@ -69,7 +69,12 @@ def main():
     server = str(cfg.get("server") or "").strip()
     url = ""
 
-    if server:
+    local_only = (os.environ.get("GT_DESKTOP_MODE") or "").strip().lower() == "local"
+    if local_only:
+        # Portable/offline mode: always start the bundled server, ignore 8766
+        # and client.json. Useful for testing and for running from a USB stick.
+        url = start_local(is_plus)
+    elif server:
         if not server.startswith("http"):
             server = "https://" + server
         port, url = rp.start_proxy(server, str(cfg.get("user") or ""), rp.unseal(cfg.get("pass") or ""), title)

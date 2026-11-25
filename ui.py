@@ -994,10 +994,10 @@ code{
     <div style="font-size:13px;color:var(--mu);margin-bottom:14px" data-i18n="inv.intro">Bought accounts: what they cost, from whom, and whether they sold. Shows real margin and how much money is frozen.</div>
     <div id="invSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
-      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.name">Назва</span><br><input id="invTitle" placeholder="Arknights starter" style="width:220px;margin-top:4px"></label>
-      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.game">Гра</span><br><input id="invGame" placeholder="Arknights" style="width:130px;margin-top:4px"></label>
-      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.cost">Собівартість, USD</span><br><input id="invCost" type="number" min="0" step="0.01" value="0" style="width:110px;margin-top:4px"></label>
-      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.source">Джерело</span><br><input id="invSource" placeholder="Taobao / store name" style="width:150px;margin-top:4px"></label>
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.name">Назва</span><br><input id="invTitle" placeholder="Arknights starter" style="width:200px;margin-top:4px"></label>
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.game">Гра</span><br><input id="invGame" placeholder="Arknights" style="width:110px;margin-top:4px"></label>
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.cost">Собівартість, USD</span><br><input id="invCost" type="number" min="0" step="0.01" value="0" style="width:90px;margin-top:4px"></label>
+      <label style="font-size:12px;color:var(--mu)"><span data-i18n="inv.source">Джерело</span><br><input id="invSource" placeholder="Taobao / store name" style="width:120px;margin-top:4px"></label>
       <label style="font-size:12px;color:var(--mu);flex:1;min-width:260px"><span data-i18n="inv.account">Дані акаунта (логін / пароль / пошта)</span><br>
         <textarea id="invAccount" data-i18n-ph="inv.ph" placeholder="логін: user@mail.com&#10;пароль: 12345&#10;пошта: user@mail.com" style="width:100%;height:64px;margin-top:4px;font-family:var(--font);font-size:12px"></textarea>
       </label>
@@ -1357,7 +1357,7 @@ code{
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px" id="themePicker">
       <div class="theme-btn" onclick="pickTheme('ledger')" data-theme="ledger" title="Ledger — лаконічна, без градієнтів">
         <div style="width:30px;height:30px;border-radius:50%;background:#0B0C0E;border:1px solid #2A2D33;position:relative">
-          <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px">L</span></div>
+          <img src="/brand-icon.png" alt="" style="position:absolute;inset:3px;width:24px;height:24px;border-radius:6px"></div>
         <span>Ledger</span>
       </div>
       <div class="theme-btn" onclick="pickTheme('slate')" data-theme="slate" title="Slate — попередня тема">
@@ -2758,7 +2758,7 @@ async function renderOverview(){
     const delta = profitPrev ? ((profit-profitPrev)/Math.abs(profitPrev)*100) : 0;
     if(g('ovProfit')) g('ovProfit').textContent = (profit>=0?'+':'-')+locMoney(Math.abs(profit));
     if(g('ovProfitD')) g('ovProfitD').textContent = profitPrev
-      ? (t('u.vs')+' '+(delta>=0?'+':'')+delta.toFixed(1)+'%') : '';
+      ? (t('u.vs')+' '+(delta>=0?'+':'')+fmtPct(delta)) : '';
     const nq = Number(q.new||0);
     if(g('ovActions')) g('ovActions').textContent = nq;
     if(g('ovActionsD')) g('ovActionsD').textContent = nq ? t('u.orders') : t('u.none');
@@ -2809,7 +2809,7 @@ async function renderChAll(){
     const top = rows.slice(0, 15);
     const month = new Date().toISOString().slice(0,7);
     const msum = rows.filter(r=>String(r.d||'').startsWith(month)).reduce((s,r)=>s+r.pf,0);
-    if(g('chAllSum')) g('chAllSum').textContent = (LANG==='ru'?'прибыль за месяц: ':LANG==='en'?'profit this month: ':'прибуток за місяць: ') + (msum>=0?'+':'') + '$' + msum.toFixed(2);
+    if(g('chAllSum')) g('chAllSum').textContent = (LANG==='ru'?'прибыль за месяц: ':LANG==='en'?'profit this month: ':'прибуток за місяць: ') + (msum>=0?'+':'-') + locMoney(Math.abs(msum));
     if(!top.length){ box.innerHTML = '<div class="none">'+(LANG==='ru'?'Пока нет продаж':LANG==='en'?'No sales yet':'Ще немає продажів')+'</div>'; return; }
     const LOGO = {'FunPay':'/logo/funpay.png','Eldorado':'/logo/eldorado.png','ZeusX':'/logo/zeusx.png'};
     const logoOf = (ch)=> LOGO[ch] ? '<img src="'+LOGO[ch]+'" alt="" style="width:14px;height:14px;border-radius:3px;object-fit:contain">' : '';
@@ -2866,7 +2866,7 @@ function mnavGo(id){
   if(!tab) return;
   sw(id,tab);
   if(id==='mail'){ clearOrderAlert(); try{ loadMailQueue(); }catch(e){} }
-  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); loadReport(); }catch(e){} }
+  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); loadReport(); loadAnalytics(); }catch(e){} }
   if(id==='taobao'){ try{ loadAgentCfg(); }catch(e){} }
   if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
   if(id==='stats'){ try{ renderStats(); setTimeout(renderRevenueChart,80); }catch(e){} }
@@ -2881,7 +2881,7 @@ function sw(id,el){
   if(id==='mail'){ clearOrderAlert(); try{ loadMailQueue(); }catch(e){} }
   if(id==='tracker'){ setTimeout(()=>{ renderPurchases(); renderRevenueChart(); },50); }
   if(id==='channels'){ renderChAll(); setTimeout(()=>{ try{ translateAll(); }catch(e){} }, 700); }
-  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); loadReport(); }catch(e){} }
+  if(id==='stats'){ try{ loadSupplierROI(); loadCashflow(); loadReport(); loadAnalytics(); }catch(e){} }
   if(id==='taobao'){ try{ loadAgentCfg(); }catch(e){} }
   if(id==='inventory'){ try{ loadInventory(); }catch(e){} }
 }
@@ -3305,6 +3305,9 @@ function fmtUah(usd){
   if(_cur==='USD') return '$'+v.toLocaleString(dateLocale(),{minimumFractionDigits:2,maximumFractionDigits:2});
   return _rate ? curSym()+(v*_rate).toLocaleString(dateLocale(),{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
 }
+function fmtPct(v,d=1){
+  return Number(v||0).toLocaleString(dateLocale(),{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+}
 function locMoney(usd){
   const v=Number(usd||0);
   const loc=dateLocale();
@@ -3434,7 +3437,12 @@ async function loadAudit(){
       rows.map(r=>{
         const dt=new Date((r.ts||0)*1000);
         const ts=dt.toLocaleString(dateLocale());
-        const det=Object.entries(r.detail||{}).filter(([k])=>k!=='keys').map(([k,v])=>k+'='+v).join(' · ')||'—';
+        const _L={uk:{title:'назва',cost:'ціна',price:'ціна',count:'кількість',status:'статус',platform:'платформа',game:'гра',qty:'кільк.',name:'назва'},en:{title:'title',cost:'cost',price:'price',count:'count',status:'status',platform:'platform',game:'game',qty:'qty',name:'name'},ru:{title:'название',cost:'цена',price:'цена',count:'количество',status:'статус',platform:'платформа',game:'игра',qty:'кол-во',name:'название'}}[LANG]||{};
+        const det=Object.entries(r.detail||{}).filter(([k,v])=>k!=='keys'&&k!=='id'&&v!==''&&v!=null).map(([k,v])=>{
+          const lbl=_L[k]||k;
+          const val=(k==='cost'||k==='price') && !isNaN(Number(v)) ? locMoney(Number(v)) : String(v);
+          return lbl+': '+val;
+        }).join(' · ')||'—';
         return '<tr><td style="font-size:10px;color:var(--mu);white-space:nowrap">'+esc(ts)+'</td>'+
           '<td style="font-size:11px">'+esc(labelOf(r.event))+'</td>'+
           '<td style="font-size:10px;color:var(--mu);word-break:break-word">'+esc(det)+'</td></tr>';
@@ -3529,8 +3537,11 @@ async function disable2FA(){
 async function loadSettings(){
   try{
     const d = await fetch('/api/settings').then(r=>r.json());
-    _rate = parseFloat(d.usd_uah)||0;
     if(d.currency) _cur = d.currency;
+    _rate = parseFloat(d.usd_uah)||0;
+    // Захист від старих/зіпсованих налаштувань, де курс зберігся ×100:
+    // інакше Overview показував суму у 100 разів більшою за Deals.
+    if((_cur==='UAH' && _rate > 200) || (_cur==='RUB' && _rate > 500)) _rate = _rate/100;
     _currencyManual = !!d.currency_manual;
     applyCurrency();
     if(g('plCur')){ g('plCur').value = _cur; }
@@ -3598,6 +3609,7 @@ async function loadSettings(){
     }
   if(d.lang && d.lang !== LANG){ LANG = d.lang; try{ localStorage.setItem('gt_lang', LANG); }catch(e){} }
   applyLang();
+  try{ if(g('tab-overview') && g('tab-overview').classList.contains('on')) renderOverview(); }catch(e){}
   if(!_currencyManual){
     const _autoCur = ({uk:'UAH', en:'USD', ru:'RUB'})[LANG] || _cur;
     if(_autoCur !== _cur){
@@ -4184,7 +4196,7 @@ function renderPurchases(){
     g('plProfit').style.color=totalProfit>0?'var(--gr)':totalProfit<0?'var(--rd)':'var(--mu)';
     g('plRevenue').textContent=locMoney(totalSell);
     g('plCost').textContent=locMoney(totalBuy);
-    g('plMargin').textContent=margin+'%';
+    g('plMargin').textContent=fmtPct(margin);
     g('plMargin').style.color=parseFloat(margin)>0?'var(--gr)':'var(--mu)';
     g('plCount').textContent=plFilt.length;
     g('plFees').textContent=locMoney(totalFees);
@@ -4569,7 +4581,7 @@ function refreshCombinedStats(){
   g('plProfit').style.color=profit>0?'var(--gr)':profit<0?'var(--rd)':'var(--mu)';
   if(g('plRevenue')) g('plRevenue').textContent=locMoney(rev);
   if(g('plCost')) g('plCost').textContent=locMoney(cost);
-  if(g('plMargin')){ g('plMargin').textContent=margin.toFixed(1)+'%'; g('plMargin').style.color=margin>0?'var(--gr)':'var(--mu)'; }
+  if(g('plMargin')){ g('plMargin').textContent=fmtPct(margin); g('plMargin').style.color=margin>0?'var(--gr)':'var(--mu)'; }
   if(g('plCount')) g('plCount').textContent=pl.length + ed.length;
   if(g('plFees')) g('plFees').textContent=locMoney(plFees + edFee);
   if(g('plExpenses')) g('plExpenses').textContent=locMoney(plExp);
@@ -4636,7 +4648,7 @@ function renderStats(){
     {l:t('an.deals'),       v:recs.length,                    c:'var(--a1)'},
     {l:t('an.revenue'),     v:locMoney(totRev),           c:'var(--tx)'},
     {l:t('an.profit'),      v:(totProfit>=0?'+':'-')+locMoney(Math.abs(totProfit)), c:'var(--gr)'},
-    {l:t('an.margin'),      v:avgMargin+'%',                   c:'var(--yw)'},
+    {l:t('an.margin'),      v:fmtPct(avgMargin),              c:'var(--yw)'},
     {l:t('an.games'),       v:games.length,                    c:'var(--a3)'},
     {l:t('an.best'),        v:(top[0]?.name||'—').substring(0,18), c:'var(--gr)'},
     {l:t('an.profitED'),    v:(edAllProfit>=0?'+':'-')+locMoney(Math.abs(edAllProfit)), c:'var(--a3)'},
@@ -4718,7 +4730,7 @@ function renderStats(){
           '<td style="text-align:right;font-family:var(--font);font-size:11px;color:var(--rd)">-'+locMoney(r.fee)+'</td>'+
           '<td style="text-align:right;font-family:var(--font);font-size:11px;color:var(--yw)">-'+locMoney(r.exp)+'</td>'+
           '<td style="text-align:right;font-family:var(--font);font-size:12px;font-weight:700;color:'+(r.net>=0?'var(--gr)':'var(--rd)')+'">'+(r.net>=0?'+':'-')+locMoney(Math.abs(r.net))+'</td>'+
-          '<td style="text-align:right;font-size:11px;color:var(--mu)">'+r.margin.toFixed(1)+'%</td></tr>').join('')+
+          '<td style="text-align:right;font-size:11px;color:var(--mu)">'+fmtPct(r.margin)+'</td></tr>').join('')+
         '</tbody></table>';
     }
   }
@@ -4745,7 +4757,7 @@ function renderStats(){
         plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
         scales:{
           x:{ticks:{color:'#64748b',font:{size:9},maxRotation:35},grid:{color:'rgba(255,255,255,.04)'}},
-          y:{ticks:{color:'#64748b',callback:v=>_cs+v},grid:{color:'rgba(255,255,255,.05)'}},
+          y:{ticks:{color:'#64748b',callback:v=>_cs+Number(v).toLocaleString(dateLocale())},grid:{color:'rgba(255,255,255,.05)'}},
         }
       }
     });
@@ -4841,7 +4853,7 @@ function renderRevenueChart(){
         tooltip:{callbacks:{label:ctx=>_cs+ctx.raw.toFixed(2)}}},
       scales:{
         x:{ticks:{color:'#64748b',font:{size:9},maxRotation:45},grid:{color:'rgba(255,255,255,.04)'}},
-        y:{ticks:{color:'#64748b',font:{size:10},callback:v=>_cs+v},grid:{color:'rgba(255,255,255,.06)'}}
+        y:{ticks:{color:'#64748b',font:{size:10},callback:v=>_cs+Number(v).toLocaleString(dateLocale())},grid:{color:'rgba(255,255,255,.06)'}}
       }
     }
   });
@@ -5492,6 +5504,7 @@ function renderSupStats(){
   g('supTotal').textContent = supPage.total;
   if(g('supCnt')) g('supCnt').textContent = supPage.total;
   g('supAl').className='al ok';
+  g('supAl').style.display = supPage.total ? '' : 'none';
   g('supAl').textContent = '✅ '+(supPage.total)+' '+plural(supPage.total,'products')
     + (supPage.sale ? ' · 🔥 '+(LANG==='ru'?'Скидки: ':LANG==='en'?'Sale: ':'Акція: ')+supPage.sale : '')
     + (supPage.gone ? (LANG==='ru'?' · 🗑 исчезло: ':LANG==='en'?' · 🗑 gone: ':' · 🗑 зникло: ')+supPage.gone : '')
@@ -5715,7 +5728,7 @@ async function loadSupStatus(){
   try{
     const d = await fetch('/api/suppliers/status').then(r=>r.json());
     const el = g('supStatus'); if(!el) return;
-    const mins = Math.max(0, Math.round(Date.now()/1000 - (d.last_ok||0)) / 60);
+    const secAgo = Math.max(0, Date.now()/1000 - (d.last_ok||0));
     const next = Math.round((d.next_in||0)/60);
     window._supSuppliers = d.suppliers || [];
     renderSupCards(window._supSuppliers);
@@ -5726,7 +5739,13 @@ async function loadSupStatus(){
     const nextTxt = d.busy ? (LANG==='ru'?'сейчас обновляю…':LANG==='en'?'refreshing now…':'зараз оновлюю…')
       : (next >= 60 ? (LANG==='ru'?'следующее через ':LANG==='en'?'next in ':'наступне через ') + Math.round(next/60) + (LANG==='ru'?' ч':LANG==='en'?' h':' год')
                     : (LANG==='ru'?'следующее через ':LANG==='en'?'next in ':'наступне через ') + next + (LANG==='ru'?' мин':LANG==='en'?' min':' хв'));
-    const updTxt = d.last_ok ? (Math.round(mins) < 1 ? (LANG==='ru'?'только что':LANG==='en'?'just now':'щойно') : Math.round(mins) + (LANG==='ru'?' мин назад':LANG==='en'?' min ago':' хв тому')) : '—';
+    const updTxt = d.last_ok ? (secAgo < 60
+      ? (LANG==='ru'?'только что':LANG==='en'?'just now':'щойно')
+      : secAgo < 3600
+        ? Math.round(secAgo/60) + (LANG==='ru'?' мин назад':LANG==='en'?' min ago':' хв тому')
+        : secAgo < 86400
+          ? Math.round(secAgo/3600) + (LANG==='ru'?' ч назад':LANG==='en'?' h ago':' год тому')
+          : Math.round(secAgo/86400) + (LANG==='ru'?' дн назад':LANG==='en'?' d ago':' дн тому')) : '—';
     el.innerHTML = (LANG==='ru'?'обновлено ':LANG==='en'?'updated ':'оновлено ') + updTxt
       + ' · ' + nextTxt
       + ' · '+(LANG==='ru'?'сегодня ':LANG==='en'?'today ':'сьогодні ') + (sc.used||0) + '/' + (sc.limit||30)
@@ -6647,13 +6666,13 @@ async function loadAnalytics(){
     const gs = d.games || [], m = d.months || [];
     const total = gs.reduce((a, x) => ({n: a.n + x.n, sell: a.sell + x.sell, profit: a.profit + x.profit}), {n: 0, sell: 0, profit: 0});
     if(g('anSummary')) g('anSummary').innerHTML = [
-      [t('rep.count'), total.n], [t('an.revenue'), '$' + total.sell.toFixed(2)], [t('an.profit'), '$' + total.profit.toFixed(2)],
+      [t('rep.count'), total.n], [t('an.revenue'), locMoney(total.sell)], [t('an.profit'), (total.profit>=0?'+':'-')+locMoney(Math.abs(total.profit))],
       [LANG==='ru'?'Мёртвых лотов':LANG==='en'?'Dead lots':'Мертвих лотів', d.dead_total || 0]
     ].map(([k, v]) => '<div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:10px 14px;min-width:130px">'
         + '<div style="font-size:11px;color:var(--mu)">' + k + '</div><div style="font-size:18px;font-weight:800">' + v + '</div></div>').join('');
     const rows = (arr, keyName) => '<table class="sup-table"><thead><tr><th>' + keyName + '</th><th>'+t('an.dealsCol')+'</th><th>'+t('an.revenueCol')+'</th><th>'+t('an.profitCol')+'</th></tr></thead><tbody>'
       + arr.map(x => '<tr><td><b>' + esc(x.game || x.month) + '</b></td><td>' + x.n + '</td>'
-          + '<td>$' + Number(x.sell).toFixed(2) + '</td><td style="color:' + (x.profit >= 0 ? 'var(--gr)' : 'var(--rd)') + ';font-weight:700">$' + Number(x.profit).toFixed(2) + '</td></tr>').join('')
+          + '<td>' + locMoney(x.sell) + '</td><td style="color:' + (x.profit >= 0 ? 'var(--gr)' : 'var(--rd)') + ';font-weight:700">' + (x.profit>=0?'+':'-') + locMoney(Math.abs(x.profit)) + '</td></tr>').join('')
       + '</tbody></table>';
     if(g('anGames')) g('anGames').innerHTML = rows(gs.slice(0, 12), t('an.game'));
     if(g('anMonths')) g('anMonths').innerHTML = rows(m.slice(-12).reverse(), LANG==='ru'?'МЕСЯЦ':LANG==='en'?'MONTH':'МІСЯЦЬ');

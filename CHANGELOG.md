@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.51.4 — polish pass
+
+- Action log no longer shows raw `id=… title=… cost=…`: labels are localized and prices are formatted.
+- Percentages, chart axes and thousands separators follow the selected locale (comma in UK/RU).
+- Channels month total now uses the same conversion as Overview (no cent drift).
+- Catalog empty state is shown once instead of four times.
+- Theme picker shows the new split mark instead of the old letter L.
+- Supplier status shows hours/days instead of “1659 min ago”.
+- Inventory form fits on one row in RU; RU filter no longer wraps alone.
+- Desktop launcher supports `GT_DESKTOP_MODE=local` for portable/offline launch without attaching to a running 8766.
+- Release ZIP now contains only runtime files (no tests, Docker files or internal audit report).
+
 ## v1.51.3 — currency, RU and polish
 
 - Currency is now consistent everywhere: overview, P&L totals, analytics cards/charts/table, inventory, balances and report use the selected currency and its own rate; USD no longer multiplies by the UAH rate.
