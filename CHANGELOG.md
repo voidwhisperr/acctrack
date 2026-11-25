@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.49.0 — language, currency and desktop pass
+
+- Language switching reloads the page, so no UA/EN/RU text is left over from the previous language.
+- Replaced word-by-word translation (which produced “because of”, “with папки”, “Done к установке”) with exact string translation plus numeric patterns.
+- Currency now follows the interface language: Ukrainian → ₴, English → $, Russian → ₽.
+- The exchange-rate cache is stored per currency, so balances are no longer converted with the previous currency's rate.
+- Fixed Russian plurals (“записей”), Sell-through / Hold / Payout CSV labels and the raw “keys=…” line in the audit log.
+- Header no longer shows the stale “v5” next to the real version.
+- New gold L monogram for Ledger and L+ badge for Ledger+; sharper 32–512 px icons and SVG.
+- Ledger.exe attaches to a running local server or a remote one; LedgerPlus.exe connects to the hosted account without a login form (Basic auth proxy) and keeps the tray/notifications.
+- README: Ledger vs Ledger+, desktop apps, current screenshots in Ukrainian, English and Russian.
+- MIT copyright line now says “Ledger contributors”.
+
 ## v1.48.0 — icon content-type fix
 
 - Fixed `/app-icon-*.png` UnboundLocalError when the icon exists.
@@ -127,7 +140,7 @@
 
 ## v1.28.0 — brand icons
 
-- Dynamic app icon: A for AccTrack, L for Ledger.
+- Dynamic app icon: L monogram for Ledger, L+ badge for Ledger+.
 - Manifest, favicon, Apple touch icon and PWA icons use the active brand.
 - Windows shortcut icon updated to the A mark.
 
@@ -467,7 +480,7 @@
 
 ## v1.0.0 — first public release
 
-First stable public release of AccTrack: manual bookkeeping by default, tokens optional.
+First stable public release of Ledger: manual bookkeeping by default, tokens optional.
 
 ### Added
 - **Deals / P&L**: buy and sell prices, marketplace fee, net profit, filters, search, bulk rename, CSV and Excel export.

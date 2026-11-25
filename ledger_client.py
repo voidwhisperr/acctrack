@@ -1,4 +1,11 @@
-"""Ledger+ desktop client: hosted server + WebView2 window + tray + Windows toasts."""
+"""Ledger+ desktop client: hosted server inside a native WebView2 window,
+system tray and Windows notifications.
+
+client.json next to the exe:
+  { "server": "https://...", "user": "admin", "pass": "dpapi:..." }
+The password is optional; when present the proxy injects HTTP Basic auth so the
+window opens straight into Ledger+ without a browser or a login form.
+"""
 import os
 import sys
 import json
@@ -8,6 +15,7 @@ import threading
 import traceback
 
 APP_DIR = pathlib.Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(APP_DIR))
 ASSET_DIR = pathlib.Path(getattr(sys, "_MEIPASS", APP_DIR)) / "assets"
 CONFIG = APP_DIR / "client.json"
 DEFAULT_URL = "https://ledger.70-34-243-50.sslip.io/"
@@ -22,24 +30,25 @@ def log(msg):
         pass
 
 
-def load_url():
+def load_cfg():
     try:
-        cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
-        return str(cfg.get("server") or DEFAULT_URL).rstrip("/") + "/"
+        return json.loads(CONFIG.read_text(encoding="utf-8")) or {}
     except Exception:
-        return DEFAULT_URL
+        return {}
 
 
 def notify(n, subject, lang="uk"):
     try:
         from winotify import Notification, audio
-        if lang.startswith("ru"):
+        if str(lang).startswith("ru"):
             title, text = "Ledger+", "Новый заказ: " + (subject or str(n))
-        elif lang.startswith("en"):
+        elif str(lang).startswith("en"):
             title, text = "Ledger+", "New order: " + (subject or str(n))
         else:
             title, text = "Ledger+", "Нове замовлення: " + (subject or str(n))
         icon = str(ASSET_DIR / "ledger-plus-192.png")
+        if not pathlib.Path(icon).exists():
+            icon = str(ASSET_DIR / "app-icon-192.png")
         toast = Notification(app_id="Ledger+", title=title, msg=text, duration="short", icon=icon)
         try:
             toast.set_audio(audio.Default, loop=False)
@@ -85,8 +94,20 @@ class Api:
 
 def main():
     import webview
+    import remote_proxy as rp
 
-    url = load_url()
+    cfg = load_cfg()
+    server = str(cfg.get("server") or DEFAULT_URL).strip()
+    if not server.startswith("http"):
+        server = "https://" + server
+    user = str(cfg.get("user") or "")
+    password = rp.unseal(cfg.get("pass") or "")
+
+    if user or password:
+        port, url = rp.start_proxy(server, user, password, "Ledger+")
+    else:
+        url = server.rstrip("/") + "/"
+
     storage = pathlib.Path(os.environ.get("LOCALAPPDATA") or str(APP_DIR)) / "LedgerPlus" / "WebView"
     storage.mkdir(parents=True, exist_ok=True)
     first_run = not (storage / "EBWebView").exists()
@@ -118,16 +139,21 @@ def main():
         import pystray
         from PIL import Image
         icon_path = ASSET_DIR / "ledger-plus-192.png"
+        if not icon_path.exists():
+            icon_path = ASSET_DIR / "app-icon-192.png"
         image = Image.open(icon_path)
+
         def show_window(icon=None, item=None):
             try:
                 window.show()
                 window.restore()
             except Exception:
                 pass
+
         def quit_app(icon=None, item=None):
             try:
-                if tray: tray.stop()
+                if tray:
+                    tray.stop()
             except Exception:
                 pass
             try:
@@ -135,9 +161,10 @@ def main():
             except Exception:
                 pass
             os._exit(0)
+
         menu = pystray.Menu(
-            pystray.MenuItem("Открыть Ledger+", show_window, default=True),
-            pystray.MenuItem("Выход", quit_app),
+            pystray.MenuItem("Відкрити Ledger+", show_window, default=True),
+            pystray.MenuItem("Вихід", quit_app),
         )
         tray = pystray.Icon("LedgerPlus", image, "Ledger+", menu)
         tray.run_detached()
@@ -157,12 +184,13 @@ def main():
         pass
 
     try:
-        webview.start(debug=False, private_mode=False, storage_path=str(storage), icon=str(ASSET_DIR / "ledger-plus.ico"))
+        webview.start(debug=False, private_mode=False, storage_path=str(storage), icon=str(ASSET_DIR / "acctrack-l.ico"))
     except Exception:
         log("webview failed:\n" + traceback.format_exc())
     finally:
         try:
-            if tray: tray.stop()
+            if tray:
+                tray.stop()
         except Exception:
             pass
         os._exit(0)

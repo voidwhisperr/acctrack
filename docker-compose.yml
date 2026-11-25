@@ -1,11 +1,11 @@
-# AccTrack — Docker Compose
+# Ledger — Docker Compose
 # Start:  docker compose up -d
 # Open:   http://localhost:8766
 
 services:
-  acctrack:
+  ledger:
     build: .
-    container_name: acctrack
+    container_name: ledger
     restart: unless-stopped
     ports:
       - "8766:8766"
@@ -15,7 +15,7 @@ services:
       GT_DATA_DIR: "/app/data"
       TZ: "Europe/Kyiv"
     volumes:
-      - acctrack_data:/app/data
+      - ledger_data:/app/data
 
 volumes:
-  acctrack_data:
+  ledger_data:

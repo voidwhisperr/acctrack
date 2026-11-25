@@ -45,23 +45,23 @@ docker compose up -d
 
 Пароль генерується при першому старті:
 ```bash
-docker compose exec acctrack cat /app/data/.gt_secrets.json
+docker compose exec ledger cat /app/data/.gt_secrets.json
 ```
 
 ### C. VPS (Ubuntu, 24/7)
 
 ```bash
 sudo apt update && sudo apt install -y python3 caddy
-sudo mkdir -p /opt/acctrack && sudo chown $USER /opt/acctrack
-# скопіюйте файли в /opt/acctrack
+sudo mkdir -p /opt/ledger && sudo chown $USER /opt/ledger
+# скопіюйте файли в /opt/ledger
 
-sudo tee /etc/systemd/system/acctrack.service >/dev/null <<'EOF'
+sudo tee /etc/systemd/system/ledger.service >/dev/null <<'EOF'
 [Unit]
 Description=Ledger
 After=network.target
 [Service]
-WorkingDirectory=/opt/acctrack
-ExecStart=/usr/bin/python3 /opt/acctrack/game_tracker.py
+WorkingDirectory=/opt/ledger
+ExecStart=/usr/bin/python3 /opt/ledger/game_tracker.py
 Environment=GT_BIND=127.0.0.1
 Environment=GT_PORT=8766
 Restart=always
@@ -69,7 +69,7 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl enable --now acctrack
+sudo systemctl enable --now ledger
 ```
 
 Caddy: `your-domain.example { reverse_proxy 127.0.0.1:8766 }`

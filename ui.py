@@ -12,6 +12,7 @@ HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ledger</title>
+<script>window.__GT_LANG__="__GT_LANG_VALUE__";</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ledger">
@@ -139,7 +140,7 @@ header{
   font-size:22px;background:linear-gradient(135deg,var(--a1),var(--a3));box-shadow:var(--shadow);
 }
 h1{
-  font-family:var(--font);font-size:1.05rem;font-weight:800;letter-spacing:.04em;
+  font-family:var(--font);font-size:1.16rem;font-weight:800;letter-spacing:-.015em;
   color:var(--tx);line-height:1.15;
 }
 h1 span{
@@ -148,7 +149,7 @@ h1 span{
 }
 h1 span b{color:var(--a1);font-weight:700}
 #hdrTitle #hdrName{display:inline;font-size:inherit;font-weight:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
-#hdrTitle #planBadge{display:none;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:var(--gr);color:#07110d;font-size:15px;font-weight:900;line-height:1;letter-spacing:0;margin-left:4px;vertical-align:1px;text-transform:none}
+#hdrTitle #planBadge{display:none;align-items:center;justify-content:center;width:21px;height:21px;border-radius:6px;background:linear-gradient(135deg,#F6DEB0,#BE8842);color:#1a1206;font-size:16px;font-weight:900;line-height:1;letter-spacing:0;margin-left:6px;vertical-align:1px;text-transform:none}
 
 /* ── tabs ── */
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--brd);margin-bottom:20px;overflow-x:auto;padding-bottom:2px}
@@ -469,8 +470,8 @@ code{
 <div class="w">
 <header>
   <div class="logo">
-    <img id="brandMark" src="/app-icon-192.png" width="30" height="30" style="border-radius:8px;flex:none" alt="Ledger">
-    <h1 id="hdrTitle"><span id="hdrName">Ledger</span><span id="planBadge" style="display:none">+</span><span data-i18n="hdr.sub">v5 · УГОДИ · КАНАЛИ · ПОШТА</span></h1>
+    <img id="brandMark" src="/app-icon-192.png" width="36" height="36" style="border-radius:10px;flex:none;box-shadow:0 4px 14px rgba(0,0,0,.35)" alt="Ledger">
+    <h1 id="hdrTitle"><span id="hdrName">Ledger</span><span id="planBadge" style="display:none">+</span><span data-i18n="hdr.sub">УГОДИ · КАНАЛИ · ПОШТА</span></h1>
   </div>
   <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
     <span id="fsVal" style="font-size:12px;color:var(--mu);min-width:38px;text-align:right"></span>
@@ -1140,7 +1141,7 @@ code{
         <option value="funpay">FunPay</option><option value="eldorado">Eldorado</option><option value="other" data-i18n="f.other">Інше</option>
       </select>
       <input id="cfAmount" type="number" min="0.01" step="0.01" placeholder="Сума $" data-i18n-ph="cf.amount" style="width:120px">
-      <select id="cfStatus" style="font-size:12px"><option value="hold">Hold</option><option value="available" data-i18n="cf.available">Available</option><option value="withdrawn" data-i18n="cf.withdrawn">Withdrawn</option></select>
+      <select id="cfStatus" style="font-size:12px"><option value="hold" data-i18n="cf.hold">Hold</option><option value="available" data-i18n="cf.available">Available</option><option value="withdrawn" data-i18n="cf.withdrawn">Withdrawn</option></select>
       <input id="cfDate" type="date" style="width:140px">
       <input id="cfAvailable" type="date" title="Доступно з (Hold → Available)" style="width:140px">
       <input id="cfNote" placeholder="Коментар" data-i18n-ph="cf.note" style="width:150px">
@@ -1838,7 +1839,7 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 const I18N = {
   uk:{'ch.src':'Дані читаються з ваших кабінетів за збереженими cookie (ZeusX — API, FunPay — сторінка замовлень). Оновлюється не частіше ніж раз на 2 хвилини.','an.detail':'ДЕТАЛЬНА ТАБЛИЦЯ','f.other2':'Інше','ta.allGames':'Всі ігри','ta.allTypes':'Всі типи','ta.allRegions':'Всі регіони','s.dateDesc':'Дата ↓','s.dateAsc':'Дата ↑','s.profitDesc':'Прибуток ↓','s.sellDesc':'Продаж ↓','s.cheapFirst':'Дешевші спершу','s.expFirst':'Дорожчі спершу','s.starter':'Стартові','s.developed':'Розвинені','s.endgame':'Ендгейм','s.noTitle':'⚠ Без назви','s.moreVariants':'🎛 Більше варіантів','s.cardOnly':'💳 Тільки з оплатою карткою','ed.title':'Назва товару','ph.dealTitle':'напр. Arknights Starter','ph.pw6':'мін. 6 символів','ph.desc':'Опис...','ed.buy':'Ціна купівлі $','ed.sell':'Ціна продажу $','ed.oid':'Order ID (необов язково)','ed.cat':'Категорія (необов язково)','ed.csvbtn':'CSV (фільтр)','ed.empty':'Ще немає записів', 'nav.overview':'Огляд','nav.deals':'Угоди','nav.orders':'Замовлення','nav.channels':'Канали',
        'nav.catalog':'Каталог','nav.plan':'План','nav.taobao':'Taobao','nav.inventory':'Інвентар',
-       'nav.analytics':'Аналітика','hdr.sub':'v5 · УГОДИ · КАНАЛИ · ПОШТА',
+       'nav.analytics':'Аналітика','hdr.sub':'УГОДИ · КАНАЛИ · ПОШТА',
        'ov.today':'Сьогодні','ov.add':'Угода','ov.channels':'Канали','ov.profit':'Прибуток · місяць',
        'ov.actions':'Потребує дії','ov.stock':'Склад','ov.health':'Стан системи','ov.feed':'Що сталось',
        'ch.title':'Канали','ch.refresh':'Оновити','ch.bal':'Баланси',
@@ -1864,7 +1865,7 @@ const I18N = {
      },
   en:{'ch.src':'Data is read from your accounts using saved cookies (ZeusX — API, FunPay — order page). Refreshed no more than once every 2 minutes.','an.detail':'DETAIL TABLE','f.other2':'Other','ta.allGames':'All games','ta.allTypes':'All types','ta.allRegions':'All regions','s.dateDesc':'Date ↓','s.dateAsc':'Date ↑','s.profitDesc':'Profit ↓','s.sellDesc':'Sale ↓','s.cheapFirst':'Cheapest first','s.expFirst':'Most expensive first','s.starter':'Starter','s.developed':'Developed','s.endgame':'Endgame','s.noTitle':'⚠ Untitled','s.moreVariants':'🎛 More variants','s.cardOnly':'💳 Card payment only','ed.title':'Product name','ph.dealTitle':'e.g. Arknights Starter','ph.pw6':'min. 6 chars','ph.desc':'Description...','ed.buy':'Purchase price $','ed.sell':'Sale price $','ed.oid':'Order ID (optional)','ed.cat':'Category (optional)','ed.csvbtn':'CSV (filter)','ed.empty':'No records yet', 'nav.overview':'Overview','nav.deals':'Deals','nav.orders':'Orders','nav.channels':'Channels',
        'nav.catalog':'Catalog','nav.plan':'Plan','nav.taobao':'Taobao','nav.inventory':'Inventory',
-       'nav.analytics':'Analytics','hdr.sub':'v5 · DEALS · CHANNELS · MAIL',
+       'nav.analytics':'Analytics','hdr.sub':'DEALS · CHANNELS · MAIL',
        'ov.today':'Today','ov.add':'Deal','ov.channels':'Channels','ov.profit':'Profit · month',
        'ov.actions':'Needs action','ov.stock':'Stock','ov.health':'System','ov.feed':'What happened',
        'ch.title':'Channels','ch.refresh':'Refresh','ch.bal':'Balances',
@@ -1890,7 +1891,7 @@ const I18N = {
      },
   ru:{'ch.src':'Данные читаются из ваших кабинетов по сохранённым cookie (ZeusX — API, FunPay — страница заказов). Обновляется не чаще раза в 2 минуты.','an.detail':'ДЕТАЛЬНАЯ ТАБЛИЦА','f.other2':'Другое','ta.allGames':'Все игры','ta.allTypes':'Все типы','ta.allRegions':'Все регионы','s.dateDesc':'Дата ↓','s.dateAsc':'Дата ↑','s.profitDesc':'Прибыль ↓','s.sellDesc':'Продажа ↓','s.cheapFirst':'Дешевле сначала','s.expFirst':'Дороже сначала','s.starter':'Стартовые','s.developed':'Развитые','s.endgame':'Эндгейм','s.noTitle':'⚠ Без названия','s.moreVariants':'🎛 Больше вариантов','s.cardOnly':'💳 Только с оплатой картой','ed.title':'Название товара','ph.dealTitle':'напр. Arknights Starter','ph.pw6':'мин. 6 символов','ph.desc':'Описание...','ed.buy':'Цена покупки $','ed.sell':'Цена продажи $','ed.oid':'Order ID (необязательно)','ed.cat':'Категория (необязательно)','ed.csvbtn':'CSV (фильтр)','ed.empty':'Пока нет записей', 'nav.overview':'Обзор','nav.deals':'Сделки','nav.orders':'Заказы','nav.channels':'Каналы',
        'nav.catalog':'Каталог','nav.plan':'План','nav.taobao':'Taobao','nav.inventory':'Инвентарь',
-       'nav.analytics':'Аналитика','hdr.sub':'v5 · СДЕЛКИ · КАНАЛЫ · ПОЧТА',
+       'nav.analytics':'Аналитика','hdr.sub':'СДЕЛКИ · КАНАЛЫ · ПОЧТА',
        'ov.today':'Сегодня','ov.add':'Сделка','ov.channels':'Каналы','ov.profit':'Прибыль · месяц',
        'ov.actions':'Требует действия','ov.stock':'Склад','ov.health':'Состояние системы','ov.feed':'Что произошло',
        'ch.title':'Каналы','ch.refresh':'Обновить','ch.bal':'Балансы',
@@ -2433,10 +2434,10 @@ Object.assign(I18N.uk, {
   'an.mergedTitle':'ЗВЕДЕНО — ВСІ ЦИФРИ В ОДНОМУ МІСЦІ','an.merged':'P&L + ELDORADO — разом',
   'an.revenueDays':'ВИТОРГ ПО ДНЯХ (30 днів)','an.gamesTitle':'АНАЛІТИКА','an.byGames':'ПО ІГРАХ','an.byMonths':'ПО МІСЯЦЯХ','an.refresh':'Оновити',
   'pl.profit':'ПРИБУТОК','pl.revenue':'ВИРУЧКА','pl.cost':'ВКЛАДЕНО','pl.margin':'МАРЖА','pl.deals':'УГОД','pl.fees':'КОМІСІЇ',
-  'cf.title':'CASHFLOW / ВИПЛАТИ','cf.hold':'Hold','cf.available':'Доступно','cf.withdrawn':'Виведено','cf.total':'Всього',
+  'cf.title':'CASHFLOW / ВИПЛАТИ','cf.hold':'Холд','cf.available':'Доступно','cf.withdrawn':'Виведено','cf.total':'Всього',
   'cf.date':'Дата','cf.platform':'Платформа','cf.amount':'Сума','cf.status':'Статус','cf.availableDate':'Доступно з','cf.note':'Коментар',
   'mp.marketplace':'МАЙДАНЧИК','mp.fee':'КОМІСІЯ','mp.net':'НА РУКИ','mp.profit':'ПРИБУТОК','mp.margin':'МАРЖА',
-  'cf.add':'Додати','cf.payoutCsv':'Payout CSV','cf.empty':'Немає записів. Додай Hold, Available або Withdrawn.',
+  'cf.add':'Додати','cf.payoutCsv':'Виплати CSV','cf.empty':'Немає записів. Додай Hold, Available або Withdrawn.',
   'cf.rules':'Правила payout (днів до Available)','cf.priority':'Дата в полі «Доступно з» має пріоритет.','cf.save':'Зберегти',
   'cf.deleteConfirm':'Видалити запис?','cf.amountRequired':'Введи суму','cf.invalidPrice':'Некоректна ціна',
   'imp.title':'ІМПОРТ ПРОДАЖІВ','imp.hint':'CSV з G2G / Gameflip / PlayerAuctions. Колонки: date, title/item, price/amount, fee (необов’язково), order id (необов’язково). Собівартість підтягується зі складу, якщо є збіг.',
@@ -2479,10 +2480,10 @@ Object.assign(I18N.ru, {
   'an.mergedTitle':'СВЕДЕНО — ВСЕ ЦИФРЫ В ОДНОМ МЕСТЕ','an.merged':'P&L + ELDORADO — вместе',
   'an.revenueDays':'ВЫРУЧКА ПО ДНЯМ (30 дней)','an.gamesTitle':'АНАЛИТИКА','an.byGames':'ПО ИГРАМ','an.byMonths':'ПО МЕСЯЦАМ','an.refresh':'Обновить',
   'pl.profit':'ПРИБЫЛЬ','pl.revenue':'ВЫРУЧКА','pl.cost':'ВЛОЖЕНО','pl.margin':'МАРЖА','pl.deals':'СДЕЛОК','pl.fees':'КОМИССИИ',
-  'cf.title':'CASHFLOW / ВЫПЛАТЫ','cf.hold':'Hold','cf.available':'Доступно','cf.withdrawn':'Выведено','cf.total':'Всего',
+  'cf.title':'CASHFLOW / ВЫПЛАТЫ','cf.hold':'Холд','cf.available':'Доступно','cf.withdrawn':'Выведено','cf.total':'Всего',
   'cf.date':'Дата','cf.platform':'Платформа','cf.amount':'Сумма','cf.status':'Статус','cf.availableDate':'Доступно с','cf.note':'Комментарий',
   'mp.marketplace':'ПЛОЩАДКА','mp.fee':'КОМИССИЯ','mp.net':'НА РУКИ','mp.profit':'ПРИБЫЛЬ','mp.margin':'МАРЖА',
-  'cf.add':'Добавить','cf.payoutCsv':'Payout CSV','cf.empty':'Нет записей. Добавь Hold, Available или Withdrawn.',
+  'cf.add':'Добавить','cf.payoutCsv':'Выплаты CSV','cf.empty':'Нет записей. Добавь Hold, Available или Withdrawn.',
   'cf.rules':'Правила payout (дней до Available)','cf.priority':'Дата в поле «Доступно с» имеет приоритет.','cf.save':'Сохранить',
   'cf.deleteConfirm':'Удалить запись?','cf.amountRequired':'Введи сумму','cf.invalidPrice':'Неверная цена',
   'imp.title':'ИМПОРТ ПРОДАЖ','imp.hint':'CSV из G2G / Gameflip / PlayerAuctions. Колонки: date, title/item, price/amount, fee (необязательно), order id (необязательно). Себестоимость подтягивается со склада при совпадении.',
@@ -2558,7 +2559,7 @@ function plural(n, key){
   if(n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return forms[1];
   return forms[2];
 }
-let LANG = localStorage.getItem('gt_lang') || 'en';
+let LANG = localStorage.getItem('gt_lang') || window.__GT_LANG__ || 'en';
 function t(k){ return (I18N[LANG] && I18N[LANG][k]) || (I18N.uk[k] || k); }
 function dateLocale(){ return LANG==='ru' ? 'ru-RU' : LANG==='en' ? 'en-GB' : 'uk-UA'; }
 
@@ -2713,23 +2714,15 @@ async function refreshActiveTab(){
 async function setLang(l){
   LANG = (l==='en') ? 'en' : (l==='ru' ? 'ru' : 'uk');
   try{ localStorage.setItem('gt_lang', LANG); }catch(e){}
-  const _autoLang = !_currencyManual;
-  if(_autoLang){
-    _cur = ({uk:'UAH', en:'USD', ru:'RUB'})[LANG] || _cur;
-  }
-  applyLang();
-  try{ loadCashflow(); loadSupplierROI(); loadReport(); calcMarkets(); updateOrderNotifyUI(); }catch(e){}
-  try{ loadMailQueue(); }catch(e){}
-  try{ applyCurrency(); }catch(e){}
-  try{ loadAudit(); }catch(e){}
-  try{ if(g('onb') && g('onb').style.display === 'flex') onbRender(); }catch(e){}
-  renderOverview();
-  try{ renderPurchases(); if(typeof renderEldorado==='function') renderEldorado(); }catch(e){}
-  try{ translateAll(); }catch(e){}
+  // Валюта завжди відповідає мові: UA→₴, EN→$, RU→₽.
+  _currencyManual = false;
+  _cur = ({uk:'UAH', en:'USD', ru:'RUB'})[LANG] || _cur;
+  // Повне перезавантаження: динамічні рендери й кеш перекладів більше не
+  // змішують мови (раніше після UA→RU лишалися англійські/українські рядки).
   try{ await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(_autoLang ? {lang: LANG, currency: _cur} : {lang: LANG})}); }catch(e){}
-  if(_autoLang){ try{ await refreshRate(); }catch(e){} }
-  try{ await refreshActiveTab(); }catch(e){}
+        body: JSON.stringify({lang: LANG, currency: _cur, currency_manual: false})}); }catch(e){}
+  try{ localStorage.setItem('gt_cur', _cur); localStorage.setItem('gt_cur_manual', '0'); }catch(e){}
+  location.reload();
 }
 
 // ═══════════════════════════════════════════════
@@ -3064,7 +3057,7 @@ async function diagLoad(){
       + '<b>'+t('diag.counts')+':</b> P&L '+Number(c.purchases||0)
       + ' · ELDORADO '+Number(c.eldorado||0)
       + ' · '+t('bk.typeInventory')+' '+Number(c.inventory||0)
-      + ' · products '+Number(c.suppliers||0)+'<br>'
+      + ' · '+(LANG==='ru'?'товаров ':LANG==='en'?'products ':'товарів ')+Number(c.suppliers||0)+'<br>'
       + '<b>'+t('diag.tokens')+':</b> FunPay '+(tk.funpay?'✅':'❌')
       + ' · ZeusX '+(tk.zeusx?'✅':'❌')
       + ' · Gmail '+(tk.gmail?'✅':'❌')+'</div>';
@@ -3295,7 +3288,9 @@ function _moneyConvertNode(node){
   if(!rate || _cur==='USD') return;
   const re=/\$(\d[\d,]*(?:\.\d+)?)/g;
   if(!re.test(txt)) return;
-  _moneyOrig.set(node, txt);
+  // Оригінал тримаємо на самому вузлі: після перерендеру WeakMap втрачав
+  // звʼязок, і сума лишалася перерахованою за старим курсом.
+  if(node.__moneyOrig === undefined) node.__moneyOrig = txt;
   _moneyNodes.push(node);
   node.nodeValue=txt.replace(re,(m,num)=>{
     const v=(parseFloat(num.replace(/,/g,''))||0)*rate;
@@ -3311,9 +3306,16 @@ function convertMoneyText(root){
   let n; while((n=w.nextNode())) _moneyConvertNode(n);
 }
 function restoreMoneyText(){
-  _moneyNodes.forEach(n=>{
-    try{ if(n.isConnected && _moneyOrig.has(n)) n.nodeValue=_moneyOrig.get(n); }catch(e){}
-  });
+  try{
+    const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    let n;
+    while((n=w.nextNode())){
+      if(n.__moneyOrig !== undefined){
+        try{ n.nodeValue=n.__moneyOrig; }catch(e){}
+        delete n.__moneyOrig;
+      }
+    }
+  }catch(e){}
   _moneyNodes=[]; _moneyOrig=new WeakMap();
 }
 function scheduleMoneyConvert(){
@@ -3343,6 +3345,9 @@ function applyCurrency(){
   if(g('rateLbl')) g('rateLbl').textContent = L.l + s + L.p;
   if(g('rateTitle')) g('rateTitle').textContent = _cur==='USD' ? (L.t+' · USD') : (L.t+' · USD → '+_cur);
   scheduleMoneyConvert();
+  // Перерахувати одразу: після зміни курсу/валюти суми не мають лишатися
+  // порахованими за попереднім курсом до наступного тіка таймера.
+  try{ restoreMoneyText(); convertMoneyText(document.body); }catch(e){}
 }
 async function pickCurrency(){
   _cur = (g('curSel') && g('curSel').value) || 'USD';
@@ -3384,7 +3389,7 @@ async function loadAudit(){
       rows.map(r=>{
         const dt=new Date((r.ts||0)*1000);
         const ts=dt.toLocaleString(dateLocale());
-        const det=Object.entries(r.detail||{}).map(([k,v])=>k+'='+v).join(' · ');
+        const det=Object.entries(r.detail||{}).filter(([k])=>k!=='keys').map(([k,v])=>k+'='+v).join(' · ')||'—';
         return '<tr><td style="font-size:10px;color:var(--mu);white-space:nowrap">'+esc(ts)+'</td>'+
           '<td style="font-size:11px">'+esc(labelOf(r.event))+'</td>'+
           '<td style="font-size:10px;color:var(--mu);word-break:break-word">'+esc(det)+'</td></tr>';
@@ -3619,7 +3624,7 @@ async function refreshRate(){
     }
     toast(t('cur.nbu'));
     const d = await fetch('/api/rate?refresh=1').then(r=>r.json());
-    if(d.ok){ _rate = parseFloat(d.usd_uah)||0; toast(t('cur.refreshed')+' '+_rate.toFixed(2)+' '+curSym()); restoreMoneyText(); await loadSettings(); scheduleMoneyConvert(); }
+    if(d.ok){ _rate = parseFloat(d.usd_uah)||0; toast(t('cur.refreshed')+' '+_rate.toFixed(2)+' '+curSym()); restoreMoneyText(); await loadSettings(); restoreMoneyText(); try{ convertMoneyText(document.body); }catch(e){} }
     else toast(t('cur.nbuFail'), false);
   }catch(e){ toast('⚠ '+e, false); }
 }
@@ -4206,7 +4211,7 @@ function renderPurchases(){
   const s=Math.max(1,plPg-2),en=Math.min(tot,plPg+2);
   for(let i=s;i<=en;i++)h+=`<button class="pb${i===plPg?' on':''}" onclick="plGo(${i})">${i}</button>`;
   if(plPg<tot)h+=`<button class="pb" onclick="plGo(${tot})">→</button>`;
-  h+=`<span style="font-size:10px;color:var(--mu)">${plFilt.length} записів</span>`;
+  h+=`<span style="font-size:10px;color:var(--mu)">${plFilt.length} ${plural(plFilt.length,'records')}</span>`;
   pag.innerHTML=h; pag.style.display='flex';
 }
 function plGo(n){plPg=n;renderPurchases();window.scrollTo({top:0,behavior:'smooth'});}
@@ -5282,7 +5287,7 @@ function renderEldorado(){
   const s=Math.max(1,edPg-2), en=Math.min(tot,edPg+2);
   for(let i=s;i<=en;i++) h+=`<button class="pb${i===edPg?' on':''}" onclick="edGo(${i})">${i}</button>`;
   if(edPg<tot) h+=`<button class="pb" onclick="edGo(${tot})">→</button>`;
-  h+=`<span style="font-size:10px;color:var(--mu)">${edFilt.length} записів</span>`;
+  h+=`<span style="font-size:10px;color:var(--mu)">${edFilt.length} ${plural(edFilt.length,'records')}</span>`;
   pag.innerHTML=h; pag.style.display='flex';
 }
 function renderEdBreakdown(){
@@ -5627,21 +5632,23 @@ function onbRender(){
 }
 let _onbCurManual = false;
 function onbSetLang(l){
-  setLang(l);
+  // Не setLang(): він перезавантажує сторінку й ламає вибір валюти в онбордингу.
+  LANG = (l==='en') ? 'en' : (l==='ru' ? 'ru' : 'uk');
+  try{ localStorage.setItem('gt_lang', LANG); }catch(e){}
   if(!_onbCurManual){
     _cur = ({uk:'UAH', en:'USD', ru:'RUB'})[l] || _cur;
   }
-  onbRender();
+  _currencyManual = false;
+  applyLang(); onbRender();
 }
 function onbSetCurrency(v){ _onbCurManual = true; _currencyManual = true; _cur = v || 'USD'; applyCurrency(); }
 function onbDone(){
   _onboarded = true;
   try{ localStorage.setItem('gt_onboarded','1'); }catch(e){}
   try{ fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({onboarded: true, currency: _cur, currency_manual: _onbCurManual})})
-        .then(()=>{ try{ refreshRate(); }catch(e){} }); }catch(e){}
+        body: JSON.stringify({onboarded: true, lang: LANG, currency: _cur, currency_manual: _onbCurManual})})
+        .then(()=>{ location.reload(); }); }catch(e){ location.reload(); }
   const el = g('onb'); if(el) el.style.display = 'none';
-  try{ renderOverview(); }catch(e){}
 }
 function onbSkip(){ onbDone(); }
 function onbNext(){ onbDone(); }
@@ -6030,7 +6037,7 @@ async function enableOrderNotifications(){
 function orderNotify(n){
   try{
     if(Notification.permission==='granted'){
-      const note=new Notification('🔔 '+t('order.new'), {body:n+' · '+(window._appName||'Ledger'), icon:'/icon-192.png', tag:'acctrack-orders', requireInteraction:true});
+      const note=new Notification('🔔 '+t('order.new'), {body:n+' · '+(window._appName||'Ledger'), icon:'/icon-192.png', tag:'ledger-orders', requireInteraction:true});
       note.onclick=()=>{ try{ window.focus(); goOrders(); note.close(); }catch(e){} };
     }
   }catch(e){}
@@ -6333,9 +6340,9 @@ async function loadInventory(){
       card(_L.d, '$' + Number(d.cost_total || 0).toFixed(2));
     if(g('invAging')){
       const ag=d.aging||{};
-      const _A={uk:{a:'7+ днів',b:'30+ днів',c:'60+ днів',d:'90+ днів',e:'Sell-through',f:'Сер. днів продажу'},
+      const _A={uk:{a:'7+ днів',b:'30+ днів',c:'60+ днів',d:'90+ днів',e:'Частка продажів',f:'Сер. днів продажу'},
                 en:{a:'7+ days',b:'30+ days',c:'60+ days',d:'90+ days',e:'Sell-through',f:'Avg days to sell'},
-                ru:{a:'7+ дней',b:'30+ дней',c:'60+ дней',d:'90+ дней',e:'Sell-through',f:'Ср. дней продажи'}}[LANG] || {a:'7+ days',b:'30+ days',c:'60+ days',d:'90+ days',e:'Sell-through',f:'Avg days to sell'};
+                ru:{a:'7+ дней',b:'30+ дней',c:'60+ дней',d:'90+ дней',e:'Доля продаж',f:'Ср. дней продажи'}}[LANG] || {a:'7+ days',b:'30+ days',c:'60+ days',d:'90+ days',e:'Sell-through',f:'Avg days to sell'};
       const cell=(k,v,c)=>'<div style="background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:8px 11px;min-width:105px"><div style="font-size:10px;color:var(--mu)">'+k+'</div><div style="font-size:15px;font-weight:800;color:'+(c||'var(--tx)')+'">'+v+'</div></div>';
       g('invAging').innerHTML =
         cell(_A.a, (ag['7']?.count||0)+' · $'+Number(ag['7']?.value||0).toFixed(2), 'var(--yw)') +
@@ -7840,7 +7847,85 @@ const TR_PATTERNS = [
   [/· товарів$/, "· products"],
   [/^Продажів усього$/, "Total sales"],
   [/^(\d+) · стор\. (\d+)\/(\d+)$/, "$1 · page $2/$3"],
+  [/^(\d+) записів$/, "$1 records"],
+  [/^(\d+) продажів$/, "$1 sales"],
+  [/^(\d+) лотів$/, "$1 lots"],
+  [/^(\d+) листів$/, "$1 emails"]
 ];
+
+const TR_PATTERNS_RU = [
+  [/^оновлено — /, "обновлено — "],
+  [/^оновлено (.*)$/, "обновлено $1"],
+  [/^наступне через (\d+) год$/, "следующее через $1 ч"],
+  [/^наступне через (\d+) хв$/, "следующее через $1 мин"],
+  [/^зараз оновлюю…$/, "сейчас обновляю…"],
+  [/^оновлення йде$/, "обновление идёт"],
+  [/^сьогодні (\d+)\/(\d+)$/, "сегодня $1/$2"],
+  [/^ключі (\d+)\/(\d+) \(залишок (\d+)\)$/, "ключи $1/$2 (остаток $3)"],
+  [/^(\d+) хв, нових (\d+)$/, "$1 мин, новых $2"],
+  [/^(\d+) товарів$/, "$1 товаров"],
+  [/^(\d+) товарів · /, "$1 товаров · "],
+  [/· товарів$/, "· товаров"],
+  [/^Продажів усього$/, "Всего продаж"],
+  [/^(\d+) · стор\. (\d+)\/(\d+)$/, "$1 · стр. $2/$3"],
+  [/^(\d+) записів$/, "$1 записей"],
+  [/^(\d+) продажів$/, "$1 продаж"],
+  [/^(\d+) лотів$/, "$1 лотов"],
+  [/^(\d+) листів$/, "$1 писем"]
+];
+
+Object.assign(TR_EN, {
+  '📊 Excel (всі дані)':'📊 Excel (all data)',
+  '🗑 Очистити':'🗑 Clear',
+  '↺ Оновити з кабінетів':'↺ Refresh from accounts',
+  '⏳ Завантаження...':'⏳ Loading...',
+  '🏦 Де вигідніше продавати':'🏦 Where it pays to sell',
+  '🏷 Мої лоти на ZeusX':'🏷 My lots on ZeusX',
+  '↻ Оновити':'↻ Refresh',
+  '⏳ Завантаження постачальників...':'⏳ Loading suppliers...',
+  '🆕 Новинки':'🆕 New items',
+  '↻ Оновити зараз':'↻ Refresh now',
+  '⏳ Рахую...':'⏳ Calculating...',
+  '⚙ Налаштування Taobao-агента':'⚙ Taobao agent settings',
+  'Сервер:':'Server:',
+  'Токен:':'Token:',
+  'Копіювати':'Copy',
+  'На ПК: запусти':'On PC: run',
+  'з папки Ledger, встав ці два значення, дочекайся Chromium. Потім один раз увійди в Taobao через QR.':'from the Ledger folder, paste these two values, wait for Chromium. Then sign in to Taobao once via QR.',
+  '⬇ P&L у CSV':'⬇ P&L to CSV',
+  '⬇ ELDORADO у CSV':'⬇ ELDORADO to CSV',
+  '📊 СТАТИСТИКА ПО ІГРАХ':'📊 STATS BY GAME',
+  '✓ Змінити пароль':'✓ Change password',
+  '✓ Зберегти':'✓ Save',
+  '🔑 Згенерувати self-signed':'🔑 Generate self-signed'
+});
+
+Object.assign(TR_RU, {
+  '📊 Excel (всі дані)':'📊 Excel (все данные)',
+  '🗑 Очистити':'🗑 Очистить',
+  'Eldorado — продажі':'Eldorado — продажи',
+  '↺ Оновити з кабінетів':'↺ Обновить из кабинетов',
+  'Cookie кабінетів':'Cookie кабинетов',
+  'Зберегти cookie':'Сохранить cookie',
+  '⏳ Завантаження...':'⏳ Загрузка...',
+  '🏦 Де вигідніше продавати':'🏦 Где выгоднее продавать',
+  '🏷 Мої лоти на ZeusX':'🏷 Мои лоты на ZeusX',
+  '↻ Оновити':'↻ Обновить',
+  '⏳ Завантаження постачальників...':'⏳ Загрузка поставщиков...',
+  '↻ Оновити зараз':'↻ Обновить сейчас',
+  '⏳ Рахую...':'⏳ Считаю...',
+  'TAOBAO — ціни з Китаю':'TAOBAO — цены из Китая',
+  '⚙ Налаштування Taobao-агента':'⚙ Настройки Taobao-агента',
+  'Копіювати':'Копировать',
+  'На ПК: запусти':'На ПК: запусти',
+  'з папки Ledger, встав ці два значення, дочекайся Chromium. Потім один раз увійди в Taobao через QR.':'из папки Ledger, вставь эти два значения, дождись Chromium. Потом один раз войди в Taobao через QR.',
+  '⬇ P&L у CSV':'⬇ P&L в CSV',
+  '⬇ ELDORADO у CSV':'⬇ ELDORADO в CSV',
+  '📊 СТАТИСТИКА ПО ІГРАХ':'📊 СТАТИСТИКА ПО ИГРАМ',
+  '✓ Змінити пароль':'✓ Изменить пароль',
+  '✓ Зберегти':'✓ Сохранить',
+  '🔑 Згенерувати self-signed':'🔑 Сгенерировать self-signed'
+});
 
 let _trSorted = null;
 function _trBuildSorted(){
@@ -7850,40 +7935,27 @@ function _trBuildSorted(){
 }
 const _CYR = '[А-Яа-яІіЇїЄє]';
 
-function _trRu(txt){
-  let out = txt;
-  const keys = Object.keys(TR_RU).sort((a,b)=>b.length-a.length);
-  for(const k of keys){
-    if(out.indexOf(k) < 0) continue;
-    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    out = out.replace(new RegExp('(?<![А-Яа-яІіЇїЄє])' + esc + '(?![А-Яа-яІіЇїЄє])', 'g'), TR_RU[k]);
-  }
-  const ekeys = Object.keys(EN2RU).sort((a,b)=>b.length-a.length);
-  for(const k of ekeys){
-    if(out.indexOf(k) < 0) continue;
-    out = out.split(k).join(EN2RU[k]);
-  }
-  return out;
+// Точний переклад цілого рядка (без послівної підміни — саме вона давала
+// «because of», «with папки», «Done к установке»).
+function _trLookup(map, txt){
+  const s = String(txt);
+  const k = s.trim();
+  if(!k) return null;
+  if(Object.prototype.hasOwnProperty.call(map, k)) return s.replace(k, map[k]);
+  return null;
 }
 
 function _trText(txt){
   if(LANG === 'uk') return txt;
-  if(LANG === 'ru') return _trRu(txt);
-
-  if(!/[А-Яа-яІіЇїЄє]/.test(txt)) return txt;
-  if(!_trSorted) _trBuildSorted();
-  let out = txt;
-  for(const k of _trSorted){
-    if(out.indexOf(k) < 0) continue;
-    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp('(?<!' + _CYR + ')' + esc + '(?!' + _CYR + ')', 'g');
-    out = out.replace(re, TR_EN[k]);
-  }
-  for(const [re, rep] of TR_PATTERNS){
-    out = out.replace(re, rep);
-  }
+  const map = (LANG === 'ru') ? TR_RU : TR_EN;
+  const exact = _trLookup(map, txt);
+  if(exact !== null) return exact;
+  let out = String(txt);
+  const pats = (LANG === 'ru') ? TR_PATTERNS_RU : TR_PATTERNS;
+  for(const [re, rep] of pats){ out = out.replace(re, rep); }
   return out;
 }
+
 function _trWalk(root){
   if(!root) return;
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
@@ -7926,7 +7998,9 @@ function translateAll(){
 </html>"""
 
 
-def render_html(fee_cfg_json, paid=False):
-    """HTML з підставленими комісіями та режимом без продажної сторінки."""
+def render_html(fee_cfg_json, paid=False, lang="en"):
+    """HTML з підставленими комісіями, мовою та режимом без продажної сторінки."""
+    lang = lang if lang in ("uk", "en", "ru") else "en"
     return (HTML.replace("__FEE_CONFIG__", fee_cfg_json)
-                .replace("__PAID_MODE__", "true" if paid else "false"))
+                .replace("__PAID_MODE__", "true" if paid else "false")
+                .replace("__GT_LANG_VALUE__", lang))

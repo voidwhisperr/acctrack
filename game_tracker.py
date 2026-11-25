@@ -2057,7 +2057,11 @@ def _get_rate(force=False):
     st   = _read_json(SETTINGS_FILE, {}) or {}
     rate = float(st.get("usd_uah") or 0)
     ts   = float(st.get("rate_ts") or 0)
-    if rate and not force and (time.time() - ts) < RATE_TTL:
+    cur  = str(st.get("currency") or "USD").upper()[:3]
+    rate_cur = str(st.get("rate_currency") or "").upper()[:3]
+    # Кеш валідний лише для тієї валюти, для якої його отримали: інакше після
+    # зміни мови/валюти баланс перераховувався за курсом попередньої валюти.
+    if rate and not force and (time.time() - ts) < RATE_TTL and rate_cur == cur:
         return rate, ts, "cache"
     try:
         _st0 = _read_json(SETTINGS_FILE, {}) or {}
@@ -2094,6 +2098,7 @@ def _get_rate(force=False):
             st["usd_uah"] = rate
             st["rate_ts"] = ts
             st["rate_source"] = src
+            st["rate_currency"] = cur
             _atomic_dump(SETTINGS_FILE, st)
         return rate, ts, src
     except Exception:
@@ -3973,7 +3978,7 @@ def _restore_test_backup(raw, password=""):
     """Безпечний restore-test у тимчасовій папці: розпаковує, парсить JSON, прибирає."""
     import tempfile
     raw = _decrypt_backup(raw, password)
-    tmp = tempfile.mkdtemp(prefix="acctrack_restore_")
+    tmp = tempfile.mkdtemp(prefix="ledger_restore_")
     try:
         with zipfile.ZipFile(io.BytesIO(raw)) as z:
             names = set(z.namelist())
@@ -4458,7 +4463,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.48.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.49.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4778,7 +4783,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "notify": {k: bool(st.get("notify_" + k, v))
                            for k, v in _TG_DEFAULTS.items()},
                 "lang": str(st.get("lang") or "en")[:2],
-                "onboarded": bool(st.get("onboarded")),
+                "onboarded": bool(st.get("onboarded", bool(st.get("lang") and st.get("currency")))),
                 "app_name": str(st.get("app_name") or "Ledger")[:32],
                 "zeusx_tier": str(st.get("zeusx_tier") or "iron")[:16],
                 "fee_profiles": {
@@ -4868,7 +4873,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.48.0",
+            self._json({"ok": True, "version": "1.49.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5335,6 +5340,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     if "currency" in body:
                         _c = str(body.get("currency") or "USD").upper()[:3]
                         if _c.isalpha():
+                            if _c != str(st.get("currency") or "").upper()[:3]:
+                                st["rate_ts"] = 0   # курс іншої валюти не використовувати
                             st["currency"] = _c
                     if "currency_manual" in body:
                         st["currency_manual"] = bool(body.get("currency_manual"))
@@ -6171,9 +6178,11 @@ def _render_html():
     if ui is None:
         return ("<h1>UI недоступний</h1><p>Не знайдено модуль ui.py — "
                 "поклади його поруч із game_tracker.py</p>")
-    paid = (os.environ.get("GT_PAID") == "1"
-            or bool((_read_json(SETTINGS_FILE, {}) or {}).get("paid_mode")))
-    return ui.render_html(payload, paid)
+    _st = _read_json(SETTINGS_FILE, {}) or {}
+    _env_paid = os.environ.get("GT_PAID")
+    paid = (_env_paid == "1") if _env_paid in ("0", "1") else bool(_st.get("paid_mode"))
+    _lang = str(_st.get("lang") or "en")
+    return ui.render_html(payload, paid, _lang)
 
 
 def _startup_supplier_refresh(allow_network=True):
@@ -6267,7 +6276,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.48.0")
+    print("  ▲  Ledger v1.49.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

@@ -172,7 +172,7 @@ def main():
         st, raw, hd = req("/")
         check("GET / = 200", st == 200)
         check("сторінка містить вкладки", b"tab-platforms" in raw and b"tab-taobao" in raw)
-        check("немає залишків цілі", b"goalProgress" not in raw and b"\xd0\xa6\xd0\x86\xd0\x9b\xd0\xac" not in raw)
+        check("немає залишків цілі", b"goalProgress" not in raw and b"data-goal" not in raw)
 
         st, d, _ = jreq("/api/health")
         check("/api/health ok", st == 200 and d.get("ok") and d.get("version"))

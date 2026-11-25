@@ -154,7 +154,7 @@ date,title,platform,buy,sell
 docker compose up -d      # → http://localhost:8766
 ```
 
-Дані — у томі `acctrack_data`, переживають перезапуск контейнера.
+Дані — у томі `ledger_data`, переживають перезапуск контейнера.
 
 ## 15. Що працює, а що ні
 
