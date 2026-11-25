@@ -122,4 +122,16 @@ The panel and the license register/release endpoints are public (no dashboard pa
 
 ## Team roles
 
-Team plan entitlement is reserved; multi-user roles (owner/manager/viewer) are the next step and currently not enforced.
+Team seats use one-time invite links:
+
+1. Owner opens Ledger → Ledger+ → Team, enters a name, selects `manager` or `viewer`, clicks "Create invite".
+2. The link `/join?token=...` is single-use and expires after 30 days.
+3. Opening it sets a signed `gt_member` cookie and signs that person in.
+
+Roles:
+
+- **owner** — full access, including settings, backups, secrets, licenses and team.
+- **manager** — works with deals, orders, inventory, channels; cannot change settings, backups, secrets, 2FA, team or licenses.
+- **viewer** — read-only; no exports, no mutations.
+
+Removing a member sets `active: false`; their cookie stops working on the next request.

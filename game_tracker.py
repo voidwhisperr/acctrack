@@ -101,6 +101,7 @@ TAOBAO_FILE = str(_BASE_DIR / ".gt_taobao.json")
 INVENTORY_FILE = str(_BASE_DIR / ".gt_inventory.json")
 SETTINGS_FILE = str(_BASE_DIR / ".gt_settings.json")
 PAYMENTS_FILE = str(_BASE_DIR / ".gt_payments.json")
+TEAM_FILE = str(_BASE_DIR / ".gt_team.json")
 CASHFLOW_FILE = str(_BASE_DIR / ".gt_cashflow.json")
 AUDIT_FILE    = str(_BASE_DIR / ".gt_audit.json")
 TG_FILE       = str(_BASE_DIR / ".gt_tg.json")
@@ -4441,7 +4442,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         sig = hmac.new(_csrf_key(), ("v1|" + ver + "|" + ts).encode("utf-8"), "sha256").hexdigest()[:24]
         return ts + "." + sig
 
-    def _device_ok(self):
+    def _device_ok_owner(self):
         c = (self._cookie("gt_device") or "").strip()
         if not c or "." not in c:
             return False
@@ -4456,6 +4457,47 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return False
         want = hmac.new(_csrf_key(), ("v1|" + _device_version() + "|" + ts).encode("utf-8"), "sha256").hexdigest()[:24]
         return hmac.compare_digest(sig, want)
+
+    def _device_ok(self):
+        if self._device_ok_owner():
+            return True
+        return _team_member_from_cookie(self) is not None
+
+    def _member(self):
+        return _team_member_from_cookie(self)
+
+    def _role(self):
+        if AUTH_MODE == "off":
+            return "owner"
+        if self._device_ok_owner() or self._auth_ok():
+            return "owner"
+        m = self._member()
+        return str(m.get("role")) if m else "guest"
+
+    def _role_gate(self):
+        p = self.path.split("?")[0]
+        if p in ("/join", "/api/license/register", "/api/license/release") or p.startswith("/admin"):
+            return True
+        role = self._role()
+        if role == "owner":
+            return True
+        if role == "viewer":
+            if self.command != "GET":
+                self._json({"ok": False, "error": "read-only access"}, code=403)
+                return False
+            if p.startswith("/api/backup/export"):
+                self._json({"ok": False, "error": "read-only access"}, code=403)
+                return False
+            return True
+        if role == "manager":
+            blocked = ("/api/settings/save", "/api/backup", "/api/secrets", "/api/2fa",
+                       "/api/team", "/api/license/admin", "/api/password", "/api/logout/all")
+            if any(p.startswith(b) for b in blocked) or p.startswith("/admin"):
+                self._json({"ok": False, "error": "manager cannot change this"}, code=403)
+                return False
+            return True
+        self._json({"ok": False, "error": "auth required"}, code=401)
+        return False
 
     def _auth_ok(self):
         """Basic-auth: без пароля дашборд не віддається навіть у локальній мережі."""
@@ -4528,7 +4570,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.startswith("/logo/") or self.path.startswith("/app-icon") or self.path.split("?")[0] == "/demo"
                 or self.path.startswith("/docs/")
                 or self.path.split("?")[0] in ("/api/license/register", "/api/license/release",
-                                                "/admin", "/admin/revoke",
+                                                "/admin", "/admin/revoke", "/join",
                                                 "/api/license/admin/list", "/api/license/admin/revoke")):
             return True      # публічні статичні файли
         if (self.path.startswith("/api/taobao")
@@ -4594,7 +4636,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.55.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.56.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -4607,6 +4649,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 and (p.startswith("/api/taobao") or p.startswith("/api/secrets/"))
                 and "X-GT-TOKEN" in self.headers and self._collector_ok()):
             pass  # колектор з валідним токеном
+        elif p.startswith("/admin") or p == "/join":
+            pass  # admin token / team invite token are checked in the route
         elif AUTH_MODE != "off" and not self._device_ok() and not self._basic_ok_quiet():
             if p == "/login":
                 self._send(200, "text/html", LOGIN_HTML.encode("utf-8"))
@@ -4618,6 +4662,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._send(401, "application/json", b'{"ok":false,"error":"auth required"}')
             return
         if not self._require_auth():
+            return
+        if not self._role_gate():
             return
         if p == "/":
             token = self._cookie("gt_csrf")
@@ -4923,6 +4969,32 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         elif p == "/api/2fa/status":
             self._json({"ok": True, "enabled": _totp_enabled(),
                         "available": AUTH_MODE != "off"})
+        elif p == "/join":
+            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+            _token = (qs.get("token") or [""])[0]
+            d = _team_load()
+            inv = next((x for x in d["invites"]
+                        if x.get("token") == _token and not x.get("used_at")), None)
+            if inv and int(inv.get("expires") or 0) and int(inv["expires"]) < int(time.time()):
+                inv = None
+            if not inv:
+                self._send(400, "text/html; charset=utf-8",
+                           b"<h3>Invite is invalid or already used</h3>")
+            else:
+                mid = os.urandom(8).hex()
+                role = inv.get("role") if inv.get("role") in ("manager", "viewer") else "viewer"
+                d["members"].append({"id": mid, "name": str(inv.get("name") or "Team member")[:60],
+                                     "role": role, "created": int(time.time()),
+                                     "last_seen": int(time.time()), "active": True})
+                inv["used_at"] = int(time.time())
+                inv["used_by"] = mid
+                _team_save(d)
+                cookie = ("gt_member=" + _team_cookie_for(mid) +
+                          "; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax")
+                if self._is_https():
+                    cookie += "; Secure"
+                _audit("team.join", member=mid, role=role)
+                self._send(302, "text/html", b"", extra={"Location": "/", "Set-Cookie": cookie})
         elif p == "/admin":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             _tok = (qs.get("token") or [""])[0]
@@ -4941,6 +5013,15 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     _audit("license.revoke", key_id=_kid)
             self._send(200, "text/html; charset=utf-8",
                        ("<!doctype html><meta http-equiv='refresh' content='0;url=/admin?token=%s'>" % _tok).encode("utf-8"))
+        elif p == "/api/team":
+            if self._role() != "owner":
+                self._json({"ok": False, "error": "owner only"}, code=403)
+            elif not (_license_has("team") or _license_has("hosted")):
+                self._json({"ok": False, "error": "team plan required"}, code=402)
+            else:
+                d = _team_load()
+                self._json({"ok": True, "members": d["members"],
+                            "invites": [x for x in d["invites"] if not x.get("used_at")]})
         elif p == "/api/license/status":
             _inf = _license_info()
             self._json({"ok": True, "paid": _license_paid(), "license": _inf,
@@ -5076,7 +5157,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.55.0",
+            self._json({"ok": True, "version": "1.56.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5256,6 +5337,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             print(f"  🔑 device login · IP {ip}", flush=True)
             return
         if not self._require_auth():
+            return
+        if not self._role_gate():
             return
         if not self._origin_ok():
             self._json({"ok": False,
@@ -5618,6 +5701,49 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                             "admin_token_hint": _license_admin_token()[:8] + "…"})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)[:200]}, code=500)
+            return
+        if self.path in ("/api/team/invite", "/api/team/remove", "/api/team/revoke"):
+            try:
+                if self._role() != "owner":
+                    self._json({"ok": False, "error": "owner only"}, code=403)
+                    return
+                if not (_license_has("team") or _license_has("hosted")):
+                    self._json({"ok": False, "error": "team plan required"}, code=402)
+                    return
+                d = _team_load()
+                if self.path.endswith("/invite"):
+                    _role = str(body.get("role") or "viewer")
+                    _role = _role if _role in ("manager", "viewer") else "viewer"
+                    _name = str(body.get("name") or "Team member")[:60]
+                    _days = max(1, min(365, int(body.get("days") or 30)))
+                    _tok = os.urandom(16).hex()
+                    d["invites"].append({"token": _tok, "role": _role, "name": _name,
+                                         "created": int(time.time()),
+                                         "expires": int(time.time()) + _days * 86400})
+                    _team_save(d)
+                    _host = (self.headers.get("Host") or "127.0.0.1:8766").strip()
+                    _scheme = "https" if self._is_https() else "http"
+                    _link = "%s://%s/join?token=%s" % (_scheme, _host, _tok)
+                    _audit("team.invite", role=_role, name=_name)
+                    self._json({"ok": True, "link": _link, "token": _tok, "role": _role})
+                elif self.path.endswith("/remove"):
+                    _mid = str(body.get("id") or "")
+                    for m in d["members"]:
+                        if m.get("id") == _mid:
+                            m["active"] = False
+                    _team_save(d)
+                    _audit("team.remove", member=_mid)
+                    self._json({"ok": True})
+                else:
+                    _tok = str(body.get("token") or "")
+                    for inv in d["invites"]:
+                        if inv.get("token") == _tok:
+                            inv["used_at"] = int(time.time())
+                    _team_save(d)
+                    _audit("team.revoke_invite", token=_tok[:8])
+                    self._json({"ok": True})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:200]}, code=400)
             return
         if self.path == "/api/settings/save":
             try:
@@ -6608,6 +6734,50 @@ def _admin_page(token):
             "</body>") % (len(d["keys"]), bound, revoked, total, "".join(rows), "".join(prows))
 
 
+def _team_load():
+    d = _read_json(TEAM_FILE, {}) or {}
+    if not isinstance(d, dict):
+        d = {}
+    d.setdefault("members", [])
+    d.setdefault("invites", [])
+    return d
+
+
+def _team_save(d):
+    _atomic_dump(TEAM_FILE, d)
+
+
+def _team_member_from_cookie(handler):
+    raw = (handler._cookie("gt_member") or "").strip()
+    if not raw or raw.count(".") != 2:
+        return None
+    mid, ts, sig = raw.split(".")
+    if not mid or not ts.isdigit():
+        return None
+    want = hmac.new(_csrf_key(), ("member|" + mid + "|" + ts).encode("utf-8"),
+                    "sha256").hexdigest()[:24]
+    if not hmac.compare_digest(sig, want):
+        return None
+    if time.time() - int(ts) > 30 * 86400:
+        return None
+    d = _team_load()
+    m = next((x for x in d["members"] if x.get("id") == mid and x.get("active")), None)
+    if m:
+        m["last_seen"] = int(time.time())
+        try:
+            _team_save(d)
+        except Exception:
+            pass
+    return m
+
+
+def _team_cookie_for(mid):
+    ts = str(int(time.time()))
+    sig = hmac.new(_csrf_key(), ("member|" + mid + "|" + ts).encode("utf-8"),
+                   "sha256").hexdigest()[:24]
+    return mid + "." + ts + "." + sig
+
+
 def _license_register_remote(key, instance_id):
     """Ask the license server (our VPS) to bind this key to this instance."""
     import urllib.request
@@ -7128,7 +7298,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.55.0")
+    print("  ▲  Ledger v1.56.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

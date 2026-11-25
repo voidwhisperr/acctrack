@@ -3585,9 +3585,38 @@ async function loadPlus(){
       + '</div>'
       + '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn" onclick="savePayDetails()">'+t('plus.save')+'</button><span style="font-size:11px;color:var(--mu)">'+t('plus.hint')+'</span></div>'
       + '<div style="font-size:11px;color:var(--mu);margin-top:10px">'+t('plus.trialNote')+'</div>'
-      + '<div style="font-size:11px;color:var(--mu);margin-top:4px">'+t('plus.stars')+'</div>';
+      + '<div style="font-size:11px;color:var(--mu);margin-top:4px">'+t('plus.stars')+'</div>'
+      + '<div class="ph" style="margin:18px 0 8px"><span>TEAM</span></div><div id="teamBox">⏳</div>';
+    loadTeam();
   }catch(e){ box.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
 }
+async function loadTeam(){
+  const box=g('teamBox'); if(!box) return;
+  const L=(uk,en,ru)=>LANG==='en'?en:(LANG==='ru'?ru:uk);
+  try{
+    const d=await fetch('/api/team').then(r=>r.json());
+    if(!d.ok){ box.innerHTML='<div class="al info">'+esc(d.error||'')+'</div>'; return; }
+    const rows=(d.members||[]).filter(m=>m.active).map(m=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--brd)"><span>'+esc(m.name)+' · <b>'+esc(m.role)+'</b></span><button class="btn" style="font-size:11px;padding:4px 8px" onclick="teamRemoveMember(\''+m.id+'\')">✕</button></div>').join('');
+    const inv=(d.invites||[]).map(i=>'<div style="font-size:11px;color:var(--mu);padding:4px 0">'+esc(i.name)+' · '+esc(i.role)+' · <a style="color:var(--gr)" target="_blank" href="'+location.origin+'/join?token='+encodeURIComponent(i.token)+'">'+L('посилання','link','ссылка')+'</a></div>').join('');
+    box.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><input id="teamName" placeholder="'+L('Ім’я','Name','Имя')+'" style="flex:1;min-width:160px;font-size:12px"><select id="teamRole" style="font-size:12px;width:auto"><option value="manager">manager</option><option value="viewer">viewer</option></select><button class="btn gr" onclick="teamInvite()">'+L('Створити інвайт','Create invite','Создать инвайт')+'</button></div><div id="teamLink" style="font-size:12px;color:var(--gr);word-break:break-all;margin-bottom:6px"></div>'+(rows||'<div class="none">'+L('Немає учасників','No members','Нет участников')+'</div>')+(inv?'<div style="margin-top:8px">'+inv+'</div>':'');
+  }catch(e){ box.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
+}
+async function teamInvite(){
+  const L=(uk,en,ru)=>LANG==='en'?en:(LANG==='ru'?ru:uk);
+  try{
+    const name=(g('teamName')&&g('teamName').value||'').trim();
+    const role=(g('teamRole')&&g('teamRole').value)||'viewer';
+    const d=await fetch('/api/team/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,role,days:30})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(g('teamLink')) g('teamLink').textContent=d.link;
+    toast(L('Інвайт створено','Invite created','Инвайт создан'));
+    loadTeam();
+  }catch(e){ toast('⚠ '+e, false); }
+}
+async function teamRemoveMember(id){
+  try{ await fetch('/api/team/remove',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}); loadTeam(); }catch(e){ toast('⚠ '+e, false); }
+}
+
 async function activateLicense(){
   const code=(g('licCode')&&g('licCode').value||'').trim();
   if(!code){ toast(t('plus.codePh'), false); return; }
