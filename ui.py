@@ -1224,6 +1224,21 @@ code{
     <div style="font-size:11px;color:var(--mu);margin-top:7px" data-i18n="app.hint">Android/Chrome: кнопка вище або меню ⋮ → «Встановити застосунок». iPhone/Safari: «Поділитися» → «На екран Домівки».</div>
   </div>
 
+  <div id="pwaHelpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:18px;width:min(560px,96vw);max-height:88vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-size:15px;font-weight:800" id="pwaHelpTitle">⬇</div>
+        <button class="btn" onclick="closePwaHelp()" style="padding:4px 10px">✕</button>
+      </div>
+      <div id="pwaHelpBody" style="font-size:12.5px;line-height:1.6;color:var(--mu)"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn gr" onclick="pwaDownloadShortcut()" id="pwaShortcutBtn">⬇</button>
+        <button class="btn" onclick="pwaCopyLink()" id="pwaCopyBtn">📋</button>
+        <button class="btn" onclick="closePwaHelp()" id="pwaCloseBtn">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div class="panel" id="pwPanel" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="pw.optional">PASSWORD (OPTIONAL)</span></div>
     <div style="font-size:12.5px;color:var(--mu);margin-bottom:10px" id="pwStatus">—</div>
@@ -7094,18 +7109,51 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
       }
       return;
     }
+    const ua=navigator.userAgent||'';
+    const isOpera=/OPR\/|Opera/i.test(ua);
+    if(isOpera){ openPwaHelp('opera'); return; }
     const _pp=_pwaPrompt||window.__pwaEarly;
     if(_pp){
-      _pp.prompt();
-      _pp.userChoice.then(c=>{
-        if(c && c.outcome==='accepted') toast('✅ '+(LANG==='ru'?'Установлено':LANG==='en'?'Installed':'Встановлено'));
-        _pwaPrompt=null; window.__pwaEarly=null;
-      }).catch(()=>{});
+      try{
+        _pp.prompt();
+        _pp.userChoice.then(c=>{
+          if(c && c.outcome==='accepted') toast('✅ '+(LANG==='ru'?'Установлено':LANG==='en'?'Installed':'Встановлено'));
+          _pwaPrompt=null; window.__pwaEarly=null;
+        }).catch(()=>{ openPwaHelp('manual'); });
+      }catch(e){ openPwaHelp('manual'); }
       return;
     }
-    const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
-    if(ios) alert(LANG==='ru'?'Safari → «Поделиться» → «На экран Домой»':LANG==='en'?'Safari → Share → Add to Home Screen':'Safari → «Поділитися» → «На екран Домівки»');
-    else alert(LANG==='ru'?'Меню браузера ⋮ → «Установить приложение»':LANG==='en'?'Browser menu ⋮ → Install app':'Меню браузера ⋮ → «Встановити застосунок»');
+    const ios=/iphone|ipad|ipod/i.test(ua);
+    openPwaHelp(ios?'ios':'manual');
+  }
+  function closePwaHelp(){ const m=g('pwaHelpModal'); if(m) m.style.display='none'; }
+  function pwaCopyLink(){
+    const u=location.origin+'/';
+    (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('📋 '+(LANG==='ru'?'Ссылка скопирована':LANG==='en'?'Link copied':'Посилання скопійовано'))).catch(()=>{ prompt('URL',u); });
+  }
+  function pwaDownloadShortcut(){
+    const u=location.origin+'/';
+    const ico=location.origin+'/app-icon-192.png';
+    const body='[InternetShortcut]\r\nURL='+u+'\r\nIconFile='+ico+'\r\n';
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([body],{type:'application/internet-shortcut'}));
+    a.download='Ledger.url'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }
+  function openPwaHelp(reason){
+    const m=g('pwaHelpModal'); if(!m) return;
+    const ru=LANG==='ru', en=LANG==='en';
+    const title=g('pwaHelpTitle'), body=g('pwaHelpBody');
+    const short=reason==='opera'?(ru?'Opera на компьютере не поддерживает установку PWA. Открой эту же ссылку в Chrome или Edge — там кнопка работает. На Android в Opera: меню → «Добавить на главный экран».':en?'Opera on desktop does not support PWA installation. Open this link in Chrome or Edge — the button works there. On Opera Android: menu → “Add to Home screen”.':'Opera на комп’ютері не підтримує встановлення PWA. Відкрий це саме посилання в Chrome або Edge — там кнопка працює. На Android в Opera: меню → «Додати на головний екран».')
+      : reason==='ios'?(ru?'Safari → «Поделиться» → «На экран Домой».':en?'Safari → Share → Add to Home Screen.':'Safari → «Поділитися» → «На екран Домівки».')
+      : (ru?'Браузер не показал окно установки. Попробуй меню ⋮ → «Установить приложение». Если пункта нет — открой в Chrome или Edge.':en?'The browser did not show the install prompt. Try menu ⋮ → Install app. If that item is missing, open in Chrome or Edge.':'Браузер не показав вікно встановлення. Спробуй меню ⋮ → «Встановити застосунок». Якщо пункту немає — відкрий у Chrome або Edge.');
+    if(title) title.textContent='⬇ '+(ru?'Установка приложения':en?'Install app':'Встановлення застосунку');
+    if(body) body.innerHTML='<div style="margin-bottom:8px">'+esc(short)+'</div><div style="font-size:11px;word-break:break-all"><code>'+esc(location.origin+'/')+'</code></div>';
+    const sb=g('pwaShortcutBtn'), cb=g('pwaCopyBtn'), xb=g('pwaCloseBtn');
+    if(sb) sb.textContent='⬇ '+(ru?'Скачать ярлык':en?'Download shortcut':'Скачати ярлик');
+    if(cb) cb.textContent='📋 '+(ru?'Копировать ссылку':en?'Copy link':'Скопіювати посилання');
+    if(xb) xb.textContent=(ru?'Закрыть':en?'Close':'Закрити');
+    m.style.display='flex';
   }
   window.pwaInstall = pwaInstall;
   try{

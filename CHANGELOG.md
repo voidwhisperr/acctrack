@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.40.0 — Opera install help
+
+- Opera detected: install button opens a clear help dialog instead of a silent no-op.
+- Fallback offers link copy and a Windows `.url` shortcut.
+- PWA icons made public; early install prompt capture.
+
 ## v1.39.0 — reliable PWA prompt
 
 - Early `beforeinstallprompt` capture in the page head.
