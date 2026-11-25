@@ -130,7 +130,7 @@ header{
   padding:22px 0 16px;border-bottom:1px solid var(--brd);margin-bottom:20px;
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
 }
-.logo{display:flex;align-items:center;gap:12px}
+.logo{display:flex;align-items:center;gap:14px}
 @keyframes brandWiggle{0%,100%{transform:rotate(0) scale(1)}20%{transform:rotate(-12deg) scale(1.15)}40%{transform:rotate(12deg) scale(1.15)}60%{transform:rotate(-7deg) scale(1.08)}80%{transform:rotate(7deg) scale(1.08)}}
 #brandMark.order-alert{animation:brandWiggle 1.1s ease-in-out infinite;color:var(--gr)!important;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--gr) 70%,transparent))}
 #orderBanner{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9998;display:none;align-items:center;gap:10px;background:linear-gradient(135deg,#0f3d2e,#0b2a21);border:1px solid var(--gr);color:#eafff6;padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.5);font-size:12.5px;animation:orderDrop .35s ease-out}
@@ -140,7 +140,7 @@ header{
   font-size:22px;background:linear-gradient(135deg,var(--a1),var(--a3));box-shadow:var(--shadow);
 }
 h1{
-  font-family:var(--font);font-size:1.16rem;font-weight:800;letter-spacing:-.015em;
+  font-family:var(--font);font-size:1.38rem;font-weight:800;letter-spacing:-.02em;
   color:var(--tx);line-height:1.15;
 }
 h1 span{
@@ -470,13 +470,10 @@ code{
 <div class="w">
 <header>
   <div class="logo">
-    <img id="brandMark" src="/app-icon-192.png" width="36" height="36" style="border-radius:10px;flex:none;box-shadow:0 4px 14px rgba(0,0,0,.35)" alt="Ledger">
+    <img id="brandMark" src="/app-icon-192.png" width="50" height="50" style="border-radius:14px;flex:none;box-shadow:0 6px 18px rgba(0,0,0,.45)" alt="Ledger">
     <h1 id="hdrTitle"><span id="hdrName">Ledger</span><span id="planBadge" style="display:none">+</span><span data-i18n="hdr.sub">УГОДИ · КАНАЛИ · ПОШТА</span></h1>
   </div>
   <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
-    <span id="fsVal" style="font-size:12px;color:var(--mu);min-width:38px;text-align:right"></span>
-    <button class="btn" onclick="setFs(-0.05)" title="Дрібніший шрифт" style="padding:7px 12px;font-size:14px">A−</button>
-    <button class="btn" onclick="setFs(0.05)" title="Більший шрифт" style="padding:7px 12px;font-size:14px">A+</button>
     <button class="langbtn" id="langUk" onclick="setLang('uk')" title="Українська">UA</button>
     <button class="langbtn" id="langEn" onclick="setLang('en')" title="English">EN</button>
     <button class="langbtn" id="langRu" onclick="setLang('ru')" title="Русский">RU</button>
@@ -1380,7 +1377,13 @@ code{
         <span>Світла</span>
       </div>
     </div>
-    <div style="font-size:12px;color:var(--mu)">Розмір шрифту — кнопки <b>A−</b> / <b>A+</b> у шапці сторінки (запам'ятовується).</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--brd);padding-top:12px">
+      <span style="font-size:12px;color:var(--mu)" data-i18n="fs.title">Розмір шрифту</span>
+      <button class="btn" onclick="setFs(-0.05)" title="A−" style="padding:5px 12px">A−</button>
+      <span id="fsVal" style="font-size:12px;color:var(--mu);min-width:42px;text-align:center">100%</span>
+      <button class="btn" onclick="setFs(0.05)" title="A+" style="padding:5px 12px">A+</button>
+      <button class="btn" onclick="resetFs()" style="padding:5px 12px;font-size:11px" data-i18n="fs.reset">100%</button>
+    </div>
   </div>
   <div class="panel" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="bk.panelTitle">БЕКАП P&L</span>
@@ -1830,6 +1833,7 @@ function applyFs(){
   if(b) b.textContent = Math.round(_fs*100)+'%';
 }
 function setFs(d){ _fs += d; applyFs(); }
+function resetFs(){ _fs = 1; applyFs(); }
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
 // ═══════════════════════════════════════════════
@@ -7280,7 +7284,9 @@ g('lotModal').addEventListener('click', e=>{ if(e.target===g('lotModal')) closeL
 })();
 </script>
 <script>
-Object.assign(I18N.uk, {'tk.check':'Перевірити токени','tk.checking':'Перевіряю токени…'});
+Object.assign(I18N.uk, {'tk.check':'Перевірити токени','tk.checking':'Перевіряю токени…','fs.title':'Розмір шрифту','fs.reset':'Скинути'});
+Object.assign(I18N.en, {'fs.title':'Font size','fs.reset':'Reset'});
+Object.assign(I18N.ru, {'fs.title':'Размер шрифта','fs.reset':'Сбросить'});
 Object.assign(I18N.en, {'tk.check':'Check tokens','tk.checking':'Checking tokens…'});
 Object.assign(I18N.ru, {'tk.check':'Проверить токены','tk.checking':'Проверяю токены…'});
 

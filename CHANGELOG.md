@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.51.0 — new mark and cleaner header
+
+- New monochrome mark: a metal tile split by a diagonal blade (no letter, no gold, no LoL resemblance).
+- Ledger+ uses the same mark with a green plus badge.
+- The mark is larger in the header (46 px instead of 36 px) and the wordmark is bigger.
+- Font size controls moved out of every page header into Settings → Interface theme → Font size (with a reset button).
+- New favicon, PWA icons, tray icon and exe icon built from the same geometry.
+
 ## v1.50.0 — full free-version audit
 
 - Audited the free Ledger UI end to end: 201 visible controls clicked, all links checked, downloads verified.

@@ -1148,7 +1148,7 @@ button:disabled{opacity:.55;cursor:default}
 </style></head><body>
 <form class="box" onsubmit="return go(event)">
   <div class="brand">
-    <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.6 21 20.4H3L12 3.6Z" fill="#edeef0"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5" fill="#0E1014" stroke="#3A404B"/><path d="M5.2 5.2 H18.8 L5.2 18.8 Z" fill="#E9EDF4"/><path d="M18.8 5.2 L18.8 18.8 L5.2 18.8 Z" fill="#A9B4C6"/><line x1="3.6" y1="20.4" x2="20.4" y2="3.6" stroke="#0E1014" stroke-width="1.9"/></svg>
     <b>Ledger</b>
   </div>
   <h1 id="t1">Sign in</h1>
@@ -4474,7 +4474,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.50.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.51.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4896,7 +4896,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.50.0",
+            self._json({"ok": True, "version": "1.51.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6406,7 +6406,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.50.0")
+    print("  ▲  Ledger v1.51.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
