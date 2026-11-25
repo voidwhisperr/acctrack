@@ -1328,7 +1328,7 @@ code{
         <div style="color:var(--mu)" data-i18n="ph.contact.desc">Хочете таку саму автоматизацію: збір Taobao, FunPay/ZeusX, проходження капчі, авто-імпорт замовлень — напишіть у Telegram.</div>
         <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
           <a class="btn" href="https://t.me/ENOUGHT285" target="_blank" rel="noopener">Telegram →</a>
-          <a class="btn" id="demoBtn" href="/demo?lang=en" target="_blank" rel="noopener" data-i18n="cta.screens">Скріншоти функцій →</a>
+          <a class="btn" id="demoBtn" href="/demo" target="_blank" rel="noopener" data-i18n="cta.screens">Скріншоти функцій →</a>
         </div>
       </div>
     </div>

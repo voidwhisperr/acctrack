@@ -4389,7 +4389,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                           "/icon.svg", "/icon.png", "/ledger.svg")
                 or self.path.split("?")[0].lstrip("/") in _ICONS_B64
                 or self.path.split("?")[0] in ("/icon.svg", "/icon.png", "/ledger.svg")
-                or self.path.startswith("/logo/") or self.path.startswith("/app-icon") or self.path == "/demo"
+                or self.path.startswith("/logo/") or self.path.startswith("/app-icon") or self.path.split("?")[0] == "/demo"
                 or self.path.startswith("/docs/")):
             return True      # публічні статичні файли
         if (self.path.startswith("/api/taobao")
@@ -4455,7 +4455,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.36.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.37.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4862,7 +4862,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.36.0",
+            self._json({"ok": True, "version": "1.37.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6261,7 +6261,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  AccTrack v1.36.0")
+    print("  ▲  AccTrack v1.37.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

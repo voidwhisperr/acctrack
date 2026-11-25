@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.37.0 — updated screenshots and demo fix
+
+- `/demo?lang=...` is public and no longer returns 404 behind auth.
+- Screenshots refreshed for all main screens in UA/EN/RU.
+- Demo gallery adds Orders, Taobao and Backups/settings.
+- `docs/` is included in release builds.
+
 ## v1.36.0 — more reply variants
 
 - Ten reply variants per language.
