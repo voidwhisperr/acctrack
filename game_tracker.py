@@ -4458,7 +4458,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.45.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.46.0", "uptime": int(time.time() - _START_TS)})
             return
         if (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
@@ -4525,12 +4525,15 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         elif p in ("/app-icon.svg", "/app-icon-32.png", "/app-icon-180.png",
                      "/app-icon-192.png", "/app-icon-512.png"):
             _nm, _letter, _tag = _app_brand()
+            _st = _read_json(SETTINGS_FILE, {}) or {}
+            _paid = (os.environ.get("GT_PAID") == "1") or bool(_st.get("paid_mode"))
+            _stem = "ledger-plus" if _paid else "ledger"
             if p == "/app-icon.svg":
-                _f = os.path.join(str(_ASSETS_DIR), f"icon-{_tag}.svg")
+                _f = os.path.join(str(_ASSETS_DIR), f"{_stem}.svg")
                 _ct = "image/svg+xml"
             else:
                 _sz = p.rsplit("-", 1)[1].split(".")[0]
-                _f = os.path.join(str(_ASSETS_DIR), f"icon-{_tag}-{_sz}.png")
+                _f = os.path.join(str(_ASSETS_DIR), f"{_stem}-{_sz}.png")
             if not os.path.exists(_f):
                 _alt = os.path.join(_BASE_DIR, os.path.basename(_f))
                 if os.path.exists(_alt):
@@ -4865,7 +4868,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.45.0",
+            self._json({"ok": True, "version": "1.46.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6264,7 +6267,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.45.0")
+    print("  ▲  Ledger v1.46.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

@@ -6,8 +6,8 @@ rem Creates "Ledger" shortcut next to start.bat with the triangle icon.
 rem Double-click the shortcut afterwards (it shows the logo in the title bar
 rem and keeps the window open if the app fails).
 
-if not exist "assets\acctrack.ico" (
-  echo [ERROR] assets\acctrack.ico not found.
+if not exist "assets\ledger.ico" (
+  echo [ERROR] assets\ledger.ico not found.
   pause
   exit /b 1
 )
@@ -19,7 +19,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$s.TargetPath = Join-Path $env:WINDIR 'System32\cmd.exe';" ^
   "$s.Arguments = '/c \"\"' + (Join-Path $d 'start.bat') + '\"\"';" ^
   "$s.WorkingDirectory = $d;" ^
-  "$s.IconLocation = (Join-Path $d 'assets\acctrack.ico') + ',0';" ^
+  "$s.IconLocation = (Join-Path $d 'assets\ledger.ico') + ',0';" ^
   "$s.Description = 'Ledger - deals, channels, stock';" ^
   "$s.Save(); Write-Host 'Shortcut created: Ledger.lnk'"
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.46.0 — chosen Ledger mark
+
+- Base Ledger icon: L monogram (variant 1).
+- Ledger+ icon: same L with green plus badge.
+- Updated header, favicon, PWA icons, desktop EXE and tray.
+
 ## v1.45.0 — Ledger and Ledger+ apps
 
 - `Ledger.exe` — public app, no paid automation.

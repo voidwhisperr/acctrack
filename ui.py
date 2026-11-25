@@ -468,7 +468,7 @@ code{
 <div class="w">
 <header>
   <div class="logo">
-    <svg id="brandMark" width="20" height="22" viewBox="0 0 24 24" style="color:var(--tx);flex:none" aria-label="Ledger"><use href="#ic-mark"/></svg>
+    <img id="brandMark" src="/app-icon-192.png" width="22" height="22" style="border-radius:6px;flex:none" alt="Ledger">
     <h1 id="hdrTitle"><span id="hdrName">Ledger</span><span id="planBadge" style="display:none;font-size:10px;font-weight:800;color:var(--gr);letter-spacing:.02em;vertical-align:top">+</span><span data-i18n="hdr.sub">v5 · УГОДИ · КАНАЛИ · ПОШТА</span></h1>
   </div>
   <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
@@ -5952,17 +5952,12 @@ let _favTimer=null, _titleTimer=null, _alertCount=0, _favTick=0;
 function _favFrame(phase){
   const c = phase%2 ? '%2310b981' : '%23f59e0b';
   const r = phase%2 ? 15 : 11;
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 12 52 50H12Z" fill="%23f2f2f2"/><circle cx="50" cy="14" r="'+r+'" fill="'+c+'" stroke="%230b0c0e" stroke-width="3"/><circle cx="50" cy="14" r="22" fill="none" stroke="'+c+'" stroke-width="2" opacity=".5"/></svg>';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M20 12h7v32h19v7H20z" fill="%23f2f2f2"/><circle cx="50" cy="14" r="'+r+'" fill="'+c+'" stroke="%230b0c0e" stroke-width="3"/><circle cx="50" cy="14" r="22" fill="none" stroke="'+c+'" stroke-width="2" opacity=".5"/></svg>';
 }
 function _favLinks(){ return Array.from(document.querySelectorAll('link[rel~="icon"]')); }
-function _defaultFavSvg(){
-  const nm=window._appName||'Ledger';
-  const letter=(nm.trim()[0]||'A').toUpperCase().replace(/[<>&"]/g,'');
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230b0c0e"/><path d="M32 9 55 54H9Z" fill="%23e8e8e8"/><text x="32" y="46" text-anchor="middle" font-family="Arial,sans-serif" font-size="23" font-weight="800" fill="%230b0c0e">'+letter+'</text></svg>';
-}
 function setDefaultFavicon(){
-  const href='data:image/svg+xml,'+_defaultFavSvg();
-  _favLinks().forEach(l=>{ try{ l.type='image/svg+xml'; l.href=href; }catch(e){} });
+  const urls=['/app-icon-32.png?v=3','/app-icon.svg?v=3','/app-icon-192.png?v=3','/app-icon-180.png?v=3'];
+  _favLinks().forEach((l,i)=>{ try{ l.type=(i===1?'image/svg+xml':'image/png'); l.href=urls[i]||urls[0]; }catch(e){} });
   window._origFavicons=null;
 }
 function _paintFavicon(phase){
