@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.51.1 — readable Ledger+ badge
+
+- The green dot was the plus badge: its arms were too thin and disappeared at 32–53 px.
+- It is now a larger badge with a bold plus, in the app accent gradient (indigo → cyan).
+- The “+” next to the wordmark follows the selected interface theme instead of a fixed gold.
+
 ## v1.51.0 — new mark and cleaner header
 
 - New monochrome mark: a metal tile split by a diagonal blade (no letter, no gold, no LoL resemblance).

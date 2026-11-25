@@ -149,7 +149,7 @@ h1 span{
 }
 h1 span b{color:var(--a1);font-weight:700}
 #hdrTitle #hdrName{display:inline;font-size:inherit;font-weight:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
-#hdrTitle #planBadge{display:none;align-items:center;justify-content:center;width:21px;height:21px;border-radius:6px;background:linear-gradient(135deg,#F6DEB0,#BE8842);color:#1a1206;font-size:16px;font-weight:900;line-height:1;letter-spacing:0;margin-left:6px;vertical-align:1px;text-transform:none}
+#hdrTitle #planBadge{display:none;align-items:center;justify-content:center;width:21px;height:21px;border-radius:6px;background:linear-gradient(135deg,var(--a3),var(--a4));color:#0b0d12;font-size:16px;font-weight:900;line-height:1;letter-spacing:0;margin-left:6px;vertical-align:1px;text-transform:none}
 
 /* ── tabs ── */
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--brd);margin-bottom:20px;overflow-x:auto;padding-bottom:2px}
