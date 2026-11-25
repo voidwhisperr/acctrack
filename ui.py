@@ -2824,6 +2824,14 @@ async function renderChAll(){
   }catch(e){ box.innerHTML = '<div class="none">Помилка: '+esc(String(e))+'</div>'; }
 }
 
+function openCookiePanel(){
+  try{ mnavGo('channels'); }catch(e){}
+  setTimeout(function(){
+    try{ chView('bal'); }catch(e){}
+    try{ const el=g('ckFunpay'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
+  }, 250);
+}
+
 function chView(v){
   const host = g('tab-channels'); if(!host) return;
   const pl = g('tab-platforms'), ed = g('tab-eldorado');
@@ -6763,7 +6771,7 @@ async function mailCookieHint(){
     const st = await fetch('/api/secrets/status').then(r => r.json());
     box.innerHTML = st.funpay_cookie ? '' :
       '<div class="al warn" style="margin-bottom:12px">⚠ <b>FunPay:</b> ' + (LANG==='uk'?'cookie не задано — замовлення з FunPay сюди не надходять.':(LANG==='ru'?'cookie не задан — заказы с FunPay сюда не поступают.':'cookie is not set — FunPay orders do not arrive here.')) + ' <button class="btn" style="font-size:11px;padding:3px 9px" '
-      + 'onclick="mnavGo(\'platforms\')">' + (LANG==='uk'?'Вставити cookie':(LANG==='ru'?'Вставить cookie':'Paste cookie')) + '</button></div>';
+      + 'onclick="openCookiePanel()">' + (LANG==='uk'?'Вставити cookie':(LANG==='ru'?'Вставить cookie':'Paste cookie')) + '</button></div>';
   }catch(e){}
 }
 
