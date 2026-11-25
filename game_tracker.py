@@ -102,6 +102,7 @@ INVENTORY_FILE = str(_BASE_DIR / ".gt_inventory.json")
 SETTINGS_FILE = str(_BASE_DIR / ".gt_settings.json")
 PAYMENTS_FILE = str(_BASE_DIR / ".gt_payments.json")
 TEAM_FILE = str(_BASE_DIR / ".gt_team.json")
+CLIENTS_FILE = str(_BASE_DIR / ".gt_clients.json")
 CASHFLOW_FILE = str(_BASE_DIR / ".gt_cashflow.json")
 AUDIT_FILE    = str(_BASE_DIR / ".gt_audit.json")
 TG_FILE       = str(_BASE_DIR / ".gt_tg.json")
@@ -4476,7 +4477,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _role_gate(self):
         p = self.path.split("?")[0]
-        if p in ("/join", "/api/license/register", "/api/license/release") or p.startswith("/admin"):
+        if (p in ("/join", "/api/license/register", "/api/license/release")
+                or p.startswith("/admin") or p.startswith("/hosting")):
             return True
         role = self._role()
         if role == "owner":
@@ -4570,7 +4572,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.startswith("/logo/") or self.path.startswith("/app-icon") or self.path.split("?")[0] == "/demo"
                 or self.path.startswith("/docs/")
                 or self.path.split("?")[0] in ("/api/license/register", "/api/license/release",
-                                                "/admin", "/admin/revoke", "/join",
+                                                "/admin", "/admin/revoke", "/join", "/hosting",
+                                                "/hosting/save", "/hosting/check", "/hosting/delete",
                                                 "/api/license/admin/list", "/api/license/admin/revoke")):
             return True      # публічні статичні файли
         if (self.path.startswith("/api/taobao")
@@ -4636,7 +4639,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.56.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.57.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -4649,7 +4652,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 and (p.startswith("/api/taobao") or p.startswith("/api/secrets/"))
                 and "X-GT-TOKEN" in self.headers and self._collector_ok()):
             pass  # колектор з валідним токеном
-        elif p.startswith("/admin") or p == "/join":
+        elif p.startswith("/admin") or p == "/join" or p.startswith("/hosting"):
             pass  # admin token / team invite token are checked in the route
         elif AUTH_MODE != "off" and not self._device_ok() and not self._basic_ok_quiet():
             if p == "/login":
@@ -4995,6 +4998,43 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     cookie += "; Secure"
                 _audit("team.join", member=mid, role=role)
                 self._send(302, "text/html", b"", extra={"Location": "/", "Set-Cookie": cookie})
+        elif p == "/hosting":
+            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+            self._send(200, "text/html; charset=utf-8",
+                       _hosting_page((qs.get("token") or [""])[0]).encode("utf-8"))
+        elif p in ("/hosting/save", "/hosting/check", "/hosting/delete"):
+            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+            _tok = (qs.get("token") or [""])[0]
+            if _tok != _license_admin_token():
+                self._send(403, "text/plain", b"403 forbidden")
+                return
+            clients = _clients_load()
+            if p == "/hosting/save":
+                _id = (qs.get("id") or [""])[0]
+                rec = next((c for c in clients if c.get("id") == _id), None)
+                if not rec:
+                    rec = {"id": os.urandom(6).hex(), "created": int(time.time())}
+                    clients.append(rec)
+                for k in ("name", "contact", "plan", "url", "paid_until", "notes"):
+                    if qs.get(k):
+                        rec[k] = str(qs[k][0])[:300]
+                _clients_save(clients)
+                _audit("hosting.save", client=rec.get("id"))
+            elif p == "/hosting/delete":
+                _id = (qs.get("id") or [""])[0]
+                _clients_save([c for c in clients if c.get("id") != _id])
+                _audit("hosting.delete", client=_id)
+            else:
+                _id = (qs.get("id") or [""])[0]
+                for c in clients:
+                    if c.get("id") == _id:
+                        ok, ver = _client_health(c.get("url"))
+                        c["last_ok"] = ok
+                        c["last_check"] = int(time.time())
+                        c["version"] = ver
+                        c["status"] = "active" if ok else "down"
+                _clients_save(clients)
+            self._send(302, "text/html", b"", extra={"Location": "/hosting?token=" + _tok})
         elif p == "/admin":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             _tok = (qs.get("token") or [""])[0]
@@ -5157,7 +5197,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.56.0",
+            self._json({"ok": True, "version": "1.57.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6693,6 +6733,76 @@ def _license_server_url():
     return (url or "https://ledger.70-34-243-50.sslip.io").rstrip("/")
 
 
+def _clients_load():
+    d = _read_json(CLIENTS_FILE, []) or []
+    return d if isinstance(d, list) else []
+
+
+def _clients_save(d):
+    _atomic_dump(CLIENTS_FILE, d[-500:])
+
+
+def _client_health(url):
+    try:
+        import urllib.request
+        base = str(url or "").rstrip("/")
+        with urllib.request.urlopen(base + "/api/health", timeout=8) as resp:
+            d = json.loads(resp.read().decode("utf-8", "replace"))
+        return bool(d.get("ok")), str(d.get("version") or "")
+    except Exception as e:
+        return False, str(e)[:80]
+
+
+def _hosting_page(token):
+    if not token or token != _license_admin_token():
+        return ("<!doctype html><meta charset='utf-8'><title>Hosting admin</title>"
+                "<body style='font:14px system-ui;background:#0d1017;color:#e9ebf2;padding:40px'>"
+                "<h2>Hosting admin</h2><form method='get' action='/hosting'>"
+                "<input name='token' placeholder='admin token' style='padding:8px;width:320px'>"
+                "<button style='padding:8px 14px'>Open</button></form></body>")
+    clients = _clients_load()
+    import datetime as _dt
+    today = _dt.date.today()
+    rows, expiring = [], 0
+    for c in sorted(clients, key=lambda x: str(x.get("paid_until") or "")):
+        try:
+            left = (_dt.date.fromisoformat(str(c.get("paid_until"))) - today).days
+        except Exception:
+            left = None
+        if left is not None and 0 <= left <= 7:
+            expiring += 1
+        ok = c.get("last_ok")
+        state = "—" if ok is None else ("up" if ok else "down")
+        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
+                    "<td><a style='color:#7ad3a1' href='/hosting/check?token=%s&id=%s'>check</a> "
+                    "<a style='color:#ff7a59' href='/hosting/delete?token=%s&id=%s'>delete</a></td></tr>"
+                    % (_html_mod.escape(str(c.get("name") or "")),
+                       _html_mod.escape(str(c.get("plan") or "")),
+                       _html_mod.escape(str(c.get("paid_until") or "")),
+                       "—" if left is None else str(left),
+                       _html_mod.escape(str(c.get("url") or "")),
+                       _html_mod.escape(state),
+                       _html_mod.escape(str(c.get("notes") or "")[:60]), token, c.get("id"), token, c.get("id")))
+    form = ("<h3>Add client</h3><form method='get' action='/hosting/save'>"
+            "<input type='hidden' name='token' value='%s'>"
+            "<input name='name' placeholder='Name' required style='padding:6px;margin:2px'>"
+            "<input name='contact' placeholder='Telegram/email' style='padding:6px;margin:2px'>"
+            "<input name='plan' placeholder='solo/team' value='solo' style='padding:6px;margin:2px;width:90px'>"
+            "<input name='url' placeholder='https://...' style='padding:6px;margin:2px;width:280px'>"
+            "<input name='paid_until' placeholder='YYYY-MM-DD' style='padding:6px;margin:2px;width:120px'>"
+            "<input name='notes' placeholder='notes' style='padding:6px;margin:2px'>"
+            "<button style='padding:7px 12px'>Add</button></form>") % token
+    hint = ("<p style='color:#8b93a1'>Suggested instance: <code>GT_DATA_DIR=/root/client-&lt;id&gt; PORT=&lt;port&gt; "
+            "python3 game_tracker.py</code>, then a Caddy block for &lt;subdomain&gt;. Health check uses <code>/api/health</code>.</p>")
+    return ("<!doctype html><meta charset='utf-8'><title>Hosting admin</title>"
+            "<body style='font:13px system-ui;background:#0d1017;color:#e9ebf2;padding:24px'>"
+            "<h2>Hosting clients</h2>"
+            "<p>clients: <b>%d</b> · expiring in 7 days: <b>%d</b> · <a style='color:#7ad3a1' href='/admin?token=%s'>keys/payments</a></p>"
+            "%s<h3>Clients</h3><table border='1' cellpadding='6' style='border-collapse:collapse;border-color:#2a2f37'>"
+            "<tr><th>name</th><th>plan</th><th>paid until</th><th>days left</th><th>url</th><th>health</th><th>notes</th><th></th></tr>%s</table>%s</body>"
+            ) % (len(clients), expiring, token, form, "".join(rows), hint)
+
+
 def _admin_page(token):
     if not token or token != _license_admin_token():
         return ("<!doctype html><meta charset='utf-8'><title>Ledger admin</title>"
@@ -6726,12 +6836,13 @@ def _admin_page(token):
     return ("<!doctype html><meta charset='utf-8'><title>Ledger admin</title>"
             "<body style='font:13px system-ui;background:#0d1017;color:#e9ebf2;padding:24px'>"
             "<h2>Ledger admin</h2>"
-            "<p>keys: <b>%d</b> · bound: <b>%d</b> · revoked: <b>%d</b> · revenue: <b>%s</b></p>"
+            "<p>keys: <b>%d</b> · bound: <b>%d</b> · revoked: <b>%d</b> · revenue: <b>%s</b> · "
+            "<a style='color:#7ad3a1' href='/hosting?token=%s'>hosting clients</a></p>"
             "<h3>Keys</h3><table border='1' cellpadding='6' style='border-collapse:collapse;border-color:#2a2f37'>"
             "<tr><th>key id</th><th>plan</th><th>exp</th><th>state</th><th>instance</th><th></th></tr>%s</table>"
             "<h3>Payments</h3><table border='1' cellpadding='6' style='border-collapse:collapse;border-color:#2a2f37'>"
             "<tr><th>time</th><th>platform</th><th>plan</th><th>amount</th><th>key</th></tr>%s</table>"
-            "</body>") % (len(d["keys"]), bound, revoked, total, "".join(rows), "".join(prows))
+            "</body>") % (len(d["keys"]), bound, revoked, total, token, "".join(rows), "".join(prows))
 
 
 def _team_load():
@@ -7298,7 +7409,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.56.0")
+    print("  ▲  Ledger v1.57.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
