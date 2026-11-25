@@ -31,11 +31,12 @@ def free_port():
 
 def main():
     port = free_port()
+    is_plus = ("plus" in pathlib.Path(sys.executable).stem.lower()) or (os.environ.get("LEDGER_PLUS") == "1")
     os.environ["GT_DATA_DIR"] = str(APP_DIR)
     os.environ["GT_AUTH"] = "off"
     os.environ["GT_BIND"] = "127.0.0.1"
     os.environ["PORT"] = str(port)
-    os.environ["GT_PAID"] = "1"
+    os.environ["GT_PAID"] = "1" if is_plus else "0"
     os.environ["GT_NO_BROWSER"] = "1"
     os.environ["GT_DESKTOP"] = "1"
 
@@ -76,7 +77,7 @@ def main():
         return
 
     webview.create_window(
-        "Ledger+ — Game Account Tracker",
+        "Ledger+ — Game Account Tracker" if is_plus else "Ledger — Game Account Tracker",
         url,
         width=1500,
         height=950,

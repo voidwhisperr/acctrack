@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.45.0 — Ledger and Ledger+ apps
+
+- `Ledger.exe` — public app, no paid automation.
+- `LedgerPlus.exe` — automation edition with Ledger+ badge.
+- Both are native WebView2 apps with embedded server.
+
 ## v1.44.0 — one brand: Ledger and Ledger+
 
 - Public product renamed to **Ledger** everywhere.
