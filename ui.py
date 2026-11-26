@@ -882,10 +882,25 @@ body.compact-ui .tabs{gap:4px}
           <input id="ckFunpay" type="password" placeholder="golden_key=…" style="width:300px;margin-top:4px"></label>
         <label style="font-size:12px;color:var(--mu)">ZeusX (access_token)<br>
           <input id="ckZeusx" type="password" placeholder="access_token=…" style="width:300px;margin-top:4px"></label>
+        <label style="font-size:12px;color:var(--mu)">Eldorado Client ID<br>
+          <input id="ckEldoradoId" type="password" placeholder="Client ID" style="width:230px;margin-top:4px"></label>
+        <label style="font-size:12px;color:var(--mu)">Eldorado Client Secret<br>
+          <input id="ckEldoradoSecret" type="password" placeholder="Client Secret" style="width:230px;margin-top:4px"></label>
         <button class="btn gr" style="font-size:12px;padding:6px 12px" onclick="saveCookies()">Зберегти cookie</button>
         <button class="btn" style="font-size:12px;padding:6px 12px" onclick="cookieFromBrowser()" title="Прочитати cookie з відкритого вікна браузера (FunPay/ZeusX)">Взяти з браузера</button>
         <button class="btn rd" style="font-size:12px;padding:6px 12px" onclick="clearCookies()" data-i18n="set.cookieDisconnect">Disconnect cookies</button>
       </div>
+      <details style="margin-top:10px;font-size:12px;color:var(--mu)">
+        <summary style="cursor:pointer;color:var(--tx);font-weight:700">Як отримати cookie / токени</summary>
+        <div id="cookieHelpBody" style="margin-top:8px;line-height:1.65">
+          <b>FunPay:</b> funpay.com → F12 → Application → Cookies → https://funpay.com → <code>golden_key</code> → скопіюйте <b>Value</b> (без назви).<br>
+          <b>ZeusX:</b> zeusx.com → F12 → Application → Cookies → <code>access_token</code> → <b>Value</b>.<br>
+          <b>Eldorado:</b> Dashboard → Seller API → Generate credentials → <b>Client ID</b> + <b>Client Secret</b>.<br>
+          <b>EN:</b> F12 → Application → Cookies → copy <b>Value</b>; never share it.<br>
+          <b>RU:</b> F12 → Application → Cookies → скопируйте <b>Value</b>; никому не передавайте.<br>
+          <span style="color:var(--rd)">Не передавайте ці значення нікому.</span> Вони зберігаються лише на сервері; cookie періодично прострочуються — оновіть.
+        </div>
+      </details>
       <div style="font-size:11px;color:var(--mu);margin-top:8px" data-i18n="ch.cookieHelp">Chrome/Edge: F12 → Application → Cookies → funpay.com → скопіюйте значення golden_key. Зберігається лише на сервері. Без FunPay-cookie замовлення з FunPay не надходять.</div>
     </div>
     <div id="platList"><div class="none">⏳ Завантаження...</div></div>
@@ -6197,7 +6212,8 @@ async function loadCookieStatus(){
     const yes = LANG==='ru' ? '✅ есть' : LANG==='en' ? '✅ set' : '✅ є';
     const no  = LANG==='ru' ? '<span style="color:var(--rd)">❌ нет</span>' : LANG==='en' ? '<span style="color:var(--rd)">❌ missing</span>' : '<span style="color:var(--rd)">❌ немає</span>';
     el.innerHTML = ' · FunPay: ' + (d.funpay_cookie ? yes : no)
-      + ' · ZeusX: ' + (d.zeusx_cookie ? yes : no);
+      + ' · ZeusX: ' + (d.zeusx_cookie ? yes : no)
+      + ' · Eldorado: ' + (d.eldorado_client_id && d.eldorado_client_secret ? yes : no);
     return d;
   }catch(e){ return null; }
 }
@@ -6232,6 +6248,8 @@ async function clearCookies(){
       body: JSON.stringify({clear:true})}).then(r => r.json());
     if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
     g('ckFunpay').value = ''; g('ckZeusx').value = '';
+    if(g('ckEldoradoId')) g('ckEldoradoId').value = '';
+    if(g('ckEldoradoSecret')) g('ckEldoradoSecret').value = '';
     toast(LANG==='ru' ? '✅ Cookie отключены' : LANG==='en' ? '✅ Cookies disconnected' : '✅ Cookie відключено');
     loadCookieStatus(); loadPlatforms(true);
   }catch(e){ toast('⚠ ' + e, false); }
@@ -6240,13 +6258,18 @@ async function clearCookies(){
 async function saveCookies(){
   const fp = (g('ckFunpay') && g('ckFunpay').value || '').trim();
   const zx = (g('ckZeusx') && g('ckZeusx').value || '').trim();
-  if(!fp && !zx){ toast(t('set.cookieNeed'), false); return; }
+  const eid = (g('ckEldoradoId') && g('ckEldoradoId').value || '').trim();
+  const esec = (g('ckEldoradoSecret') && g('ckEldoradoSecret').value || '').trim();
+  if(!fp && !zx && !eid && !esec){ toast(t('set.cookieNeed'), false); return; }
   const body = {}; if(fp) body.funpay_cookie = fp; if(zx) body.zeusx_cookie = zx;
+  if(eid) body.eldorado_client_id = eid; if(esec) body.eldorado_client_secret = esec;
   try{
     const d = await fetch('/api/secrets/save',{method:'POST',headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body)}).then(r => r.json());
     if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
     g('ckFunpay').value = ''; g('ckZeusx').value = '';
+    if(g('ckEldoradoId')) g('ckEldoradoId').value = '';
+    if(g('ckEldoradoSecret')) g('ckEldoradoSecret').value = '';
     toast(LANG==='ru' ? ('✅ Cookie сохранены: '+(d.saved||[]).join(', ')) : LANG==='en' ? ('✅ Cookies saved: '+(d.saved||[]).join(', ')) : ('✅ Cookie збережено: '+(d.saved||[]).join(', ')));
     loadCookieStatus();
     loadPlatforms(true);

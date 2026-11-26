@@ -5167,7 +5167,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.31", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.32", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5773,7 +5773,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.31",
+            self._json({"ok": True, "version": "1.66.32",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5793,7 +5793,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             _s = _read_json(SECRETS_FILE, {}) or {}
             self._json({"ok": True,
                         "funpay_cookie": bool(_s.get("funpay_cookie")),
-                        "zeusx_cookie": bool(_s.get("zeusx_cookie"))})
+                        "zeusx_cookie": bool(_s.get("zeusx_cookie")),
+                        "eldorado_client_id": bool(_s.get("eldorado_client_id")),
+                        "eldorado_client_secret": bool(_s.get("eldorado_client_secret"))})
         elif p == "/api/mail/queue":
             _mailq_load()
             items = [x for x in _mail_queue if (x.get("kind") or "order") == "order"][-100:]
@@ -6784,10 +6786,12 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             _s = _read_json(SECRETS_FILE, {}) or {}
             self._json({"ok": True,
                         "funpay_cookie": bool(_s.get("funpay_cookie")),
-                        "zeusx_cookie": bool(_s.get("zeusx_cookie"))})
+                        "zeusx_cookie": bool(_s.get("zeusx_cookie")),
+                        "eldorado_client_id": bool(_s.get("eldorado_client_id")),
+                        "eldorado_client_secret": bool(_s.get("eldorado_client_secret"))})
             return
         if self.path == "/api/secrets/save":
-            allowed = ("funpay_cookie", "zeusx_cookie")
+            allowed = ("funpay_cookie", "zeusx_cookie", "eldorado_client_id", "eldorado_client_secret")
             if body.get("clear"):
                 keys = body.get("keys") if isinstance(body.get("keys"), list) else list(allowed)
                 keys = [k for k in allowed if k in keys]
@@ -8585,7 +8589,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.31")
+    print("  ▲  Ledger v1.66.32")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
