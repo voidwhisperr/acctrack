@@ -2613,6 +2613,28 @@ Object.assign(I18N.en, {
 Object.assign(I18N.ru, {
   'reply.title':'ГЕНЕРАТОР ОТВЕТА','reply.hint':'Три готовых варианта — выбери язык, скопируй и вставь в чат. Кнопка «Другой вариант» меняет формулировку.','reply.copy':'Копировать','reply.copied':'Скопировано','reply.regen':'Другой вариант','reply.notFound':'Заказ не найден','reply.copyFail':'Не удалось скопировать'
 });
+Object.assign(I18N.uk, {
+'mobile.title':'Мобільний доступ','mobile.refresh':'Оновити','desk.title':'Вікно застосунку',
+'desk.tray':'Закривати у трей, а не виходити','desk.hint':'Хрестик ховає вікно в трей; вийти повністю можна через меню трея.',
+'desk.save':'Зберегти','desk.compact':'Компактний режим (більше рядків на екрані)',
+'qs.title':'Швидкий старт','qs.hint':'Ще немає угод. Почни з однієї з дій — дані одразу з’являться в огляді.',
+'qs.deal':'Додати угоду','qs.channels':'Підключити канал','qs.orders':'Імпорт замовлень','qs.demo':'Демо-замовлення'
+});
+Object.assign(I18N.en, {
+'mobile.title':'Mobile access','mobile.refresh':'Refresh','desk.title':'App window',
+'desk.tray':'Close to tray instead of exiting','desk.hint':'X hides the window to the tray; use the tray menu to exit completely.',
+'desk.save':'Save','desk.compact':'Compact mode (more rows on screen)',
+'qs.title':'Quick start','qs.hint':'No deals yet. Start with one of these actions — the overview will fill in.',
+'qs.deal':'Add deal','qs.channels':'Connect channel','qs.orders':'Import orders','qs.demo':'Demo order'
+});
+Object.assign(I18N.ru, {
+'mobile.title':'Мобильный доступ','mobile.refresh':'Обновить','desk.title':'Окно приложения',
+'desk.tray':'Сворачивать в трей, а не выходить','desk.hint':'Крестик скрывает окно в трей; выйти полностью можно через меню трея.',
+'desk.save':'Сохранить','desk.compact':'Компактный режим (больше строк на экране)',
+'qs.title':'Быстрый старт','qs.hint':'Пока нет сделок. Начни с одного из действий — данные сразу появятся в обзоре.',
+'qs.deal':'Добавить сделку','qs.channels':'Подключить канал','qs.orders':'Импорт заказов','qs.demo':'Демо-заказ'
+});
+
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
   n = Math.abs(Number(n) || 0);

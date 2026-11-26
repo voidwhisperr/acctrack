@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.66.4 — missing translations for mobile/desktop panels
+- Added UA/EN/RU strings for Mobile access, App window and Quick start; the refresh button no longer shows the raw `mobile.refresh` key and still regenerates the QR.
+
 ## v1.66.3 — single instance and login favicon
 - Desktop app is single-instance: a second launch focuses the existing window instead of opening another copy (important when the first is hidden in the tray).
 - Login page now declares PNG favicons and apple-touch-icon (Safari does not use SVG favicons, so the tab showed a globe before login).
