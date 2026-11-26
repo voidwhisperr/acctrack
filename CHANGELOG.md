@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.66.16 — responsive tables and catalog cards
+- Catalog card action buttons wrap instead of overflowing on phones.
+- Tables scroll horizontally inside panels on ≤640px (Channels/ZeusX tables no longer clip).
+- Tabs wrap on tablets ≤860px so Inventory/Analytics/Ledger+/Settings stay visible.
+
 ## v1.66.15 — security fixes from multi-agent audit
 - Fixed reflected XSS in `/admin/revoke` (invalid token now 403; redirect token URL-encoded).
 - Login form now honours rate limiting; removed `GT_AUTH_NO_LIMIT` on the VPS.

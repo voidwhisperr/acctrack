@@ -378,6 +378,13 @@ code{
   #tab-taobao .sup-table td{font-size:.9rem;padding:9px 6px}
   #tab-taobao .sup-table td:first-child{max-width:100%!important}
 }
+@media(max-width:860px){
+  .tabs{flex-wrap:wrap;overflow:visible;position:static}
+  .tabs .tsep{display:none}
+}
+@media(max-width:640px){
+  .panel table{display:block;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+}
 @media(max-width:780px){.g2,.g3{grid-template-columns:1fr}}
 html,body{max-width:100%;overflow-x:hidden}
 .w{max-width:100%;overflow-x:clip}
@@ -5846,7 +5853,7 @@ function renderSupPage(){
             <span>${p.gone?'<span style="color:var(--mu)">—</span>':(p.available?'<span style="color:var(--gr)">✓ '+t('sup.availYes')+'</span>':'<span style="color:var(--rd)">✗ '+t('sup.availNo')+'</span>')}</span>
             ${supAgeBadge(p, now, DAY)}
           </div>
-          <div style="display:flex;gap:6px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%">
             <a href="${esc(p.url)}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a>
             <button class="btn" style="padding:6px 10px" onclick="addTargetFromSup(_supItems[${i}])" title="Цільова ціна">🎯</button>
             <button class="btn" style="padding:6px 10px;gap:5px" data-hist="${esc(p.id)}" title="Історія ціни за 30 днів"><svg class="ic"><use href="#ic-chart"/></svg>${t('cb.history')}</button>
