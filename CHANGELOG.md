@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.62.0 — mobile access link and QR
+- Settings → Mobile access: current public link and LAN links, copy button and a generated QR code.
+- `/api/mobile/info` returns origin/LAN URLs and auth state; `/api/mobile/qr?url=...` renders a PNG QR (qrcode + Pillow).
+- QR is generated locally, no external service.
+
 ## v1.61.0 — green icons everywhere
 - Ledger+ badge recolored from blue to the green UI accent across SVG, PNG (32/180/192/512/master) and ICO.
 - Rebuilt Ledger and LedgerPlus so the exe, window and tray icons use the new asset.

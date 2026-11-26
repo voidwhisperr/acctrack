@@ -2,3 +2,4 @@
 # Для агента збору Taobao (опційно): playwright
 # playwright>=1.40
 cryptography>=42.0
+qrcode>=7.4

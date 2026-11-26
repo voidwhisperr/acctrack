@@ -4297,6 +4297,42 @@ def _cl(uk, en, ru=None):
     return uk
 
 
+def _lan_ips():
+    ips = set()
+    try:
+        import socket as _sock
+        for info in _sock.getaddrinfo(_sock.gethostname(), None):
+            ip = info[4][0]
+            if "." in ip and not ip.startswith(("127.", "169.254.")):
+                ips.add(ip)
+    except Exception:
+        pass
+    try:
+        import socket as _sock
+        s = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ips.add(s.getsockname()[0])
+        s.close()
+    except Exception:
+        pass
+    return sorted(ips)
+
+
+def _mobile_info(handler):
+    host = (handler.headers.get("Host") or "").strip()
+    scheme = "https" if handler._is_https() else "http"
+    origin = (scheme + "://" + host) if host else ""
+    items = []
+    if origin:
+        items.append({"label": "public", "url": origin + "/"})
+    port = str(getattr(handler.server, "server_address", ("", 8766))[1])
+    if AUTH_MODE == "off":
+        for ip in _lan_ips():
+            items.append({"label": "lan", "url": "http://%s:%s/" % (ip, port)})
+    return {"ok": True, "origin": origin, "items": items,
+            "auth": AUTH_MODE != "off", "port": port}
+
+
 def _app_brand():
     st = _read_json(SETTINGS_FILE, {}) or {}
     nm = (str(st.get("app_name") or "Ledger").strip()[:32] or "Ledger")
@@ -4642,7 +4678,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.61.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.62.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5119,6 +5155,24 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 d = _team_load()
                 self._json({"ok": True, "members": d["members"],
                             "invites": [x for x in d["invites"] if not x.get("used_at")]})
+        elif p == "/api/mobile/info":
+            self._json(_mobile_info(self))
+        elif p == "/api/mobile/qr":
+            try:
+                import qrcode
+                import io as _io
+                _qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+                _url = (_qs.get("url") or [""])[0]
+                if not _url.startswith(("http://", "https://")) or len(_url) > 300:
+                    self._json({"ok": False, "error": "bad url"}, code=400)
+                else:
+                    _img = qrcode.make(_url)
+                    _buf = _io.BytesIO()
+                    _img.save(_buf, format="PNG")
+                    self._send(200, "image/png", _buf.getvalue(),
+                               extra={"Cache-Control": "no-store"})
+            except Exception as e:
+                self._json({"ok": False, "error": "QR unavailable: " + str(e)[:120]}, code=503)
         elif p == "/api/license/status":
             _inf = _license_info()
             self._json({"ok": True, "paid": _license_paid(), "license": _inf,
@@ -5254,7 +5308,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.61.0",
+            self._json({"ok": True, "version": "1.62.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7820,7 +7874,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.61.0")
+    print("  ▲  Ledger v1.62.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

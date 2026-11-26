@@ -507,7 +507,7 @@ code{
   <div class="tsep"></div>
   <div class="tab" onclick="sw('stats',this);renderStats();setTimeout(renderRevenueChart,80)"><svg class="ic"><use href="#ic-chart"/></svg><span data-i18n="nav.analytics">Аналітика</span></div>
   <div class="tab" onclick="sw('plus',this);loadPlus()"><span style="font-size:14px;font-weight:900;color:var(--gr)">✦</span><span data-i18n="nav.plus">Ledger+</span></div>
-  <div class="tab" onclick="sw('setup',this);loadBackupList();loadSettings()"><svg class="ic"><use href="#ic-gear"/></svg></div>
+  <div class="tab" onclick="sw('setup',this);loadBackupList();loadSettings();loadMobile()"><svg class="ic"><use href="#ic-gear"/></svg></div>
 </div>
 
 <nav id="mnav" aria-label="Mobile navigation">
@@ -1239,6 +1239,11 @@ code{
       <span id="pwaStatus" style="font-size:11.5px;color:var(--mu)"></span>
     </div>
     <div style="font-size:11px;color:var(--mu);margin-top:7px" data-i18n="app.hint">Android/Chrome: кнопка вище або меню ⋮ → «Встановити застосунок». iPhone/Safari: «Поділитися» → «На екран Домівки».</div>
+  </div>
+
+  <div class="panel" id="mobilePanel" style="margin-bottom:14px">
+    <div class="ph"><span>📱 <span data-i18n="mobile.title">Мобільний доступ</span></span><button class="btn" onclick="loadMobile()" style="font-size:12px;padding:6px 10px">↻ <span data-i18n="mobile.refresh">Оновити</span></button></div>
+    <div id="mobileBody" style="font-size:12.5px;color:var(--mu)">…</div>
   </div>
 
   <div id="pwaHelpModal" onclick="if(event.target===this)closePwaHelp()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
@@ -3640,6 +3645,30 @@ async function savePayDetails(){
     await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     toast(t('plus.saved'));
   }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function loadMobile(){
+  const box=g('mobileBody'); if(!box) return;
+  const L=(uk,en,ru)=>LANG==='en'?en:(LANG==='ru'?ru:uk);
+  try{
+    const d=await fetch('/api/mobile/info').then(r=>r.json());
+    const items=(d.items||[]);
+    if(!items.length){ box.innerHTML='<div class="al info">'+L('Посилання недоступне: застосунок слухає лише 127.0.0.1. Запусти з GT_BIND=0.0.0.0 для доступу з телефона.','No link: the app listens on 127.0.0.1 only. Start with GT_BIND=0.0.0.0 to allow phones.','Ссылка недоступна: приложение слушает только 127.0.0.1. Запусти с GT_BIND=0.0.0.0 для доступа с телефона.')+'</div>'; return; }
+    window.__mobileItems=items;
+    const sel=items.map((it,i)=>'<option value="'+i+'">'+esc(it.label==='lan'?L('локальна мережа','local network','локальная сеть'):L('поточне посилання','current link','текущая ссылка'))+' — '+esc(it.url)+'</option>').join('');
+    box.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><select id="mobileSel" onchange="renderMobileQr()" style="flex:1;min-width:240px;font-size:12px">'+sel+'</select><button class="btn" onclick="copyMobileLink()" style="font-size:12px;padding:6px 10px">⧉ '+L('Копіювати','Copy','Копировать')+'</button></div>'
+      + '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start"><img id="mobileQr" alt="QR" style="width:180px;height:180px;background:#fff;border-radius:10px;padding:6px"><div style="flex:1;min-width:220px;line-height:1.7">'+L('Відскануй QR телефоном.','Scan the QR with your phone.','Отсканируй QR телефоном.')+'<br>'+L('Якщо є пароль — введи його на телефоні.','If a password is set, enter it on the phone.','Если есть пароль — введи его на телефоне.')+(d.auth?'<br><b style="color:var(--gr)">'+L('Потрібен пароль','Password required','Нужен пароль')+'</b>':'')+'</div></div>';
+    renderMobileQr();
+  }catch(e){ box.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
+}
+function renderMobileQr(){
+  const items=window.__mobileItems||[]; const sel=g('mobileSel'); const img=g('mobileQr'); if(!img) return;
+  const it=items[Number(sel&&sel.value||0)]; if(!it){ img.style.display='none'; return; }
+  img.style.display='block'; img.src='/api/mobile/qr?url='+encodeURIComponent(it.url);
+}
+async function copyMobileLink(){
+  const items=window.__mobileItems||[]; const sel=g('mobileSel'); const it=items[Number(sel&&sel.value||0)]; if(!it) return;
+  try{ await navigator.clipboard.writeText(it.url); toast('⧉ '+it.url); }catch(e){ prompt('URL', it.url); }
 }
 
 async function loadSettings(){
