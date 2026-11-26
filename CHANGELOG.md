@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.66.20 — pricing Telegram link fix
+- Fixed `/pricing` 500 after replacing the personal Telegram handle with the channel; CTA now points to https://t.me/ledger_os.
+- Ledger OS channel links in dashboard header, contact panel, login page and docs.
+
+## v1.66.19 — Telegram channel links
+- Added Ledger OS Telegram channel (https://t.me/ledger_os) to the dashboard header, login page and pricing CTA.
+- Replaced the old personal Telegram contact with the channel in app, pricing, demo and docs.
+
 ## v1.66.18 — per-IP login limit behind proxy
 - Rate limiting and auth logs use `X-Forwarded-For` when behind Caddy, so one client cannot block everyone.
 - Infra: 8765 collector endpoint restricted by UFW to the agent IP; Caddy access logging disabled for 8765 (collector token no longer written to disk); prior log truncated.

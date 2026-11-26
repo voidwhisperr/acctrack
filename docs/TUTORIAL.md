@@ -166,4 +166,4 @@ docker compose up -d      # → http://localhost:8766
 
 Цей репозиторій — **ручний/напівавтоматичний** варіант.
 Повна автоматизація (збір Taobao з капчею, авто-імпорт FunPay/ZeusX, постійний агент на ПК)
-— Telegram **@ENOUGHT285** · email **dhdueu564@gmail.com** · Discord **facemyfear**.
+— Telegram **@ledger_os** · email **dhdueu564@gmail.com** · Discord **facemyfear**.
