@@ -27,3 +27,15 @@ Private category `STAFF`:
 JSON: {"en":"...","uk":"...","ru":"..."} (labels added automatically, no flags).
 
 Discord verification is not required for a private bot.
+
+
+## Moderation and anti-spam
+
+- @everyone role: MENTION_EVERYONE permission removed (regular members cannot ping @everyone/@here; administrators still can).
+- AutoMod rules (alerts go to #mod-log):
+  - Anti-spam (trigger SPAM)
+  - Anti mass-mention (mention_total_limit=5, raid protection)
+  - Block Discord invites (discord.gg / discord.com/invite / discordapp.com/invite)
+- #announcements is read-only for @everyone and the channel guide is pinned.
+
+Bot permissions now include Manage Channels, Manage Roles, Manage Guild, Manage Messages, Moderate Members.
