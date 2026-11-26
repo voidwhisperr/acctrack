@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.61.0 — green icons everywhere
+- Ledger+ badge recolored from blue to the green UI accent across SVG, PNG (32/180/192/512/master) and ICO.
+- Rebuilt Ledger and LedgerPlus so the exe, window and tray icons use the new asset.
+- Favicon/manifest links cache-busted with `?v=3` and icon cache shortened to 60s.
+
 ## v1.60.1 — pricing polish
 - Pricing page: separate “Plans” heading (no duplicate), “on request” defaults for empty payment fields.
 - Demo screenshots refreshed for v1.60 (13 per language incl. pricing), CI workflow and license unit tests, audit update.

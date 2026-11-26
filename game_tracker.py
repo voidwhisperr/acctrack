@@ -4642,7 +4642,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.60.1", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.61.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -4691,9 +4691,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 "background_color": "#0d1017",
                 "theme_color": "#0d1017",
                 "icons": [
-                    {"src": "/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-                    {"src": "/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
-                    {"src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml"},
+                    {"src": "/app-icon-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                    {"src": "/app-icon-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+                    {"src": "/app-icon.svg?v=3", "sizes": "any", "type": "image/svg+xml"},
                 ],
             }
             self._send(200, "application/json", json.dumps(manifest))
@@ -4706,7 +4706,7 @@ self.addEventListener('fetch', e => {});
 self.addEventListener('push', e => {
   const d = e.data ? e.data.json() : {};
   e.waitUntil(self.registration.showNotification(d.title||'GameTracker', {
-    body: d.body||'', icon: '/app-icon-192.png', badge: '/app-icon-32.png', vibrate: [200,100,200]
+    body: d.body||'', icon: '/app-icon-192.png?v=3', badge: '/app-icon-32.png?v=3', vibrate: [200,100,200]
   }));
 });
 self.addEventListener('notificationclick', e => { e.notification.close(); clients.openWindow('/'); });
@@ -4740,7 +4740,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._send(404, "text/plain", b"404"); return
             with open(_f, "rb") as _fh:
                 _data = _fh.read()
-            self._send(200, _ct, _data, extra={"Cache-Control": "public, max-age=300"})
+            self._send(200, _ct, _data, extra={"Cache-Control": "public, max-age=60"})
         elif p.split("?")[0].lstrip("/") in _ICONS_B64:
             _n = p.split("?")[0].lstrip("/")
             ct, data = _icon_bytes(_n)
@@ -5254,7 +5254,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.60.1",
+            self._json({"ok": True, "version": "1.61.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7820,7 +7820,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.60.1")
+    print("  ▲  Ledger v1.61.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

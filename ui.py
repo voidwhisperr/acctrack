@@ -18,11 +18,11 @@ HTML = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-title" content="Ledger">
 <meta name="theme-color" content="#0d1017">
 <script>window.__pwaEarly=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaEarly=e;});</script>
-<link rel="manifest" href="/manifest.json?v=2">
-<link rel="icon" href="/app-icon-32.png" sizes="32x32">
-<link rel="icon" type="image/svg+xml" href="/app-icon.svg">
-<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/app-icon-180.png">
+<link rel="manifest" href="/manifest.json?v=3">
+<link rel="icon" href="/app-icon-32.png?v=3" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/app-icon.svg?v=3">
+<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="/app-icon-180.png?v=3">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
