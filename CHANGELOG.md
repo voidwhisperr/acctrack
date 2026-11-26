@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.18 — per-IP login limit behind proxy
+- Rate limiting and auth logs use `X-Forwarded-For` when behind Caddy, so one client cannot block everyone.
+- Infra: 8765 collector endpoint restricted by UFW to the agent IP; Caddy access logging disabled for 8765 (collector token no longer written to disk); prior log truncated.
+
 ## v1.66.17 — tablet table scroll
 - Tables now scroll horizontally on ≤860px too, so the hosted Channels “recent sales” table is fully reachable at 768px.
 

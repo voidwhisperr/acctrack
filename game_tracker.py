@@ -4608,6 +4608,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
         except Exception:
             return False
 
+    def _client_ip(self):
+        """Real client IP behind Caddy (X-Forwarded-For), else socket peer."""
+        try:
+            peer = self.client_address[0] if self.client_address else "?"
+            if peer in ("127.0.0.1", "::1"):
+                xff = (self.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+                if xff:
+                    return xff
+            return peer
+        except Exception:
+            return "?"
+
     def _rate_limited(self):
         """Блокування IP після багатьох невдалих спроб Basic-auth.
 
@@ -4616,7 +4628,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         """
         if os.environ.get("GT_AUTH_NO_LIMIT") == "1":
             return False
-        ip = self.client_address[0] if self.client_address else "?"
+        ip = self._client_ip()
         now = time.time()
         with Handler._auth_lock:
             fails, until = Handler._auth_fails.get(ip, (0, 0.0))
@@ -4628,7 +4640,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return False
 
     def _note_auth_fail(self):
-        ip = self.client_address[0] if self.client_address else "?"
+        ip = self._client_ip()
         with Handler._auth_lock:
             fails, until = Handler._auth_fails.get(ip, (0, 0.0))
             Handler._auth_fails[ip] = (fails + 1, until if until > time.time() else 0.0)
@@ -4741,7 +4753,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.17", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.18", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5407,7 +5419,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.17",
+            self._json({"ok": True, "version": "1.66.18",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5568,7 +5580,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             if not (AUTH_PASS and hmac.compare_digest(pw.encode("utf-8"),
                                                       AUTH_PASS.encode("utf-8"))):
                 self._note_auth_fail()
-                print(f"  🔐 failed login (form) · IP {self.client_address[0]}", flush=True)
+                print(f"  🔐 failed login (form) · IP {self._client_ip()}", flush=True)
                 self._json({"ok": False, "error": "Невірний пароль"}, code=401)
                 return
             otp = str((body or {}).get("otp") or "").strip()
@@ -7993,7 +8005,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.17")
+    print("  ▲  Ledger v1.66.18")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
