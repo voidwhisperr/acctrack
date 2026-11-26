@@ -2748,14 +2748,12 @@ async function refreshActiveTab(){
 async function setLang(l){
   LANG = (l==='en') ? 'en' : (l==='ru' ? 'ru' : 'uk');
   try{ localStorage.setItem('gt_lang', LANG); }catch(e){}
-  // Валюта завжди відповідає мові: UA→₴, EN→$, RU→₽.
-  _currencyManual = false;
-  _cur = ({uk:'UAH', en:'USD', ru:'RUB'})[LANG] || _cur;
+  // Мова й валюта — незалежні: зміна мови не чіпає вибрану валюту.
   // Повне перезавантаження: динамічні рендери й кеш перекладів більше не
   // змішують мови (раніше після UA→RU лишалися англійські/українські рядки).
   try{ await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({lang: LANG, currency: _cur, currency_manual: false})}); }catch(e){}
-  try{ localStorage.setItem('gt_cur', _cur); localStorage.setItem('gt_cur_manual', '0'); }catch(e){}
+        body: JSON.stringify({lang: LANG, currency: _cur, currency_manual: _currencyManual})}); }catch(e){}
+  try{ localStorage.setItem('gt_cur', _cur); localStorage.setItem('gt_cur_manual', _currencyManual ? '1' : '0'); }catch(e){}
   location.reload();
 }
 
@@ -5865,10 +5863,7 @@ function onbSetLang(l){
   // Не setLang(): він перезавантажує сторінку й ламає вибір валюти в онбордингу.
   LANG = (l==='en') ? 'en' : (l==='ru' ? 'ru' : 'uk');
   try{ localStorage.setItem('gt_lang', LANG); }catch(e){}
-  if(!_onbCurManual){
-    _cur = ({uk:'UAH', en:'USD', ru:'RUB'})[l] || _cur;
-  }
-  _currencyManual = false;
+  // У онбордингу мова теж не змінює валюту — її вибирають окремо.
   applyLang(); onbRender();
 }
 function onbSetCurrency(v){ _onbCurManual = true; _currencyManual = true; _cur = v || 'USD'; applyCurrency(); }

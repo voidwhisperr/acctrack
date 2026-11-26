@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.63.0 — language and currency are independent
+- Changing the interface language no longer resets the display currency (UA + USD is now possible).
+- Onboarding language buttons no longer overwrite the chosen currency.
+- The currency selector keeps all 29 currencies in Settings; `currency_manual` stays set across language switches.
+
 ## v1.62.2 — mobile hint scope
 - `GT_BIND` hint is shown only when the dashboard's own origin is localhost.
 
