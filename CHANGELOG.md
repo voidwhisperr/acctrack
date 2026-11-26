@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.62.1 — LAN hint
+- Mobile access shows LAN links only when the server is actually bound beyond 127.0.0.1 and explains `GT_BIND=0.0.0.0` otherwise.
+
 ## v1.62.0 — mobile access link and QR
 - Settings → Mobile access: current public link and LAN links, copy button and a generated QR code.
 - `/api/mobile/info` returns origin/LAN URLs and auth state; `/api/mobile/qr?url=...` renders a PNG QR (qrcode + Pillow).

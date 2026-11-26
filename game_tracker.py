@@ -4325,11 +4325,13 @@ def _mobile_info(handler):
     items = []
     if origin:
         items.append({"label": "public", "url": origin + "/"})
+    bind = str(getattr(handler.server, "server_address", ("", ""))[0] or "")
     port = str(getattr(handler.server, "server_address", ("", 8766))[1])
-    if AUTH_MODE == "off":
+    lan_ok = bind not in ("127.0.0.1", "::1", "localhost", "")
+    if AUTH_MODE == "off" and lan_ok:
         for ip in _lan_ips():
             items.append({"label": "lan", "url": "http://%s:%s/" % (ip, port)})
-    return {"ok": True, "origin": origin, "items": items,
+    return {"ok": True, "origin": origin, "items": items, "lan_ok": lan_ok,
             "auth": AUTH_MODE != "off", "port": port}
 
 
@@ -4678,7 +4680,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.62.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.62.1", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5308,7 +5310,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.62.0",
+            self._json({"ok": True, "version": "1.62.1",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7874,7 +7876,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.62.0")
+    print("  ▲  Ledger v1.62.1")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
