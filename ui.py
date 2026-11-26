@@ -3723,7 +3723,10 @@ async function loadMobile(){
 function renderMobileQr(){
   const items=window.__mobileItems||[]; const sel=g('mobileSel'); const img=g('mobileQr'); if(!img) return;
   const it=items[Number(sel&&sel.value||0)]; if(!it){ img.style.display='none'; return; }
-  img.style.display='block'; img.src='/api/mobile/qr?url='+encodeURIComponent(it.url)+'&t='+Date.now();
+  img.style.display='block';
+  let _u=String(it.url||'');
+  if(window.__mobileV) _u += (_u.includes('?')?'&':'?')+'m='+window.__mobileV;
+  img.src='/api/mobile/qr?url='+encodeURIComponent(_u)+'&t='+Date.now();
 }
 async function copyMobileLink(){
   const items=window.__mobileItems||[]; const sel=g('mobileSel'); const it=items[Number(sel&&sel.value||0)]; if(!it) return;
@@ -3739,6 +3742,7 @@ try{ if(localStorage.getItem('gt_compact')==='1') document.body.classList.add('c
 
 async function refreshMobile(){
   const L=(uk,en,ru)=>LANG==='en'?en:(LANG==='ru'?ru:uk);
+  window.__mobileV=Date.now();
   await loadMobile();
   const el=g('mobileUpdated');
   if(el) el.textContent=L('Оновлено: ','Updated: ','Обновлено: ')+new Date().toLocaleTimeString();

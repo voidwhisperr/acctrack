@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.66.6 — QR visibly regenerates
+- Mobile access refresh now adds a version parameter to the encoded URL, so the QR image itself changes on every click (previously the same URL produced an identical QR).
+
 ## v1.66.5 — visible mobile QR refresh
 - Mobile access refresh now reloads the QR image (cache-busted), shows “Updated HH:MM:SS” and a toast, so it is obvious the button works.
 - LedgerPlus rebuilt with the same UI translations.
