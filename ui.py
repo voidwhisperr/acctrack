@@ -18,13 +18,15 @@ HTML = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-title" content="Ledger">
 <meta name="theme-color" content="#0d1017">
 <script>window.__pwaEarly=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaEarly=e;});</script>
-<link rel="manifest" href="/manifest.json?v=4">
-<link rel="icon" href="/app-icon-32.png?v=4" sizes="32x32">
-<link rel="icon" type="image/svg+xml" href="/app-icon.svg?v=4">
-<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png?v=4">
-<link rel="apple-touch-icon" sizes="180x180" href="/app-icon-180.png?v=4">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-precomposed.png?v=4">
-<link rel="shortcut icon" href="/favicon.ico?v=4">
+<link rel="manifest" href="/manifest.json?v=5">
+<link rel="icon" href="/app-icon-32-v5.png" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/app-icon-v5.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192-v5.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/app-icon-180-v5.png">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="/app-icon-180-v5.png">
+<link rel="shortcut icon" href="/favicon-v5.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-32-v5.png">
+<link rel="mask-icon" href="/app-icon-v5.svg" color="#7ad3a1">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -6251,7 +6253,7 @@ function _favFrame(phase){
 }
 function _favLinks(){ return Array.from(document.querySelectorAll('link[rel~="icon"]')); }
 function setDefaultFavicon(){
-  const urls=['/app-icon-32.png?v=4','/app-icon.svg?v=4','/app-icon-192.png?v=4','/app-icon-180.png?v=4'];
+  const urls=['/app-icon-32.png?v=5','/app-icon.svg?v=5','/app-icon-192.png?v=5','/app-icon-180.png?v=5'];
   _favLinks().forEach((l,i)=>{ try{ l.type=(i===1?'image/svg+xml':'image/png'); l.href=urls[i]||urls[0]; }catch(e){} });
   window._origFavicons=null;
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.66.2 — desktop startup fix
+- Fixed `create_window() got an unexpected keyword argument 'win_x'`: width/height are passed at creation, x/y are applied after the GUI starts.
+
+## v1.66.1 — stable icon URLs
+- Favicons/PWA icons now use versioned paths (`/app-icon-32-v5.png`, `/app-icon-180-v5.png`, `/app-icon-v5.svg`, `/favicon-v5.ico`) so Safari/Chrome fetch a fresh URL instead of a cached failure.
+- Versioned SVG served as `image/svg+xml`.
+
 ## v1.66.0 — desktop quick wins and Safari icons
 - Safari/favicon aliases (`/favicon-32x32.png`, `/favicon-16x16.png`, `/apple-touch-icon-precomposed.png`, `/apple-touch-icon-180x180.png`) are public and served for the current edition.
 - Overview shows a quick-start card when there are no deals (add deal / connect channel / import orders / demo order).

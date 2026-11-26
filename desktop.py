@@ -44,15 +44,9 @@ def load_prefs():
 
 
 def window_kwargs(prefs):
-    kw = {"width": int(prefs.get("win_w") or 1500),
-          "height": int(prefs.get("win_h") or 950)}
-    for k in ("win_x", "win_y"):
-        try:
-            if prefs.get(k) is not None:
-                kw[k] = int(prefs[k])
-        except Exception:
-            pass
-    return kw
+    # pywebview accepts width/height only; x/y are applied after the GUI starts.
+    return {"width": int(prefs.get("win_w") or 1500),
+            "height": int(prefs.get("win_h") or 950)}
 
 
 def remember_geometry(window):
@@ -213,11 +207,22 @@ def main():
     except Exception:
         pass
 
+    def _after_start():
+        try:
+            if prefs.get("win_x") is not None and prefs.get("win_y") is not None:
+                window.move(int(prefs["win_x"]), int(prefs["win_y"]))
+        except Exception:
+            log("window move failed:\n" + traceback.format_exc())
+        if start_hidden:
+            try:
+                window.hide()
+            except Exception:
+                pass
     try:
         _win_icon = APP_DIR / "assets" / "ledger.ico"
         if not _win_icon.exists():
             _win_icon = pathlib.Path(getattr(sys, "_MEIPASS", APP_DIR)) / "assets" / "ledger.ico"
-        webview.start(debug=False, private_mode=False, icon=str(_win_icon))
+        webview.start(_after_start, debug=False, private_mode=False, icon=str(_win_icon))
     finally:
         try:
             if tray:

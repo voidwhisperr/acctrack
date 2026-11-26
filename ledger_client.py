@@ -43,15 +43,8 @@ def load_prefs():
 
 
 def window_kwargs(prefs):
-    kw = {"width": int(prefs.get("win_w") or 1500),
-          "height": int(prefs.get("win_h") or 950)}
-    for k in ("win_x", "win_y"):
-        try:
-            if prefs.get(k) is not None:
-                kw[k] = int(prefs[k])
-        except Exception:
-            pass
-    return kw
+    return {"width": int(prefs.get("win_w") or 1500),
+            "height": int(prefs.get("win_h") or 950)}
 
 
 def remember_geometry(window):
@@ -243,9 +236,15 @@ def main():
     except Exception:
         pass
 
+    def _after_start():
+        try:
+            if _prefs.get("win_x") is not None and _prefs.get("win_y") is not None:
+                window.move(int(_prefs["win_x"]), int(_prefs["win_y"]))
+        except Exception:
+            log("window move failed:\n" + traceback.format_exc())
     try:
         _win_icon = ASSET_DIR / ("ledger-plus.ico" if (ASSET_DIR / "ledger-plus.ico").exists() else "ledger.ico")
-        webview.start(debug=False, private_mode=False, storage_path=str(storage), icon=str(_win_icon))
+        webview.start(_after_start, debug=False, private_mode=False, storage_path=str(storage), icon=str(_win_icon))
     except Exception:
         log("webview failed:\n" + traceback.format_exc())
     finally:

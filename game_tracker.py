@@ -4357,6 +4357,15 @@ _ICONS_B64.update({
     'ledger-32.png': ("image/png", 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAD50lEQVR42r1XTWhcVRT+zrn33fveZJq2iUYEKwE3gjuRolmVLgRDuhChC8EuFAluBOkiiK6qZqeLCm4ruBJ0pdCFKIEsBMWCdhO6MIu2kEVsTNP33tw3757jYpqYNG8yk78eGBh4b+Z893zn+865hF4YABHwk+129r5NzAxAk0SwAAiHDAW6UL1d1/X1KpRXq6q6tZmTNr+k6cjFNEu/NMZOxBghEnGUwcwwxkIkrhWd4nIoimsADAFAlrXfSFvZd6qKKoQIgI/i5LsLAXHOG2ZGpyzfLoqNa4Q0PXMqG/kLRCdDpyPMbHCMISLivQeAUOQbL5p22rqSOH/ucSQHACKiGKM45x2IRmn09PjfDJqsqgAiIjyGUFVNnAMB95iJnhWJNCznRIQjwEkShYh43FJPBcPyhxh76jDGgJmHSPWw/fqpY1gJlUWOqakpLCwsYHFxEdPT0yiLHMaYvRBDawG0PwI7bNlFIsbGxvDKy2cBABMTExCJzXQQQUOFsTfPoT31PFa//hn577dgMg8V3T+AzajrGnnRgbUW3W53ry4DJRbr1//AxsJNxPsF2CW7ku8bABGBmcHMgxuRCPHfB6j/EbBLAKaD98ABxA4NXYy/dR7PfHYJlDlApFFn9piEDnIW6z/+hvuJhVZdgLlRDfYYLQ/1vQc9MD45nAwPklxChSfffRXjl85DOgHUpweOjQJ2Cda+/xWqCvauUQGHArBdEY86ooj0KFjPe+8aPpwRNSUPIUBEkOc56rre8dx735OqGcyw3ecUg6pibW0Ns7OzuHBhBtYm0Eesdm5uDsvLy/De73p2KADOObQyD2vtliU3xfz8PGLs2fSRAFBVOOextLSETz6dRwhhqxpNsbKygiRJBiYHADo99oTGGFHX9Z72SkSoqgpVKAf+adpqwxrTF4CqwhgLa+2QFBCgInDOIUuzvQc8gDrGoU4/PAXdCGKGRkEdZbiGFQHZwbuOVUD6OSIxI+Ylnv7oIk7NnEXcKPs62v8moOATKTZ+uYk7H38DbnlA9lhIVPUOM5/ZtkDt4Ko312+gs3QX2q2BQWP44W+q26ugxPZli5lVVdZp5MTJr1KfvleWRSQi0+jrRYDGevCCt20JJGN6p9fGJoxplpkqhG/Je/9c1mr/CSALIYCbNk3e/yasqo2lFxFxzisxSb5RvmRijGvMdDdx6evGMMXe2rtzTVeFyv4+DYvo1tXMWsudTvFB6OQ/bF1Ofav9TubTL4wxo3VdQ1QGV3vo4QEwMaw1iFGKUJUflnl+detyugkiSZIXfDZy2RrzGhE/1dSYB78MyWqs5adOJ3ze7RY3NnP+By+u7+h8jZC+AAAAAElFTkSuQmCC'),
 })
 _icons_cache = {}
+_ICON_VERSIONED = {
+    "app-icon-v5.svg": "icon.svg",
+    "app-icon-32-v5.png": "favicon-32.png",
+    "app-icon-180-v5.png": "apple-touch-icon.png",
+    "app-icon-192-v5.png": "icon-192.png",
+    "app-icon-512-v5.png": "icon-512.png",
+    "favicon-v5.ico": "favicon.ico",
+    "favicon-32-v5.png": "favicon-32.png",
+}
 _ICON_ALIASES = {
     "apple-touch-icon-precomposed.png": "apple-touch-icon.png",
     "apple-touch-icon-180x180.png": "apple-touch-icon.png",
@@ -4549,7 +4558,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or p.startswith("/admin") or p.startswith("/hosting")
                 or p.startswith("/app-icon") or p.startswith("/logo/")
                 or p.startswith("/docs/") or p.lstrip("/") in _ICONS_B64
-                or p.lstrip("/") in _ICON_ALIASES):
+                or p.lstrip("/") in _ICON_ALIASES or p.lstrip("/") in _ICON_VERSIONED):
             return True
         role = self._role()
         if role == "owner":
@@ -4645,6 +4654,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.split("?")[0].startswith("/app-icon")
                 or self.path.split("?")[0] in ("/manifest.json", "/favicon.ico", "/favicon-32.png")
                 or self.path.split("?")[0].lstrip("/") in _ICON_ALIASES
+                or self.path.split("?")[0].lstrip("/") in _ICON_VERSIONED
                 or self.path.split("?")[0] in ("/api/license/register", "/api/license/release",
                                                 "/admin", "/admin/revoke", "/join", "/hosting",
                                                 "/hosting/save", "/hosting/check", "/hosting/delete",
@@ -4716,13 +4726,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.2", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
         elif (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
-                or p.lstrip("/") in _ICON_ALIASES
+                or p.lstrip("/") in _ICON_ALIASES or p.lstrip("/") in _ICON_VERSIONED
                 or p.split("?")[0].lstrip("/") in _ICONS_B64
                 or p.startswith("/logo/") or p.startswith("/app-icon")):
             pass  # публічні статичні файли (без них PWA/іконки ламаються)
@@ -4768,9 +4778,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 "background_color": "#0d1017",
                 "theme_color": "#0d1017",
                 "icons": [
-                    {"src": "/app-icon-192.png?v=4", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-                    {"src": "/app-icon-512.png?v=4", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
-                    {"src": "/app-icon.svg?v=4", "sizes": "any", "type": "image/svg+xml"},
+                    {"src": "/app-icon-192.png?v=5", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                    {"src": "/app-icon-512-v5.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+                    {"src": "/app-icon-v5.svg", "sizes": "any", "type": "image/svg+xml"},
                 ],
             }
             self._send(200, "application/json", json.dumps(manifest))
@@ -4783,7 +4793,7 @@ self.addEventListener('fetch', e => {});
 self.addEventListener('push', e => {
   const d = e.data ? e.data.json() : {};
   e.waitUntil(self.registration.showNotification(d.title||'GameTracker', {
-    body: d.body||'', icon: '/app-icon-192.png?v=4', badge: '/app-icon-32.png?v=4', vibrate: [200,100,200]
+    body: d.body||'', icon: '/app-icon-192-v5.png', badge: '/app-icon-32-v5.png', vibrate: [200,100,200]
   }));
 });
 self.addEventListener('notificationclick', e => { e.notification.close(); clients.openWindow('/'); });
@@ -4818,6 +4828,20 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             with open(_f, "rb") as _fh:
                 _data = _fh.read()
             self._send(200, _ct, _data, extra={"Cache-Control": "public, max-age=60"})
+        elif p.split("?")[0].lstrip("/") in _ICON_VERSIONED:
+            _n = _ICON_VERSIONED[p.split("?")[0].lstrip("/")]
+            if _n.endswith(".svg"):
+                _sf = os.path.join(str(_ASSETS_DIR), _brand_stem() + ".svg")
+                try:
+                    with open(_sf, "rb") as _fh:
+                        _data = _fh.read()
+                    self._send(200, "image/svg+xml", _data,
+                               extra={"Cache-Control": "public, max-age=300"})
+                except Exception:
+                    self._send(404, "text/plain", b"404")
+            else:
+                _ct, _data = _icon_bytes(_n)
+                self._send(200, _ct, _data, extra={"Cache-Control": "public, max-age=300"})
         elif p.split("?")[0].lstrip("/") in _ICONS_B64 or p.split("?")[0].lstrip("/") in _ICON_ALIASES:
             _n = p.split("?")[0].lstrip("/")
             _n = _ICON_ALIASES.get(_n, _n)
@@ -5350,7 +5374,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.0",
+            self._json({"ok": True, "version": "1.66.2",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7916,7 +7940,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.0")
+    print("  ▲  Ledger v1.66.2")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
