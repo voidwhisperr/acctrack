@@ -19,6 +19,7 @@ Host: `70.34.243.50` (Vultr), domain `ledger.70-34-243-50.sslip.io`.
 - Web app: `/opt/ledger` (owner `ledger`, unit `gametracker`, `User=ledger`). Do **not** deploy new code to `/root`; the live service reads `/opt/ledger`.
 - License signer: `/opt/ledger-signer/license_signer.py`, key `/etc/ledger-signer/private.b64` (root 600), socket `/run/ledger-signer/signer.sock` (root:ledger 660). The app user cannot read the key.
 - Bots: `/opt/ledger-bots` (`User=ledgerbot`).
+- Taobao Flask app: `/opt/ledger-taobao` (`User=ledger`), still bound to `127.0.0.1:5001`.
 - Legacy data under `/root` is kept only for rollback/backup.
 
 ## Additional hardening (v1.66.30)
