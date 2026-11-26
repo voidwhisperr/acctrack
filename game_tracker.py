@@ -113,7 +113,7 @@ UA   = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, lik
 
 # 🔐 АВТОРИЗАЦІЯ (браузер спитає логін/пароль при відкритті дашборду)
 AUTH_USER = os.environ.get("GT_AUTH_USER", "admin")
-AUTH_PASS = os.environ.get("GT_AUTH_PASS", "gametracker2026")
+AUTH_PASS = os.environ.get("GT_AUTH_PASS", "")
 
 SECRETS_FILE = str(_BASE_DIR / ".gt_secrets.json")
 
@@ -4717,6 +4717,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         role = self._role()
         if role == "owner":
             return True
+        _owner_only = ("/api/auth", "/api/demo", "/api/secrets", "/api/gmail", "/api/tg",
+                       "/api/suppliers/add", "/api/taobao/agent-config", "/api/password",
+                       "/api/2fa", "/api/team", "/api/license/admin", "/api/backup",
+                       "/api/diag", "/api/audit", "/api/tunnel", "/api/inventory/secret")
+        if any(p.startswith(x) for x in _owner_only):
+            self._json({"ok": False, "error": "owner only"}, code=403)
+            return False
         if role == "viewer":
             if self.command != "GET":
                 self._json({"ok": False, "error": "read-only access"}, code=403)
@@ -4899,7 +4906,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.27", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.29", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5034,9 +5041,22 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             # короткий кеш: іконки оновлюються разом з релізом
             self._send(200, ct, data, extra={"Cache-Control": "public, max-age=300"})
         elif p == "/demo" or p.startswith("/docs/"):
-            _f = os.path.join(str(_DOCS_DIR),
-                              "DEMO.html" if p == "/demo" else p[len("/docs/"):])
-            if not os.path.exists(_f):
+            _base = os.path.realpath(str(_DOCS_DIR))
+            if p == "/demo":
+                _f = os.path.join(_base, "DEMO.html")
+            else:
+                _rel = urllib.parse.unquote(p.split("?")[0][len("/docs/"):])
+                if "\x00" in _rel or _rel.startswith(("/", "\\")):
+                    self._send(404, "text/plain", b"404")
+                    return
+                _f = os.path.realpath(os.path.join(_base, _rel))
+                if _f != _base and not _f.startswith(_base + os.sep):
+                    self._send(404, "text/plain", b"404")
+                    return
+                if os.path.splitext(_f)[1].lower() not in (".html", ".md", ".png", ".jpg", ".jpeg", ".svg", ".pdf", ".txt", ".cer"):
+                    self._send(404, "text/plain", b"404")
+                    return
+            if not os.path.isfile(_f):
                 if p == "/demo":
                     # Демо-сторінки немає в цій збірці — не віддаємо 404,
                     # а показуємо посилання на актуальні скріншоти.
@@ -5565,7 +5585,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.27",
+            self._json({"ok": True, "version": "1.66.29",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -8162,7 +8182,7 @@ def main():
             print("     Listening on 127.0.0.1 only. Set a password in ⚙ → Password,")
             print("     or force open access on a trusted LAN with GT_ALLOW_OPEN=1.")
             print("=" * 60)
-    elif not AUTH_PASS:
+    elif not AUTH_PASS and AUTH_MODE != "off":
         print("  ❌ Empty password in .gt_secrets.json — that opens the dashboard to everyone.")
         print("     Set auth_pass (min 8 chars) and start again.")
         return 2
@@ -8179,7 +8199,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.27")
+    print("  ▲  Ledger v1.66.29")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

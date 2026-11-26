@@ -385,15 +385,6 @@ code{
   #tab-tracker .sup-table th,#tab-tracker .sup-table td,
   #tab-eldorado .sup-table th,#tab-eldorado .sup-table td,
   #tab-inventory .sup-table th,#tab-inventory .sup-table td{font-size:.82rem;padding:8px 6px}
-  #tab-tracker .sup-table th:nth-child(3),#tab-tracker .sup-table td:nth-child(3),
-  #tab-tracker .sup-table th:nth-child(4),#tab-tracker .sup-table td:nth-child(4),
-  #tab-tracker .sup-table th:nth-child(6),#tab-tracker .sup-table td:nth-child(6),
-  #tab-eldorado .sup-table th:nth-child(3),#tab-eldorado .sup-table td:nth-child(3),
-  #tab-eldorado .sup-table th:nth-child(5),#tab-eldorado .sup-table td:nth-child(5),
-  #tab-eldorado .sup-table th:nth-child(6),#tab-eldorado .sup-table td:nth-child(6),
-  #tab-eldorado .sup-table th:nth-child(8),#tab-eldorado .sup-table td:nth-child(8),
-  #tab-inventory .sup-table th:nth-child(3),#tab-inventory .sup-table td:nth-child(3),
-  #tab-inventory .sup-table th:nth-child(5),#tab-inventory .sup-table td:nth-child(5){display:none}
   #tab-tracker .sup-table td:nth-child(2),#tab-eldorado .sup-table td:nth-child(2),
   #tab-inventory .sup-table td:nth-child(2){max-width:190px}
   #tab-tracker .sup-table td:nth-child(7),#tab-eldorado .sup-table td:nth-child(7){white-space:nowrap}
@@ -460,10 +451,8 @@ canvas{max-width:100%!important}
   .tabs{gap:4px}
   .tab{font-size:.8rem;padding:9px 10px;flex:0 0 auto}
   #chAll{overflow-x:auto;max-width:100%}
-  #chAll table{min-width:0;width:100%}
-  #chAll table th:nth-child(1),#chAll table td:nth-child(1),
-  #chAll table th:nth-child(4),#chAll table td:nth-child(4){display:none}
-  #tab-channels .panel{overflow-x:hidden}
+  #chAll table{min-width:680px;width:auto}
+  #tab-channels .panel{overflow-x:auto}
   #tab-taobao .ph{flex-wrap:wrap}
   #tab-taobao .ph > span{display:flex;flex-wrap:wrap;width:100%;gap:8px}
   #tbStatus{flex:1 1 100%;min-width:0;line-height:1.55;word-break:normal}
@@ -2690,6 +2679,12 @@ function plural(n, key){
 }
 let LANG = localStorage.getItem('gt_lang') || window.__GT_LANG__ || 'en';
 function t(k){ return (I18N[LANG] && I18N[LANG][k]) || (I18N.uk[k] || k); }
+const CT = {
+  uk:{online:'✓ онлайн',accounting:'✓ облік',zconn:'ZeusX не підключено — вставте access_token у ⚙ → Підключення',zcookie:'Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.',fconn:'FunPay не підключено — вставте golden_key у ⚙ → Підключення',fcookie:'Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.',noorders:'Замовлень у списку немає',eldnote:'Eldorado — через офіційний Seller API.',sales:'Продажів усього',revenue:'Виторг',profit:'Прибуток',month:'Цей місяць',source:'Джерело',lot:'ЛОТ',game:'ГРА',price:'ЦІНА',supplier:'У ПОСТАЧАЛЬНИКА',diff:'РІЗНИЦЯ',qty:'К-СТЬ',median:'медіана',over:'дорожче за постачальника',under:'дешевше за постачальника',loading:'⏳ Читаю лоти...',empty:'Активних лотів не знайдено',nodata:'немає даних',imported:'📥 Нові продажі в черзі: ZeusX {z} · FunPay {f} — відкрийте «ЗАМОВЛЕННЯ».'},
+  en:{online:'✓ online',accounting:'✓ books',zconn:'ZeusX is not connected — paste access_token in ⚙ → Connections',zcookie:'Fresh cookie required: sign in at zeusx.com and update the token.',fconn:'FunPay is not connected — paste golden_key in ⚙ → Connections',fcookie:'FunPay cookie expires quickly — sign in at funpay.com and update it.',noorders:'No orders in the list',eldnote:'Eldorado — via the official Seller API.',sales:'Total sales',revenue:'Revenue',profit:'Profit',month:'This month',source:'Source',lot:'LOT',game:'GAME',price:'PRICE',supplier:'SUPPLIER',diff:'DIFF',qty:'QTY',median:'median',over:'above supplier',under:'below supplier',loading:'⏳ Loading offers...',empty:'No active offers found',nodata:'no data',imported:'📥 New sales queued: ZeusX {z} · FunPay {f} — open Orders.'},
+  ru:{online:'✓ онлайн',accounting:'✓ учёт',zconn:'ZeusX не подключён — вставьте access_token в ⚙ → Подключения',zcookie:'Нужен свежий cookie: войдите на zeusx.com и обновите токен.',fconn:'FunPay не подключён — вставьте golden_key в ⚙ → Подключения',fcookie:'Cookie FunPay живёт недолго — войдите на funpay.com и обновите.',noorders:'Заказов в списке нет',eldnote:'Eldorado — через официальный Seller API.',sales:'Продаж всего',revenue:'Выручка',profit:'Прибыль',month:'Этот месяц',source:'Источник',lot:'ЛОТ',game:'ИГРА',price:'ЦЕНА',supplier:'У ПОСТАВЩИКА',diff:'РАЗНИЦА',qty:'КОЛ-ВО',median:'медиана',over:'дороже поставщика',under:'дешевле поставщика',loading:'⏳ Читаю лоты...',empty:'Активных лотов не найдено',nodata:'нет данных',imported:'📥 В очередь добавлены продажи: ZeusX {z} · FunPay {f} — откройте «ЗАКАЗЫ».'}
+}[LANG] || {};
+
 function dateLocale(){ return LANG==='ru' ? 'ru-RU' : LANG==='en' ? 'en-GB' : 'uk-UA'; }
 function fmtNum(v,d=2){ return Number(v||0).toLocaleString(dateLocale(),{minimumFractionDigits:d,maximumFractionDigits:d}); }
 function fmtDate(v){
@@ -5878,7 +5873,7 @@ function renderSupPage(){
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px">
-            <span style="display:inline-flex;padding:2px 7px;border-radius:5px;font-weight:700;border:1px solid;background:${p.sourceColor}18;color:${p.sourceColor};border-color:${p.sourceColor}38">${p.sourceEmoji} ${p.sourceName}</span>
+            <span style="display:inline-flex;padding:2px 7px;border-radius:5px;font-weight:700;border:1px solid;background:${p.sourceColor}18;color:${p.sourceColor};border-color:${p.sourceColor}38">${p.sourceEmoji} ${esc(p.sourceName)}</span>
             ${disc}
             ${cheapBadge(p.cheaper)}
             <span>${p.gone?'<span style="color:var(--mu)">—</span>':(p.available?'<span style="color:var(--gr)">✓ '+t('sup.availYes')+'</span>':'<span style="color:var(--rd)">✗ '+t('sup.availNo')+'</span>')}</span>
@@ -5902,7 +5897,7 @@ function renderSupPage(){
       const disc=p.isOnSale?`<span style="background:rgba(239,68,68,.1);color:var(--rd);border:1px solid rgba(239,68,68,.2);padding:1px 5px;border-radius:3px;font-size:11px;font-weight:700">${Number.isFinite(_disc)&&_disc>0?('-'+_disc+'%'):t('sup.sale')}</span>`:'—';
       const cheap=p.cheaper?`<span style="display:block;margin-top:3px;color:var(--rd);font-size:11px">💸 −$${Math.abs(p.cheaper.diff).toFixed(2)} · ${esc(p.cheaper.sourceName)}</span>`:'';
       return`<tr${p.gone?' style="opacity:.62"':''}><td style="max-width:300px"><a href="${esc(p.url)}" target="_blank" style="text-decoration:none;font-weight:600">${esc(p.title)}</a></td>
-        <td><span style="display:inline-flex;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;border:1px solid;${bc}">${p.sourceEmoji} ${p.sourceName}</span></td>
+        <td><span style="display:inline-flex;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;border:1px solid;${bc}">${p.sourceEmoji} ${esc(p.sourceName)}</span></td>
         <td><span style="font-size:14px;font-weight:800;color:${p.gone?'var(--mu)':'var(--gr)'}">$${(p.price||0).toFixed(2)}</span>${p.comparePrice>0?`<span style="font-size:11px;color:var(--mu);text-decoration:line-through;display:block">$${p.comparePrice.toFixed(2)}</span>`:''}${cheap}</td>
         <td>${disc}</td>
         <td>${p.gone?'<span style="color:var(--mu)">—</span>':(p.available?'<span style="color:var(--gr)">✓</span>':'<span style="color:var(--rd)">✗</span>')}</td>
@@ -6084,8 +6079,8 @@ async function openCompare(id){
     const p=d.product||{}, ms=d.matches||[];
     const shopH = LANG==='ru'?'МАГАЗИН':LANG==='en'?'SHOP':'МАГАЗИН';
     const prodH = LANG==='ru'?'ТОВАР':LANG==='en'?'PRODUCT':'ТОВАР';
-    const priceH = LANG==='ru'?'ЦЕНА':LANG==='en'?'PRICE':'ЦІНА';
-    const diffH = LANG==='ru'?'РАЗНИЦА':LANG==='en'?'DIFF':'РІЗНИЦЯ';
+    const priceH = LANG==='ru'?'ЦЕНА':LANG==='en'?'PRICE':CT.price;
+    const diffH = LANG==='ru'?'РАЗНИЦА':LANG==='en'?'DIFF':CT.diff;
     let html=`<div style="font-size:13px;font-weight:700;line-height:1.35">${esc(p.title||'')}</div>
       <div style="font-size:11px;color:var(--mu);margin:4px 0 12px">${t('sup.compareBase')}: ${esc(p.sourceName||'')} · $${(p.price||0).toFixed(2)}</div>`;
     if(!ms.length){
@@ -6177,7 +6172,7 @@ async function loadOffers(force){
           if(sup && o.diff_usd != null){
             const over = o.diff_usd > 0;
             diff = '<b style="color:' + (over ? 'var(--yw)' : 'var(--gr)') + '">' + (over ? '+' : '') + '$' + Number(o.diff_usd).toFixed(2) + '</b>'
-                 + '<div style="font-size:11px;color:var(--mu)">' + (over ? 'дорожче за постачальника' : 'дешевше за постачальника') + '</div>';
+                 + '<div style="font-size:11px;color:var(--mu)">' + (over ? CT.over : CT.under) + '</div>';
           }
           return '<tr>'
             + '<td style="max-width:380px">' + (o.url
@@ -6275,6 +6270,7 @@ async function loadPlatforms(force){
       </div>
       ${rows}
     </div>`;
+
     const TR = {uk:{acc:'Акаунт',bal:'Баланс',hold:'В обробці / на холді',wd:'Виведено всього',tier:'Тіри',orders:'Замовлень',msgs:'нові повідомлення',ordsl:'Замовлень (останні)',nosrc:'немає даних'},
                 en:{acc:'Account',bal:'Balance',hold:'Processing / on hold',wd:'Withdrawn total',tier:'Tiers',orders:'Orders',msgs:'new messages',ordsl:'Orders (latest)',nosrc:'no data'},
                 ru:{acc:'Аккаунт',bal:'Баланс',hold:'В обработке / холд',wd:'Выведено всего',tier:'Тиры',orders:'Заказов',msgs:'новые сообщения',ordsl:'Заказов (последние)',nosrc:'нет данных'}}[LANG] || {};
@@ -6288,7 +6284,7 @@ async function loadPlatforms(force){
         row(TR.tier,esc((z.seller_tier||'—')+' / '+(z.buyer_tier||'—')))+
         row(TR.orders,`${z.orders_all||0} · ✅ ${z.orders_good||0} · ⏳ ${z.orders_pending||0} · ↩ ${z.orders_refunded||0}`)+
         row(TR.msgs,(d.mail_msgs||{}).ZeusX||0)
-      : `${errBox(z.error||'немає даних')}
+      : `${errBox(CT.zconn)}
          <div style="font-size:12px;color:var(--mu);margin-top:8px">Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.</div>`;
     const fl = (f.list || []).slice(0, 4);
     const frows = f.ok
@@ -6299,23 +6295,23 @@ async function loadPlatforms(force){
             <div style="color:var(--mu);font-size:12px">${esc(o.status||'')} · ${locMoney(o.price)} · ${esc(o.date||'')}</div>
           </div>`).join('')
         : '<div style="font-size:12px;color:var(--mu);padding-top:6px">Замовлень у списку немає</div>')
-      : `${errBox(f.error||'немає даних')}
+      : `${errBox(CT.fconn)}
          <div style="font-size:12px;color:var(--mu);margin-top:8px">Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.</div>`;
     const e = d.eldorado||{};
     const erows = e.ok
-      ? row('Продажів усього',e.count||0)+
-        row('Виторг',locMoney(e.revenue))+
-        row('Прибуток',locMoney(e.profit))+
-        row('Цей місяць',(e.month_count||0)+' · '+locMoney(e.month_profit))+
-        row('Джерело',esc(e.source||'—'))
+      ? row(CT.sales,e.count||0)+
+        row(CT.revenue,locMoney(e.revenue))+
+        row(CT.profit,locMoney(e.profit))+
+        row(CT.month,(e.month_count||0)+' · '+locMoney(e.month_profit))+
+        row(CT.source,esc(e.source||'—'))
       : errBox(e.error||'немає даних');
     el.innerHTML='<div style="display:flex;gap:14px;flex-wrap:wrap">'
-      + card('⚡ ZeusX','var(--a1)',zrows+'<div class="online-w" data-plat="zeusx"></div>',z.ok?'<span style="color:var(--gr);font-size:12px">✓ онлайн</span>':'')
-      + card('🔵 FunPay','var(--a3)',frows+'<div class="online-w" data-plat="funpay"></div>',f.ok?'<span style="color:var(--gr);font-size:12px">✓ онлайн</span>':'')
-      + card('🟡 Eldorado','var(--yw)',erows+'<div class="online-w" data-plat="eldorado"></div>',e.ok?'<span style="color:var(--gr);font-size:12px">✓ облік</span>':'')
+      + card('⚡ ZeusX','var(--a1)',zrows+'<div class="online-w" data-plat="zeusx"></div>',z.ok?'<span style="color:var(--gr);font-size:12px">'+CT.online+'</span>':'')
+      + card('🔵 FunPay','var(--a3)',frows+'<div class="online-w" data-plat="funpay"></div>',f.ok?'<span style="color:var(--gr);font-size:12px">'+CT.online+'</span>':'')
+      + card('🟡 Eldorado','var(--yw)',erows+'<div class="online-w" data-plat="eldorado"></div>',e.ok?'<span style="color:var(--gr);font-size:12px">'+CT.accounting+'</span>':'')
       + '</div>'
       + ((d.zeusx_imported||d.funpay_imported)?`<div class="al ok" style="margin-top:14px">📥 У чергу додано нових продажів: ZeusX ${d.zeusx_imported||0} · FunPay ${d.funpay_imported||0} — відкрийте вкладку «ЗАМОВЛЕННЯ».</div>`:'')
-      + `<div style="font-size:12px;color:var(--mu);margin-top:10px">Eldorado не має публічного API — дані беруться з пошти та вашого ручного обліку.</div>`;
+      + '<div style="font-size:12px;color:var(--mu);margin-top:10px">'+CT.eldnote+'</div>';
   calcMarkets();
   loadOffers();
   loadOnline();

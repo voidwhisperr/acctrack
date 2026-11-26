@@ -1,18 +1,26 @@
 # Changelog
 
+## v1.66.29 — translations and mobile money columns
+- Channels cards, supplier comparison and Eldorado notes are localized in UA/EN/RU.
+- Mobile tables keep date/amount/profit columns and scroll horizontally instead of hiding money.
+
+## v1.66.28 — security hardening
+- Fixed `/docs/` path traversal (realpath containment + extension allowlist).
+- Owner-only gate for auth, secrets, demo, Gmail/Telegram, supplier add, agent config, diagnostics and backups.
+- Removed the default password; local no-auth mode still starts, public auth mode fails closed without a password.
+- Escaped supplier names in catalog cards.
+
 ## v1.66.27 — Eldorado always online
 - Eldorado is included in always-online via official Seller API credentials (client ID/secret), with token refresh every 5 minutes and honest status.
 
 ## v1.66.26 — polished always-online widgets
 - Always-online blocks use a switch, compact time inputs, status dot and refresh pill instead of the raw checkbox/fields.
 
-## v1.66.25 — always online (5-min keepalive)
-
 ## v1.66.25 — always online for ZeusX and FunPay
 - Channels cards get an “Always online” toggle with a daily time window, server-side activity keepalive, and a real status (online / scheduled / off / error + last check).
 - Eldorado has no public API, so it stays accounting-only.
 
-## v1.66.24 — contact email
+## v1.66.23 — contact email
 - Contact panel and pricing page use ledgeros.gg@gmail.com; docs and tests updated.
 
 ## v1.66.22 — catalog tab and supplier cache fixes
