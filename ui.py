@@ -6337,10 +6337,6 @@ function renderOnline(){
   document.querySelectorAll('.online-w').forEach(el=>{
     const p=el.dataset.plat, T=onlT();
     const d=ONLINE && ONLINE.platforms ? ONLINE.platforms[p] : null;
-    if(p==='eldorado'){
-      el.innerHTML='<div class="online-box"><div class="online-title"><span class="online-dot"></span>'+T.always+'</div><div style="font-size:11px;color:var(--mu);margin-top:4px">'+T.eld+'</div></div>';
-      return;
-    }
     if(!d){ el.innerHTML='<div class="online-box"><div class="online-foot">'+T.waiting+'</div></div>'; return; }
     const st=d.state||'off';
     const cls = st==='online'?'on':(st==='error'?'err':(st==='scheduled'?'wait':''));

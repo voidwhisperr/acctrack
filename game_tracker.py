@@ -2164,15 +2164,37 @@ _title_tokens = _platforms_mod._title_tokens
 
 ONLINE_FILE = str(_BASE_DIR / ".gt_online.json")
 _online_lock = threading.Lock()
-_ONLINE_PLATFORMS = ("zeusx", "funpay")
-_ONLINE_CALLS = {"zeusx": lambda: _platform_zeusx(), "funpay": lambda: _platform_funpay()}
+_ONLINE_PLATFORMS = ("zeusx", "funpay", "eldorado")
+
+
+def _eldorado_keepalive():
+    cid = str(_sec_get("eldorado_client_id") or "").strip()
+    sec = str(_sec_get("eldorado_client_secret") or "").strip()
+    if not cid or not sec:
+        return {"ok": False, "error": "немає Seller API ключів Eldorado"}
+    import urllib.request
+    req = urllib.request.Request(
+        "https://www.eldorado.gg/api/authentication/seller/token",
+        data=json.dumps({"clientId": cid, "clientSecret": sec}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "User-Agent": UA},
+        method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            data = json.loads(r.read().decode("utf-8", "replace"))
+        return {"ok": bool(data.get("accessToken")), "error": "" if data.get("accessToken") else "no token"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+
+
+_ONLINE_CALLS = {"zeusx": lambda: _platform_zeusx(), "funpay": lambda: _platform_funpay(),
+                 "eldorado": lambda: _eldorado_keepalive()}
 
 
 def _online_cfg():
     st = _read_json(SETTINGS_FILE, {}) or {}
     raw = st.get("keep_online") or {}
     out = {}
-    for key in ("zeusx", "funpay"):
+    for key in ("zeusx", "funpay", "eldorado"):
         v = raw.get(key) or {}
         out[key] = {
             "enabled": bool(v.get("enabled")),
@@ -2253,7 +2275,7 @@ def _online_payload():
     state = _online_state()
     now = time.time()
     out = {}
-    for key in ("zeusx", "funpay"):
+    for key in ("zeusx", "funpay", "eldorado"):
         c = cfg[key]
         s = state.get(key) or {}
         last_ok = int(s.get("ok_ts") or 0)
@@ -2270,8 +2292,6 @@ def _online_payload():
         out[key] = {**c, "state": stt, "last_ts": int(s.get("ts") or 0),
                     "last_ok": last_ok, "error": str(s.get("error") or "")[:200],
                     "in_window": _online_window(c)}
-    out["eldorado"] = {"enabled": False, "state": "unsupported",
-                       "error": "no public API"}
     return {"ok": True, "now": int(now), "platforms": out}
 
 
@@ -4879,7 +4899,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.26", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.27", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5545,7 +5565,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.26",
+            self._json({"ok": True, "version": "1.66.27",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6141,7 +6161,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         if self.path == "/api/online/config":
             try:
                 _key = str(body.get("platform") or "").lower()
-                if _key not in ("zeusx", "funpay"):
+                if _key not in ("zeusx", "funpay", "eldorado"):
                     self._json({"ok": False, "error": "unknown platform"}, code=400)
                     return
                 _st = _read_json(SETTINGS_FILE, {}) or {}
@@ -8159,7 +8179,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.26")
+    print("  ▲  Ledger v1.66.27")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

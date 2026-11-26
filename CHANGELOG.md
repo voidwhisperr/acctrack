@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.66.27 — Eldorado always online
+- Eldorado is included in always-online via official Seller API credentials (client ID/secret), with token refresh every 5 minutes and honest status.
+
 ## v1.66.26 — polished always-online widgets
 - Always-online blocks use a switch, compact time inputs, status dot and refresh pill instead of the raw checkbox/fields.
 
