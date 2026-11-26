@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.10 — icon fills the tile
+- Shield mark enlarged to ~70% of the tile (like other iOS apps) and the green plus badge reduced to r8.5.
+- iOS 96% scale, maskable 68%; validated 0 clipped pixels against iOS squircle and Android circle masks.
+
 ## v1.66.9 — balanced plus badge
 - Badge radius set to 10.5 (between the clipped 14 and the too-small 8.5), moved to (46,46); iOS 180 at 86% scale, maskable at 72%.
 - Validated: 0 clipped pixels against iOS squircle and Android circle masks.
