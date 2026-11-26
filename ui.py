@@ -136,6 +136,28 @@ body::before{
 .social.tg:hover{border-color:#2AABEE;color:#2AABEE}
 .social.dc:hover{border-color:#5865F2;color:#5865F2}
 @media(max-width:640px){.social span{display:none}.social{padding:7px 9px}}
+.online-box{margin-top:12px;padding:10px 12px;border:1px solid var(--brd);border-radius:12px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--card2) 86%,transparent),transparent)}
+.online-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.online-title{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--tx)}
+.online-dot{width:7px;height:7px;border-radius:50%;background:var(--mu);flex:none}
+.online-dot.on{background:var(--gr);box-shadow:0 0 0 3px color-mix(in srgb,var(--gr) 18%,transparent)}
+.online-dot.err{background:var(--rd)}
+.online-dot.wait{background:var(--yw)}
+.online-switch{position:relative;display:inline-block;width:34px;height:20px;flex:none;cursor:pointer}
+.online-switch input{opacity:0;width:0;height:0;position:absolute}
+.online-slider{position:absolute;inset:0;background:var(--brd);border-radius:999px;transition:.18s;cursor:pointer}
+.online-slider:before{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.18s}
+.online-switch input:checked+.online-slider{background:var(--gr)}
+.online-switch input:checked+.online-slider:before{transform:translateX(14px)}
+.online-times{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+.online-time{font-size:11px;padding:4px 6px;border:1px solid var(--brd);border-radius:7px;
+  background:var(--card);color:var(--tx);font-family:inherit;width:94px;min-height:0!important}
+.online-foot{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11px;color:var(--mu)}
+.online-state{font-weight:700}
+.online-refresh{padding:3px 8px;font-size:10.5px;border-radius:6px;border:1px solid var(--brd);
+  background:var(--card2);color:var(--tx);cursor:pointer}
+.online-refresh:hover{border-color:var(--a1)}
 /* ── header ── */
 header{
   padding:22px 0 16px;border-bottom:1px solid var(--brd);margin-bottom:20px;
@@ -6316,24 +6338,26 @@ function renderOnline(){
     const p=el.dataset.plat, T=onlT();
     const d=ONLINE && ONLINE.platforms ? ONLINE.platforms[p] : null;
     if(p==='eldorado'){
-      el.innerHTML='<div style="border-top:1px solid var(--brd);margin-top:10px;padding-top:8px;font-size:11.5px;color:var(--mu)">'+T.eld+'</div>';
+      el.innerHTML='<div class="online-box"><div class="online-title"><span class="online-dot"></span>'+T.always+'</div><div style="font-size:11px;color:var(--mu);margin-top:4px">'+T.eld+'</div></div>';
       return;
     }
-    if(!d){ el.innerHTML='<div style="font-size:11px;color:var(--mu);margin-top:8px">'+T.waiting+'</div>'; return; }
+    if(!d){ el.innerHTML='<div class="online-box"><div class="online-foot">'+T.waiting+'</div></div>'; return; }
     const st=d.state||'off';
+    const cls = st==='online'?'on':(st==='error'?'err':(st==='scheduled'?'wait':''));
     const color = st==='online'?'var(--gr)':(st==='error'?'var(--rd)':(st==='scheduled'?'var(--yw)':'var(--mu)'));
     const label = st==='online'?T.online:(st==='scheduled'?T.scheduled:(st==='error'?T.error:(st==='off'?T.off:T.waiting)));
     const ago = d.last_ts ? Math.max(0, Math.round((Date.now()/1000-d.last_ts)/60)) : null;
-    el.innerHTML='<div style="border-top:1px solid var(--brd);margin-top:10px;padding-top:8px;font-size:11.5px">'
-      +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px"><input type="checkbox" data-onl-en="'+p+'" '+(d.enabled?'checked':'')+' onchange="saveOnline(\''+p+'\')"> <b>'+T.always+'</b></label>'
-      +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:5px"><span style="color:var(--mu)">'+T.from+'</span>'
-      +'<input type="time" data-onl-start="'+p+'" value="'+esc(d.start||'')+'" onchange="saveOnline(\''+p+'\')" style="font-size:11px;padding:2px 4px">'
-      +'<span style="color:var(--mu)">'+T.to+'</span>'
-      +'<input type="time" data-onl-end="'+p+'" value="'+esc(d.end||'')+'" onchange="saveOnline(\''+p+'\')" style="font-size:11px;padding:2px 4px"></div>'
-      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="color:'+color+';font-weight:700">● '+label+'</span>'
-      +(ago!==null?'<span style="color:var(--mu)">'+T.checked+' '+ago+' хв</span>':'')
-      +(d.error?'<span style="color:var(--mu);font-size:10.5px">'+esc(d.error.slice(0,80))+'</span>':'')
-      +'<button class="btn" style="padding:2px 7px;font-size:10.5px" onclick="saveOnline(\''+p+'\',true)">↻ '+T.refresh+'</button></div></div>';
+    el.innerHTML='<div class="online-box">'
+      +'<div class="online-head"><div class="online-title"><span class="online-dot '+cls+'"></span>'+T.always+'</div>'
+      +'<label class="online-switch"><input type="checkbox" data-onl-en="'+p+'" '+(d.enabled?'checked':'')+' onchange="saveOnline(\''+p+'\')"><span class="online-slider"></span></label></div>'
+      +'<div class="online-times"><span style="color:var(--mu);font-size:11px">'+T.from+'</span>'
+      +'<input type="time" class="online-time" data-onl-start="'+p+'" value="'+esc(d.start||'')+'" onchange="saveOnline(\''+p+'\')">'
+      +'<span style="color:var(--mu);font-size:11px">'+T.to+'</span>'
+      +'<input type="time" class="online-time" data-onl-end="'+p+'" value="'+esc(d.end||'')+'" onchange="saveOnline(\''+p+'\')"></div>'
+      +'<div class="online-foot"><span class="online-state" style="color:'+color+'">● '+label+'</span>'
+      +(ago!==null?'<span>'+T.checked+' '+ago+' хв</span>':'')
+      +(d.error?'<span style="font-size:10.5px;opacity:.8">'+esc(d.error.slice(0,70))+'</span>':'')
+      +'<button class="online-refresh" onclick="saveOnline(\''+p+'\',true)">↻ '+T.refresh+'</button></div></div>';
   });
 }
 async function saveOnline(p, force){
