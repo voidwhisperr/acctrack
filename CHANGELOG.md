@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.66.12 — clean console in free edition
+- `/api/team` returns 200 with `ok:false` when the team plan is missing, instead of 402, so the free dashboard no longer logs a failed network request.
+
+## v1.66.11 — mobile layout fixes
+- No horizontal page scroll on phones (body/wrapper overflow guard).
+- Mobile navigation tabs wrap into rows instead of a clipped horizontal strip; all labels visible.
+- Tested at 360/390/768 px across all 11 tabs.
+
 ## v1.66.10 — icon fills the tile
 - Shield mark enlarged to ~70% of the tile (like other iOS apps) and the green plus badge reduced to r8.5.
 - iOS 96% scale, maskable 68%; validated 0 clipped pixels against iOS squircle and Android circle masks.

@@ -378,14 +378,18 @@ code{
   #tab-taobao .sup-table td:first-child{max-width:100%!important}
 }
 @media(max-width:780px){.g2,.g3{grid-template-columns:1fr}}
+html,body{max-width:100%;overflow-x:hidden}
+.w{max-width:100%;overflow-x:clip}
+canvas{max-width:100%!important}
 @media(max-width:640px){
   body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
   .w{padding:0 12px 18px}
   .tabs{
-    position:sticky;top:0;z-index:50;background:var(--bg);
-    flex-wrap:nowrap;padding:6px 4px;margin-bottom:14px;
-    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    position:static;background:var(--bg);
+    flex-wrap:wrap;overflow:visible;padding:6px 2px;margin-bottom:12px;
   }
+  .tabs .tsep{display:none}
+  .tab{font-size:.75rem;padding:7px 8px;flex:0 1 auto}
   .tabs::-webkit-scrollbar{display:none}
   .tab{padding:9px 10px;font-size:.8rem;gap:5px}
   .tab .ic{width:16px;height:16px}
