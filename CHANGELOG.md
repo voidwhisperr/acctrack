@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.66.21 — community links in the app
+- Header now has branded Telegram and Discord buttons (icons + labels; icons only on phones).
+- Contact panel, login page and pricing CTA link to both the Telegram channel and Discord server.
+- Discord server hardened: verification level Medium, explicit content filter All Members, Server Hub removed.
+
 ## v1.66.20 — pricing Telegram link fix
 - Fixed `/pricing` 500 after replacing the personal Telegram handle with the channel; CTA now points to https://t.me/ledger_os.
 - Ledger OS channel links in dashboard header, contact panel, login page and docs.
