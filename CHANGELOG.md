@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.9 — balanced plus badge
+- Badge radius set to 10.5 (between the clipped 14 and the too-small 8.5), moved to (46,46); iOS 180 at 86% scale, maskable at 72%.
+- Validated: 0 clipped pixels against iOS squircle and Android circle masks.
+
 ## v1.66.8 — smaller Ledger+ badge
 - Redesigned Ledger+ mark: the green plus badge is smaller and moved inward; content stays within 80% of the canvas on iOS and inside the Android maskable safe circle.
 - New full-bleed SVG/PNG/ICO assets; iOS 180 at 85%, PWA any 85%, maskable 70%.
