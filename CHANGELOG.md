@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.66.17 — tablet table scroll
+- Tables now scroll horizontally on ≤860px too, so the hosted Channels “recent sales” table is fully reachable at 768px.
+
 ## v1.66.16 — responsive tables and catalog cards
 - Catalog card action buttons wrap instead of overflowing on phones.
 - Tables scroll horizontally inside panels on ≤640px (Channels/ZeusX tables no longer clip).

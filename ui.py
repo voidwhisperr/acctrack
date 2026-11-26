@@ -381,6 +381,7 @@ code{
 @media(max-width:860px){
   .tabs{flex-wrap:wrap;overflow:visible;position:static}
   .tabs .tsep{display:none}
+  .panel table{display:block;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
 }
 @media(max-width:640px){
   .panel table{display:block;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
