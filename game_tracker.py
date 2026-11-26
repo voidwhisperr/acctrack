@@ -4357,6 +4357,12 @@ _ICONS_B64.update({
     'ledger-32.png': ("image/png", 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAD50lEQVR42r1XTWhcVRT+zrn33fveZJq2iUYEKwE3gjuRolmVLgRDuhChC8EuFAluBOkiiK6qZqeLCm4ruBJ0pdCFKIEsBMWCdhO6MIu2kEVsTNP33tw3757jYpqYNG8yk78eGBh4b+Z893zn+865hF4YABHwk+129r5NzAxAk0SwAAiHDAW6UL1d1/X1KpRXq6q6tZmTNr+k6cjFNEu/NMZOxBghEnGUwcwwxkIkrhWd4nIoimsADAFAlrXfSFvZd6qKKoQIgI/i5LsLAXHOG2ZGpyzfLoqNa4Q0PXMqG/kLRCdDpyPMbHCMISLivQeAUOQbL5p22rqSOH/ucSQHACKiGKM45x2IRmn09PjfDJqsqgAiIjyGUFVNnAMB95iJnhWJNCznRIQjwEkShYh43FJPBcPyhxh76jDGgJmHSPWw/fqpY1gJlUWOqakpLCwsYHFxEdPT0yiLHMaYvRBDawG0PwI7bNlFIsbGxvDKy2cBABMTExCJzXQQQUOFsTfPoT31PFa//hn577dgMg8V3T+AzajrGnnRgbUW3W53ry4DJRbr1//AxsJNxPsF2CW7ku8bABGBmcHMgxuRCPHfB6j/EbBLAKaD98ABxA4NXYy/dR7PfHYJlDlApFFn9piEDnIW6z/+hvuJhVZdgLlRDfYYLQ/1vQc9MD45nAwPklxChSfffRXjl85DOgHUpweOjQJ2Cda+/xWqCvauUQGHArBdEY86ooj0KFjPe+8aPpwRNSUPIUBEkOc56rre8dx735OqGcyw3ecUg6pibW0Ns7OzuHBhBtYm0Eesdm5uDsvLy/De73p2KADOObQyD2vtliU3xfz8PGLs2fSRAFBVOOextLSETz6dRwhhqxpNsbKygiRJBiYHADo99oTGGFHX9Z72SkSoqgpVKAf+adpqwxrTF4CqwhgLa+2QFBCgInDOIUuzvQc8gDrGoU4/PAXdCGKGRkEdZbiGFQHZwbuOVUD6OSIxI+Ylnv7oIk7NnEXcKPs62v8moOATKTZ+uYk7H38DbnlA9lhIVPUOM5/ZtkDt4Ko312+gs3QX2q2BQWP44W+q26ugxPZli5lVVdZp5MTJr1KfvleWRSQi0+jrRYDGevCCt20JJGN6p9fGJoxplpkqhG/Je/9c1mr/CSALIYCbNk3e/yasqo2lFxFxzisxSb5RvmRijGvMdDdx6evGMMXe2rtzTVeFyv4+DYvo1tXMWsudTvFB6OQ/bF1Ofav9TubTL4wxo3VdQ1QGV3vo4QEwMaw1iFGKUJUflnl+detyugkiSZIXfDZy2RrzGhE/1dSYB78MyWqs5adOJ3ze7RY3NnP+By+u7+h8jZC+AAAAAElFTkSuQmCC'),
 })
 _icons_cache = {}
+_ICON_ALIASES = {
+    "apple-touch-icon-precomposed.png": "apple-touch-icon.png",
+    "apple-touch-icon-180x180.png": "apple-touch-icon.png",
+    "favicon-32x32.png": "favicon-32.png",
+    "favicon-16x16.png": "favicon-32.png",
+}
 
 
 _ICON_FILE_MAP = {
@@ -4372,20 +4378,42 @@ _ICON_FILE_MAP = {
 }
 
 
+def _brand_stem():
+    _st = _read_json(SETTINGS_FILE, {}) or {}
+    return "ledger-plus" if (os.environ.get("GT_PAID") == "1" or bool(_st.get("paid_mode"))) else "ledger"
+
+
 def _icon_bytes(name):
     """PNG/ICO з assets (актуальний знак), base64 — лише якщо файлу немає."""
-    if name not in _icons_cache:
-        fn = _ICON_FILE_MAP.get(name)
+    _stem = _brand_stem()
+    _key = _stem + ":" + name
+    if _key not in _icons_cache:
+        _paid_map = {
+            "favicon.ico": _stem + ".ico",
+            "favicon-32.png": _stem + "-32.png",
+            "favicon-32x32.png": _stem + "-32.png",
+            "favicon-16x16.png": _stem + "-32.png",
+            "apple-touch-icon.png": _stem + "-180.png",
+            "apple-touch-icon-precomposed.png": _stem + "-180.png",
+            "apple-touch-icon-180x180.png": _stem + "-180.png",
+            "icon-192.png": _stem + "-192.png",
+            "icon-512.png": _stem + "-512.png",
+            "ledger-512.png": _stem + "-512.png",
+            "ledger-192.png": _stem + "-192.png",
+            "ledger-touch.png": _stem + "-180.png",
+            "ledger-32.png": _stem + "-32.png",
+        }
+        fn = _paid_map.get(name) or _ICON_FILE_MAP.get(name)
         if fn:
             fp = os.path.join(str(_ASSETS_DIR), fn)
             if os.path.exists(fp):
                 ct = "image/x-icon" if fn.endswith(".ico") else "image/png"
                 with open(fp, "rb") as fh:
-                    _icons_cache[name] = (ct, fh.read())
-                return _icons_cache[name]
+                    _icons_cache[_key] = (ct, fh.read())
+                return _icons_cache[_key]
         ct, b64 = _ICONS_B64[name]
-        _icons_cache[name] = (ct, base64.b64decode(b64))
-    return _icons_cache[name]
+        _icons_cache[_key] = (ct, base64.b64decode(b64))
+    return _icons_cache[_key]
 
 
 _SECURITY_HEADERS = {
@@ -4517,10 +4545,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         if (p in ("/join", "/pricing", "/api/license/register", "/api/license/release",
                  "/manifest.json", "/favicon.ico", "/favicon-32.png", "/apple-touch-icon.png",
-                 "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg", "/demo")
+                 "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg", "/demo", *_ICON_ALIASES)
                 or p.startswith("/admin") or p.startswith("/hosting")
                 or p.startswith("/app-icon") or p.startswith("/logo/")
-                or p.startswith("/docs/") or p in _ICONS_B64):
+                or p.startswith("/docs/") or p.lstrip("/") in _ICONS_B64
+                or p.lstrip("/") in _ICON_ALIASES):
             return True
         role = self._role()
         if role == "owner":
@@ -4615,6 +4644,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.startswith("/docs/")
                 or self.path.split("?")[0].startswith("/app-icon")
                 or self.path.split("?")[0] in ("/manifest.json", "/favicon.ico", "/favicon-32.png")
+                or self.path.split("?")[0].lstrip("/") in _ICON_ALIASES
                 or self.path.split("?")[0] in ("/api/license/register", "/api/license/release",
                                                 "/admin", "/admin/revoke", "/join", "/hosting",
                                                 "/hosting/save", "/hosting/check", "/hosting/delete",
@@ -4686,12 +4716,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.65.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
         elif (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
+                or p.lstrip("/") in _ICON_ALIASES
                 or p.split("?")[0].lstrip("/") in _ICONS_B64
                 or p.startswith("/logo/") or p.startswith("/app-icon")):
             pass  # публічні статичні файли (без них PWA/іконки ламаються)
@@ -4700,7 +4731,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 and "X-GT-TOKEN" in self.headers and self._collector_ok()):
             pass  # колектор з валідним токеном
         elif (p.startswith("/admin") or p == "/join" or p.startswith("/hosting")
-              or p == "/pricing" or p.startswith("/app-icon") or p == "/manifest.json"):
+              or p == "/pricing" or p.startswith("/app-icon") or p == "/manifest.json"
+              or p in _ICON_ALIASES):
             pass  # admin token / public icons and manifest
         elif AUTH_MODE != "off" and not self._device_ok() and not self._basic_ok_quiet():
             if p == "/login":
@@ -4786,8 +4818,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             with open(_f, "rb") as _fh:
                 _data = _fh.read()
             self._send(200, _ct, _data, extra={"Cache-Control": "public, max-age=60"})
-        elif p.split("?")[0].lstrip("/") in _ICONS_B64:
+        elif p.split("?")[0].lstrip("/") in _ICONS_B64 or p.split("?")[0].lstrip("/") in _ICON_ALIASES:
             _n = p.split("?")[0].lstrip("/")
+            _n = _ICON_ALIASES.get(_n, _n)
             ct, data = _icon_bytes(_n)
             # короткий кеш: іконки оновлюються разом з релізом
             self._send(200, ct, data, extra={"Cache-Control": "public, max-age=300"})
@@ -5317,7 +5350,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.65.0",
+            self._json({"ok": True, "version": "1.66.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7883,7 +7916,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.65.0")
+    print("  ▲  Ledger v1.66.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

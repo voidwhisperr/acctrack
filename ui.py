@@ -23,6 +23,8 @@ HTML = r"""<!DOCTYPE html>
 <link rel="icon" type="image/svg+xml" href="/app-icon.svg?v=4">
 <link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png?v=4">
 <link rel="apple-touch-icon" sizes="180x180" href="/app-icon-180.png?v=4">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-precomposed.png?v=4">
+<link rel="shortcut icon" href="/favicon.ico?v=4">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -443,6 +445,14 @@ code{
 [style*="font-size:13px"]{font-size:calc(14px * var(--fs))!important}
 [style*="font-size:14px"]{font-size:calc(15px * var(--fs))!important}
 
+/* compact mode */
+body.compact-ui .panel{padding:10px 12px;margin-bottom:10px}
+body.compact-ui .ph{margin-bottom:8px}
+body.compact-ui .ov-tile{padding:9px 11px}
+body.compact-ui table td, body.compact-ui table th{padding:4px 7px}
+body.compact-ui .tab{padding:7px 10px}
+body.compact-ui .tabs{gap:4px}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
 </script>
@@ -532,6 +542,16 @@ code{
       <div class="ov-tile"><div class="ov-k" data-i18n="ov.actions">Потребує дії</div><div class="ov-v" id="ovActions">—</div><div class="ov-d" id="ovActionsD"></div></div>
       <div class="ov-tile"><div class="ov-k" data-i18n="ov.stock">Склад</div><div class="ov-v" id="ovStock">—</div><div class="ov-d" id="ovStockD"></div></div>
       <div class="ov-tile"><div class="ov-k" data-i18n="ov.health">Стан системи</div><div class="ov-v" id="ovHealth" style="font-size:.95rem">—</div><div class="ov-d" id="ovHealthD"></div></div>
+    </div>
+  </div>
+  <div class="panel" id="quickStart" style="display:none">
+    <div class="ph"><span>🚀 <span data-i18n="qs.title">Швидкий старт</span></span></div>
+    <div style="font-size:12px;color:var(--mu);margin-bottom:10px" data-i18n="qs.hint">Ще немає угод. Почни з однієї з дій — дані одразу з’являться в огляді.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px">
+      <button class="btn gr" style="padding:12px" onclick="sw('tracker',document.querySelectorAll('.tab')[1])">➕ <span data-i18n="qs.deal">Додати угоду</span></button>
+      <button class="btn" style="padding:12px" onclick="sw('channels',document.querySelectorAll('.tab')[3]);loadPlatforms(true)">🔗 <span data-i18n="qs.channels">Підключити канал</span></button>
+      <button class="btn" style="padding:12px" onclick="sw('mail',document.querySelectorAll('.tab')[2]);loadMailQueue()">📥 <span data-i18n="qs.orders">Імпорт замовлень</span></button>
+      <button class="btn" style="padding:12px" onclick="createDemoOrder()">🧪 <span data-i18n="qs.demo">Демо-замовлення</span></button>
     </div>
   </div>
   <div class="panel">
@@ -1251,6 +1271,10 @@ code{
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
       <input type="checkbox" id="closeToTray">
       <span data-i18n="desk.tray">Закривати у трей, а не виходити</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:8px">
+      <input type="checkbox" id="compactMode" onchange="setCompact(this.checked)">
+      <span data-i18n="desk.compact">Компактний режим (більше рядків на екрані)</span>
     </label>
     <div style="font-size:11.5px;color:var(--mu);margin-top:6px" data-i18n="desk.hint">Хрестик ховає вікно в трей; вийти повністю можна через меню трея.</div>
     <div style="margin-top:9px"><button class="btn gr" onclick="saveDesktopPrefs()">✓ <span data-i18n="desk.save">Зберегти</span></button></div>
@@ -2789,6 +2813,7 @@ async function renderOverview(){
       srcName:'Eldorado', sell:Number(x.price||0), buy:Number(x.buy||0),
       afterFee:Number(x.profit||0), _ed:true}));
     const all = (pl.purchases||[]).concat(edRows);
+    try{ const qs=g('quickStart'); if(qs) qs.style.display = (all.length ? 'none' : 'block'); }catch(e){}
     const sum = (m)=> all.filter(r=>_mon(r.date)===m)
                         .reduce((a,r)=>a+Number(r.afterFee||0),0);
     const profit = sum(cur), profitPrev = sum(prev);
@@ -3680,10 +3705,17 @@ async function copyMobileLink(){
   try{ await navigator.clipboard.writeText(it.url); toast('⧉ '+it.url); }catch(e){ prompt('URL', it.url); }
 }
 
+function setCompact(on){
+  document.body.classList.toggle('compact-ui', !!on);
+  try{ localStorage.setItem('gt_compact', on?'1':'0'); }catch(e){}
+  const cb=g('compactMode'); if(cb) cb.checked=!!on;
+}
+try{ if(localStorage.getItem('gt_compact')==='1') document.body.classList.add('compact-ui'); }catch(e){}
+
 function initDesktopPrefs(){
   const panel=g('desktopPanel'); if(!panel) return;
   if(!(window.pywebview && window.pywebview.api && window.pywebview.api.get_prefs)){ panel.style.display='none'; return; }
-  try{ window.pywebview.api.get_prefs().then(p=>{ const cb=g('closeToTray'); if(cb) cb.checked = !!(p&&p.close_to_tray); panel.style.display='block'; }).catch(()=>{ panel.style.display='none'; }); }catch(e){ panel.style.display='none'; }
+  try{ window.pywebview.api.get_prefs().then(p=>{ const cb=g('closeToTray'); if(cb) cb.checked = !!(p&&p.close_to_tray); const cm=g('compactMode'); if(cm) cm.checked=(localStorage.getItem('gt_compact')==='1'); panel.style.display='block'; }).catch(()=>{ panel.style.display='none'; }); }catch(e){ panel.style.display='none'; }
 }
 async function saveDesktopPrefs(){
   try{
@@ -8629,12 +8661,40 @@ function _trWalk(root){
 }
 
 let _trTimer = null;
+const CMDK_ITEMS=[
+ ['overview','Огляд','Overview','Обзор'],['tracker','Угоди','Deals','Сделки'],['mail','Замовлення','Orders','Заказы'],
+ ['channels','Канали','Channels','Каналы'],['supply','Каталог','Catalog','Каталог'],['buy','План','Plan','План'],
+ ['taobao','Taobao','Taobao','Taobao'],['inventory','Інвентар','Inventory','Инвентарь'],
+ ['stats','Аналітика','Analytics','Аналитика'],['setup','Налаштування','Settings','Настройки'],['plus','Ledger+','Ledger+','Ledger+']
+];
+function _cmdkLabel(x){ return LANG==='en'?x[2]:(LANG==='ru'?x[3]:x[1]); }
+function openCmdk(){ const m=g('cmdk'); if(!m) return; m.style.display='flex'; const i=g('cmdkInput'); if(i){ i.value=''; i.focus(); } renderCmdk(''); }
+function closeCmdk(){ const m=g('cmdk'); if(m) m.style.display='none'; }
+function renderCmdk(q){
+  const box=g('cmdkList'); if(!box) return;
+  const s=String(q||'').toLowerCase();
+  const items=CMDK_ITEMS.filter(x=>!s||_cmdkLabel(x).toLowerCase().includes(s)||x[0].includes(s));
+  box.innerHTML=items.map(x=>'<button class="cmdk-item" data-tab="'+x[0]+'" onclick="runCmdk(\''+x[0]+'\')" style="display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--fg);padding:9px 10px;border-radius:8px;font-size:13px;cursor:pointer">'+_cmdkLabel(x)+'</button>').join('');
+}
+function runCmdk(tab){
+  closeCmdk();
+  const el=[...document.querySelectorAll('.tab')].find(x=>String(x.getAttribute('onclick')||'').includes("'"+tab+"'"));
+  if(el) el.click();
+}
+document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='k'){ e.preventDefault(); const m=g('cmdk'); if(m&&m.style.display==='flex') closeCmdk(); else openCmdk(); } else if(e.key==='Escape'){ closeCmdk(); } });
+
 function translateAll(){
   clearTimeout(_trTimer);
   _trTimer = setTimeout(()=>{ _trWalk(document.body); }, 60);
 }
 
 </script>
+<div id="cmdk" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:12000;align-items:flex-start;justify-content:center;padding-top:14vh" onclick="if(event.target===this)closeCmdk()">
+  <div style="width:min(560px,94vw);background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <input id="cmdkInput" placeholder="Ctrl+K — пошук дії" oninput="renderCmdk(this.value)" onkeydown="if(event.key==='Escape')closeCmdk();if(event.key==='Enter'){const b=document.querySelector('#cmdkList .cmdk-item');if(b)b.click();}" style="width:100%;font-size:15px;padding:10px 12px;margin-bottom:8px">
+    <div id="cmdkList"></div>
+  </div>
+</div>
 </body>
 </html>"""
 

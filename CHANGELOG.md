@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.66.0 — desktop quick wins and Safari icons
+- Safari/favicon aliases (`/favicon-32x32.png`, `/favicon-16x16.png`, `/apple-touch-icon-precomposed.png`, `/apple-touch-icon-180x180.png`) are public and served for the current edition.
+- Overview shows a quick-start card when there are no deals (add deal / connect channel / import orders / demo order).
+- Compact mode in Settings → Window (denser panels and tables).
+- Ctrl/Cmd+K command palette to jump to any tab.
+- Window size/position is remembered between launches for both editions.
+
 ## v1.65.0 — close to tray for both editions
 - Free Ledger now has a tray icon and the same close-to-tray behavior as Ledger+.
 - New desktop setting “Close to tray instead of exiting” (Settings → Window), persisted in `desktop.json` next to the exe.

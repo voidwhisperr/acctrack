@@ -42,6 +42,34 @@ def load_prefs():
     return d
 
 
+def window_kwargs(prefs):
+    kw = {"width": int(prefs.get("win_w") or 1500),
+          "height": int(prefs.get("win_h") or 950)}
+    for k in ("win_x", "win_y"):
+        try:
+            if prefs.get(k) is not None:
+                kw[k] = int(prefs[k])
+        except Exception:
+            pass
+    return kw
+
+
+def remember_geometry(window):
+    try:
+        d = load_prefs()
+        for k, attr in (("win_w", "width"), ("win_h", "height"),
+                        ("win_x", "x"), ("win_y", "y")):
+            try:
+                v = getattr(window, attr)
+                if v is not None:
+                    d[k] = int(v)
+            except Exception:
+                pass
+        save_prefs(d)
+    except Exception:
+        log("geometry save failed:\n" + traceback.format_exc())
+
+
 def save_prefs(d):
     try:
         PREFS.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -142,16 +170,17 @@ def main():
     start_hidden = ("--tray" in sys.argv) and not first_run
 
     api = Api()
+    _prefs = load_prefs()
+    _prefs_kwargs = window_kwargs(_prefs)
     window = webview.create_window(
         "Ledger+ — Game Account Tracker",
         url,
-        width=1500,
-        height=950,
         min_size=(980, 620),
         background_color="#0d1017",
         text_select=True,
         js_api=api,
         hidden=start_hidden,
+        **_prefs_kwargs,
     )
 
     def inject():
@@ -200,6 +229,7 @@ def main():
         log("tray failed:\n" + traceback.format_exc())
 
     def on_closing():
+        remember_geometry(window)
         try:
             if bool(load_prefs().get("close_to_tray", True)) and tray is not None:
                 window.hide()
