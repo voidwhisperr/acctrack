@@ -1264,8 +1264,9 @@ body.compact-ui .tabs{gap:4px}
   </div>
 
   <div class="panel" id="mobilePanel" style="margin-bottom:14px">
-    <div class="ph"><span>📱 <span data-i18n="mobile.title">Мобільний доступ</span></span><button class="btn" onclick="loadMobile()" style="font-size:12px;padding:6px 10px">↻ <span data-i18n="mobile.refresh">Оновити</span></button></div>
+    <div class="ph"><span>📱 <span data-i18n="mobile.title">Мобільний доступ</span></span><button class="btn" onclick="refreshMobile()" style="font-size:12px;padding:6px 10px">↻ <span data-i18n="mobile.refresh">Оновити</span></button></div>
     <div id="mobileBody" style="font-size:12.5px;color:var(--mu)">…</div>
+    <div id="mobileUpdated" style="font-size:11px;color:var(--gr);margin-top:4px"></div>
   </div>
 
   <div class="panel" id="desktopPanel" style="display:none;margin-bottom:14px">
@@ -3722,7 +3723,7 @@ async function loadMobile(){
 function renderMobileQr(){
   const items=window.__mobileItems||[]; const sel=g('mobileSel'); const img=g('mobileQr'); if(!img) return;
   const it=items[Number(sel&&sel.value||0)]; if(!it){ img.style.display='none'; return; }
-  img.style.display='block'; img.src='/api/mobile/qr?url='+encodeURIComponent(it.url);
+  img.style.display='block'; img.src='/api/mobile/qr?url='+encodeURIComponent(it.url)+'&t='+Date.now();
 }
 async function copyMobileLink(){
   const items=window.__mobileItems||[]; const sel=g('mobileSel'); const it=items[Number(sel&&sel.value||0)]; if(!it) return;
@@ -3735,6 +3736,14 @@ function setCompact(on){
   const cb=g('compactMode'); if(cb) cb.checked=!!on;
 }
 try{ if(localStorage.getItem('gt_compact')==='1') document.body.classList.add('compact-ui'); }catch(e){}
+
+async function refreshMobile(){
+  const L=(uk,en,ru)=>LANG==='en'?en:(LANG==='ru'?ru:uk);
+  await loadMobile();
+  const el=g('mobileUpdated');
+  if(el) el.textContent=L('Оновлено: ','Updated: ','Обновлено: ')+new Date().toLocaleTimeString();
+  toast(L('QR оновлено','QR refreshed','QR обновлён'));
+}
 
 function initDesktopPrefs(){
   const panel=g('desktopPanel'); if(!panel) return;

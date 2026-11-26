@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.5 — visible mobile QR refresh
+- Mobile access refresh now reloads the QR image (cache-busted), shows “Updated HH:MM:SS” and a toast, so it is obvious the button works.
+- LedgerPlus rebuilt with the same UI translations.
+
 ## v1.66.4 — missing translations for mobile/desktop panels
 - Added UA/EN/RU strings for Mobile access, App window and Quick start; the refresh button no longer shows the raw `mobile.refresh` key and still regenerates the QR.
 
