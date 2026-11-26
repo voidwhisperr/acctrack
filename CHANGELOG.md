@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.66.13 — orders header wraps on mobile
+- Panel header controls now wrap (`flex-wrap`) so “звук”, “авто в P&L”, Demo and Refresh stay visible on narrow screens.
+
 ## v1.66.12 — clean console in free edition
 - `/api/team` returns 200 with `ok:false` when the team plan is missing, instead of 402, so the free dashboard no longer logs a failed network request.
 

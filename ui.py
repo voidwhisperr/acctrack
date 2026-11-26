@@ -199,6 +199,7 @@ h1 span b{color:var(--a1);font-weight:700}
   margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--brd);
   display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
 }
+.ph > div{flex-wrap:wrap;row-gap:6px}
 .al{padding:14px 18px;border-radius:11px;font-size:.92rem;margin-bottom:14px;border:1px solid}
 .al.info{border-color:color-mix(in srgb, var(--a1) 35%, transparent);background:color-mix(in srgb, var(--a1) 8%, transparent);color:#c7cdff}
 .al.ok{border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.08);color:var(--gr)}
