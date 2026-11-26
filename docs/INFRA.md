@@ -16,7 +16,7 @@ Host: `70.34.243.50` (Vultr), domain `ledger.70-34-243-50.sslip.io`.
 
 ## Manual steps still required
 
-1. Open TCP 80 in the Vultr firewall (Vultr dashboard -> Server -> Firewall). UFW already allows it; packets never reach the host.
+1. ~~Open TCP 80 in the Vultr firewall~~ done: port 80 now returns 308 to HTTPS.
 2. Rotate the collector token (old value was written to Caddy logs): generate a new `collector_token` in `.gt_secrets.json`, update the agent config, then remove the legacy `:8765` Caddy site entirely once the agent uses `https://ledger.70-34-243-50.sslip.io` (valid TLS).
 3. Optional: move the collector to the main domain on 443 so no self-signed endpoint is public.
 
