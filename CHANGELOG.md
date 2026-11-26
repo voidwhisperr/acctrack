@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.66.7 — icon safe areas
+- iOS apple-touch icon at 75% logo size (no clipping under the squircle mask).
+- PWA manifest now has separate `any` (80%) and `maskable` (55%, inside the Android 80% safe circle) icons.
+- Removed the residual outer border from generated icons; validated against iOS squircle and Android circle masks.
+
 ## v1.66.6 — QR visibly regenerates
 - Mobile access refresh now adds a version parameter to the encoded URL, so the QR image itself changes on every click (previously the same URL produced an identical QR).
 

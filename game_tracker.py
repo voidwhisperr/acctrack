@@ -4730,7 +4730,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.6", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.7", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -4782,8 +4782,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 "background_color": "#0d1017",
                 "theme_color": "#0d1017",
                 "icons": [
-                    {"src": "/app-icon-192.png?v=5", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-                    {"src": "/app-icon-512-v5.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+                    {"src": "/app-icon-192-v5.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                    {"src": "/app-icon-512-v5.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+                    {"src": "/app-icon-maskable-192-v6.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+                    {"src": "/app-icon-maskable-512-v6.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
                     {"src": "/app-icon-v5.svg", "sizes": "any", "type": "image/svg+xml"},
                 ],
             }
@@ -4832,6 +4834,16 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             with open(_f, "rb") as _fh:
                 _data = _fh.read()
             self._send(200, _ct, _data, extra={"Cache-Control": "public, max-age=60"})
+        elif p in ("/app-icon-maskable-192-v6.png", "/app-icon-maskable-512-v6.png"):
+            _sz = "512" if "512" in p else "192"
+            _mf = os.path.join(str(_ASSETS_DIR), _brand_stem() + "-maskable-" + _sz + ".png")
+            try:
+                with open(_mf, "rb") as _fh:
+                    _data = _fh.read()
+                self._send(200, "image/png", _data,
+                           extra={"Cache-Control": "public, max-age=300"})
+            except Exception:
+                self._send(404, "text/plain", b"404")
         elif p.split("?")[0].lstrip("/") in _ICON_VERSIONED:
             _n = _ICON_VERSIONED[p.split("?")[0].lstrip("/")]
             if _n.endswith(".svg"):
@@ -5378,7 +5390,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.6",
+            self._json({"ok": True, "version": "1.66.7",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7944,7 +7956,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.6")
+    print("  ▲  Ledger v1.66.7")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
