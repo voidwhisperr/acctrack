@@ -5167,7 +5167,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.30", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.31", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5773,7 +5773,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.30",
+            self._json({"ok": True, "version": "1.66.31",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7306,7 +7306,106 @@ def _license_private():
         return None
 
 
+# ── license signing (the private key can live on a separate signer host) ──
+_LICENSE_SIGNER_DEFAULT_SOCKET = "/run/ledger-signer/signer.sock"
+_LICENSE_SIGNER_TIMEOUT = 5.0
+_LICENSE_SIGNER_MAX_PAYLOAD = 4096
+
+
+def _license_signer_path():
+    """Return the signer socket to use, or "" to sign locally.
+
+    LEDGER_SIGNER_SOCKET explicitly selects the remote signer. Without it, on
+    POSIX hosts the default socket is auto-detected unless LEDGER_SIGNER_AUTO=0.
+    Desktop/offline installs keep the local private-key fallback.
+    """
+    explicit = (os.environ.get("LEDGER_SIGNER_SOCKET") or "").strip()
+    if explicit:
+        return explicit
+    if os.name == "nt" or not hasattr(socket, "AF_UNIX"):
+        return ""
+    if (os.environ.get("LEDGER_SIGNER_AUTO") or "").strip() == "0":
+        return ""
+    import stat as _stat
+    try:
+        if _stat.S_ISSOCK(os.stat(_LICENSE_SIGNER_DEFAULT_SOCKET).st_mode):
+            return _LICENSE_SIGNER_DEFAULT_SOCKET
+    except OSError:
+        pass
+    return ""
+
+
+def _license_signer_connect(path):
+    """Open a connected AF_UNIX socket to the signer (5 s timeout)."""
+    if not hasattr(socket, "AF_UNIX"):
+        raise ValueError("the license signer socket is not supported on this platform")
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.settimeout(_LICENSE_SIGNER_TIMEOUT)
+    try:
+        s.connect(path)
+    except Exception:
+        try:
+            s.close()
+        except OSError:
+            pass
+        raise
+    return s
+
+
+def _license_sign_remote(payload, path):
+    """Ask the isolated signer to sign payload bytes; return the raw signature."""
+    if len(payload) > _LICENSE_SIGNER_MAX_PAYLOAD:
+        raise ValueError("license payload too long for the signer")
+    deadline = time.monotonic() + _LICENSE_SIGNER_TIMEOUT
+    sock = _license_signer_connect(path)
+    try:
+        req = json.dumps({"payload_b64": base64.b64encode(payload).decode("ascii")},
+                         separators=(",", ":")).encode("utf-8") + b"\n"
+        sock.sendall(req)
+        buf = b""
+        while b"\n" not in buf:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                raise ValueError("license signer timed out")
+            sock.settimeout(left)
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            buf += chunk
+            if len(buf) > 65536:
+                raise ValueError("license signer response is too large")
+    finally:
+        try:
+            sock.close()
+        except OSError:
+            pass
+    line = buf.split(b"\n", 1)[0]
+    if not line.strip():
+        raise ValueError("license signer returned an empty response")
+    try:
+        resp = json.loads(line.decode("utf-8", "replace"))
+    except ValueError:
+        raise ValueError("license signer returned invalid JSON") from None
+    if not isinstance(resp, dict):
+        raise ValueError("license signer returned an unexpected response")
+    if resp.get("error"):
+        raise ValueError("license signer error: " + str(resp["error"])[:200])
+    sig_b64 = resp.get("sig_b64")
+    if not isinstance(sig_b64, str):
+        raise ValueError("license signer response has no signature")
+    try:
+        sig = base64.b64decode(sig_b64, validate=True)
+    except Exception:
+        raise ValueError("license signer returned invalid signature encoding") from None
+    if len(sig) != 64:
+        raise ValueError("license signer returned a bad signature length")
+    return sig
+
+
 def _license_sign(payload):
+    signer = _license_signer_path()
+    if signer:
+        return _license_sign_remote(payload, signer)
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     key = _license_private()
     if not key:
@@ -8486,7 +8585,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.30")
+    print("  ▲  Ledger v1.66.31")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

@@ -77,7 +77,7 @@ Paid and trial keys are now **bound to a single installation**:
 Server side:
 
 - `license_server_mode: true` in settings (or `GT_LICENSE_SERVER_MODE=1`) makes this instance the licensing server.
-- Private signing key: `~/.ledger-license/private.b64` (or `LEDGER_LICENSE_PRIVATE_FILE`); **never ship it**.
+- Private signing key: `~/.ledger-license/private.b64` (or `LEDGER_LICENSE_PRIVATE_FILE`); **never ship it**. For the hosted deployment, move it to the isolated signer (`docs/LICENSE-SIGNER.md`) and give the app only `LEDGER_SIGNER_SOCKET`.
 - Registry: `.gt_license_registry.json` in the server data dir.
 - Admin token lives in `.gt_secrets.json` as `license_admin_token`.
 

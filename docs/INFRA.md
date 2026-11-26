@@ -26,7 +26,7 @@ Host: `70.34.243.50` (Vultr), domain `ledger.70-34-243-50.sslip.io`.
 
 ## Manual steps still required
 
-1. License key separation: the Ed25519 private key still lives on the same VPS. Move signing to a separate host or offline signer before claiming full isolation; automatic key issuance needs that signer.
+1. License key separation: the signer service (`license_signer.py`, see `docs/LICENSE-SIGNER.md`) is implemented but not deployed. The Ed25519 private key still lives on the same VPS until the signer runs under its own UID/socket (or on a separate host); automatic key issuance needs that signer.
 2. Main app still runs as root. Migrating needs code/data under /opt/ledger and /var/lib/ledger plus User=ledger; bots are already non-root.
 
 1. ~~Open TCP 80 in the Vultr firewall~~ done: port 80 now returns 308 to HTTPS.
