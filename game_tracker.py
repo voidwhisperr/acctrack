@@ -4720,6 +4720,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
                    extra={"WWW-Authenticate": 'Basic realm="Game Tracker"'})
         return False
 
+    def do_HEAD(self):
+        self._head_only = True
+        try:
+            self._route_get()
+        except Exception:
+            pass
+
     def do_GET(self):
         try:
             self._route_get()
@@ -4734,7 +4741,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.14", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.15", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5222,7 +5229,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             _tok = (qs.get("token") or [""])[0]
             _kid = (qs.get("key_id") or [""])[0]
-            if _tok == _license_admin_token() and _kid:
+            if _tok != _license_admin_token():
+                self._send(403, "text/plain", b"403 forbidden")
+                return
+            if _kid:
                 d = _lic_registry()
                 rec = d["keys"].get(_kid)
                 if rec:
@@ -5231,7 +5241,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     _lic_registry_save(d)
                     _audit("license.revoke", key_id=_kid)
             self._send(200, "text/html; charset=utf-8",
-                       ("<!doctype html><meta http-equiv='refresh' content='0;url=/admin?token=%s'>" % _tok).encode("utf-8"))
+                       ("<!doctype html><meta http-equiv='refresh' content='0;url=/admin?token=%s'>"
+                        % urllib.parse.quote(_tok, safe="")).encode("utf-8"))
         elif p == "/api/team":
             if self._role() != "owner":
                 self._json({"ok": False, "error": "owner only"}, code=403)
@@ -5261,9 +5272,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._json({"ok": False, "error": "QR unavailable: " + str(e)[:120]}, code=503)
         elif p == "/api/license/status":
             _inf = _license_info()
+            _pm = bool((_read_json(SETTINGS_FILE, {}) or {}).get("paid_mode")) or os.environ.get("GT_PAID") == "1"
             self._json({"ok": True, "paid": _license_paid(), "license": _inf,
-                        "features": (_inf or {}).get("features") or [],
-                        "plan": (_inf or {}).get("plan") or "free",
+                        "features": (_inf or {}).get("features") or (["hosted", "auto_orders", "taobao"] if _pm else []),
+                        "plan": (_inf or {}).get("plan") or ("plus" if _pm else "free"),
                         "days_left": (_inf or {}).get("days_left")})
         elif p == "/api/settings":
             st = _read_json(SETTINGS_FILE, {}) or {}
@@ -5273,6 +5285,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             src  = st.get("rate_source") or ("cache" if rate else "none")
             cloud = _cloud_dir()
             g_user, g_pwd = _gmail_cfg()
+            _is_owner = self._role() == "owner"
             self._json({
                 "ok": True,
                 "taobao_min_cny": float(st.get("taobao_min_cny") or 5),
@@ -5334,7 +5347,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "tg": {
                     "configured": bool(tg.get("token") and tg.get("chat_id")),
                     "has_token": bool(tg.get("token")),
-                    "chat_id": tg.get("chat_id", ""),
+                    "chat_id": tg.get("chat_id", "") if _is_owner else "",
                     "enabled": bool(tg.get("enabled")),
                     "notify_mail": bool(tg.get("notify_mail", True)),
                     "notify_price": bool(tg.get("notify_price", True)),
@@ -5342,7 +5355,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 },
                 "gmail": {
                     "configured": bool(g_user and g_pwd),
-                    "user": g_user,
+                    "user": g_user if _is_owner else ("***" if g_user else ""),
                     "has_pass": bool(g_pwd),
                     "last_check": int(_gmail_state.get("last_check") or 0),
                     "last_ok": int(_gmail_state.get("last_ok") or 0),
@@ -5394,7 +5407,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.14",
+            self._json({"ok": True, "version": "1.66.15",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5547,6 +5560,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             if self.path == "/api/logout":
                 self._json({"ok": True}, extra={"Set-Cookie":
                            "gt_device=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"})
+                return
+            if self._rate_limited():
+                self._json({"ok": False, "error": "Забагато спроб — спробуй пізніше"}, code=429)
                 return
             pw = str((body or {}).get("password") or "")
             if not (AUTH_PASS and hmac.compare_digest(pw.encode("utf-8"),
@@ -6811,7 +6827,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 # для бінарних типів charset не потрібен
                 bin_type = ct.startswith(("image/", "font/", "application/zip",
                                           "application/octet-stream", "application/x-icon"))
-                self.send_header("Content-Type", ct if bin_type else ct + "; charset=utf-8")
+                if bin_type or "charset=" in ct.lower():
+                    self.send_header("Content-Type", ct)
+                else:
+                    self.send_header("Content-Type", ct + "; charset=utf-8")
                 self.send_header("Content-Length", str(len(data)))
             self.send_header("Connection", "close")
             if dev_cookie:
@@ -6825,7 +6844,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             for k, v in (extra or {}).items():
                 self.send_header(k, v)
             self.end_headers()
-            if data:
+            if data and not getattr(self, "_head_only", False):
                 self.wfile.write(data)
             self.wfile.flush()
         except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
@@ -7447,8 +7466,15 @@ def _license_register_remote(key, instance_id):
     data = json.dumps({"key": key, "instance_id": instance_id}).encode("utf-8")
     req = urllib.request.Request(url, data=data, method="POST",
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            body = json.loads(e.read().decode("utf-8", "replace"))
+        except Exception:
+            body = {"ok": False, "error": "HTTP %s" % e.code}
+        return body
 
 
 def _license_release_remote(key, instance_id):
@@ -7457,8 +7483,15 @@ def _license_release_remote(key, instance_id):
     data = json.dumps({"key": key, "instance_id": instance_id}).encode("utf-8")
     req = urllib.request.Request(url, data=data, method="POST",
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            body = json.loads(e.read().decode("utf-8", "replace"))
+        except Exception:
+            body = {"ok": False, "error": "HTTP %s" % e.code}
+        return body
 
 
 def _license_register_local(key, instance_id):
@@ -7960,7 +7993,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.14")
+    print("  ▲  Ledger v1.66.15")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
@@ -7977,9 +8010,9 @@ def main():
         print("  🔓 " + _open_msg
               + (" · " + _cl("заголовок Access обов'язковий", "Access header required", "заголовок Access обязателен") if REQUIRE_ACCESS else ""))
     else:
-        print("  🔓 " + _cl("Без пароля — відкритий доступ (увімкни: ⚙ → Пароль входу)",
-                        "No password — open access (enable: ⚙ → Login password)",
-                        "Без пароля — открытый доступ (включи: ⚙ → Пароль входа)"))
+        print("  🔐 " + _cl("Пароль увімкнено — вхід лише після логіна",
+                        "Password enabled — login required",
+                        "Пароль включён — вход только после логина"))
     print()
 
     _load_file_cache()

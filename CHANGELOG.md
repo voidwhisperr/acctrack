@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.66.15 — security fixes from multi-agent audit
+- Fixed reflected XSS in `/admin/revoke` (invalid token now 403; redirect token URL-encoded).
+- Login form now honours rate limiting; removed `GT_AUTH_NO_LIMIT` on the VPS.
+- `HEAD` supported; single `charset` in Content-Type; settings PII masked for non-owner roles; hosted `/api/license/status` reports plan `plus` consistently; license activation preserves server error text; startup banner no longer says “no password” when auth is on.
+- CI runs `tests/verify_auth.py`; `tests/test_license.py` standalone.
+
 ## v1.66.14 — collector token auth fix
 - Fixed `_role_gate` blocking `X-GT-TOKEN` requests with 401 on password-protected instances; Taobao collector now works on hosted Ledger+ again (verify_auth 14/14).
 - CI runs `tests/verify_auth.py`; `tests/test_license.py` runs standalone without pytest.
