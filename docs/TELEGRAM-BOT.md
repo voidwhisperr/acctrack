@@ -34,3 +34,19 @@ python3 ledger_os_bot.py --post-json post.json
 Preview without sending: add `--dry-run`.
 
 Hosted on the VPS as systemd unit `ledger-os-bot.service` (WorkingDirectory /root, token /root/ledger-os-bot.token, 0600).
+
+
+## Automatic translation (DeepL)
+
+Save the DeepL key locally as `deepl.key` (or env `DEEPL_API_KEY`):
+- Windows: `C:/Users/User/Downloads/Ledger-Desktop/deepl.key`
+- VPS: `/root/deepl.key` (0600)
+
+One key works for all target languages; the bot makes one request per language.
+
+```
+python3 ledger_os_bot.py --auto --en "Ledger OS is live."
+python3 ledger_os_bot.py --auto --split --en "..."
+```
+
+Brand names (Ledger OS, Reseller OS, Ledger+, FunPay, ZeusX, Eldorado, Taobao, P&L, GitHub, Telegram, Discord) are protected from translation. Any supplied `--uk`/`--ru` overrides the automatic translation.

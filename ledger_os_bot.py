@@ -120,6 +120,61 @@ def poll():
             time.sleep(3)
 
 
+def _deepl_key():
+    k = (os.environ.get("DEEPL_API_KEY") or "").strip()
+    if k:
+        return k
+    here = pathlib.Path(__file__).resolve().parent
+    for p in (here / "deepl.key",
+              pathlib.Path.home() / "Downloads" / "Ledger-Desktop" / "deepl.key",
+              pathlib.Path("/root/deepl.key")):
+        try:
+            if p.is_file():
+                return p.read_text(encoding="utf-8").strip()
+        except OSError:
+            pass
+    return ""
+
+
+_BRANDS = ("Ledger OS", "Reseller OS", "Ledger+", "FunPay", "ZeusX",
+           "Eldorado", "Taobao", "P&L", "GitHub", "Telegram", "Discord")
+
+
+def _protect(text):
+    terms = []
+    for i, term in enumerate(_BRANDS):
+        if term in text:
+            tok = "[[[%d]]]" % i
+            text = text.replace(term, tok)
+            terms.append((tok, term))
+    return text, terms
+
+
+def _restore(text, terms):
+    for tok, term in terms:
+        text = text.replace(tok, term)
+    return text
+
+
+def deepl(text, target):
+    key = _deepl_key()
+    text, terms = _protect(text)
+    if not key:
+        raise RuntimeError("no DeepL key (deepl.key / DEEPL_API_KEY)")
+    host = "api-free.deepl.com" if key.endswith(":fx") else "api.deepl.com"
+    req = urllib.request.Request(
+        "https://%s/v2/translate" % host,
+        data=json.dumps({"text": [text], "source_lang": "EN",
+                         "target_lang": target}).encode("utf-8"),
+        headers={"Authorization": "DeepL-Auth-Key " + key,
+                 "Content-Type": "application/json"},
+        method="POST")
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        data = json.loads(resp.read().decode("utf-8", "replace"))
+    out = (data.get("translations") or [{}])[0].get("text") or ""
+    return _restore(out, terms)
+
+
 def _val(args, name):
     if name in args:
         i = args.index(name)
@@ -156,6 +211,14 @@ def main():
     elif "--post-file" in args:
         parts = {"en": pathlib.Path(_val(args, "--post-file")).read_text(encoding="utf-8")}
 
+    if "--auto" in args and parts.get("en"):
+        try:
+            if not parts.get("uk"):
+                parts["uk"] = deepl(parts["en"], "UK")
+            if not parts.get("ru"):
+                parts["ru"] = deepl(parts["en"], "RU")
+        except Exception as e:
+            print("deepl error:", e, file=sys.stderr)
     body = _compose(parts) if parts else ""
     if not body:
         poll()
