@@ -14,6 +14,13 @@ Host: `70.34.243.50` (Vultr), domain `ledger.70-34-243-50.sslip.io`.
 - Caddy access logging disabled for the `:8765` site and the old log truncated (it contained `X-Gt-Token` headers).
 - App login rate limiting/logging uses `X-Forwarded-For` from Caddy, so limits are per client IP instead of shared `127.0.0.1`.
 
+## Live paths (v1.66.31)
+
+- Web app: `/opt/ledger` (owner `ledger`, unit `gametracker`, `User=ledger`). Do **not** deploy new code to `/root`; the live service reads `/opt/ledger`.
+- License signer: `/opt/ledger-signer/license_signer.py`, key `/etc/ledger-signer/private.b64` (root 600), socket `/run/ledger-signer/signer.sock` (root:ledger 660). The app user cannot read the key.
+- Bots: `/opt/ledger-bots` (`User=ledgerbot`).
+- Legacy data under `/root` is kept only for rollback/backup.
+
 ## Additional hardening (v1.66.30)
 
 - Collector token rotated; old gametracker.log.bak.* files with X-Gt-Token removed. The collector agent uses the new token.
