@@ -1,5 +1,7 @@
 # Trilingual channel post template
 
+> Rule: if the full three-language text fits the platform limit (Telegram caption 1024, Discord 2000), post all three in one message. If it does not fit, post English as the main post and put clickable `Українська` / `Русский` links to public `/docs/<slug>-ua.html` / `-ru.html` pages at the bottom.
+
 Fill the three blocks, save as post.json, then run on the VPS:
 
 ```json
