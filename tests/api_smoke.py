@@ -6,6 +6,11 @@ import sys
 import urllib.error
 import urllib.request
 
+import os, sys
+if os.environ.get("GT_DESTRUCTIVE") != "1":
+    print("REFUSING: api_smoke mutates the running app. Set GT_DESTRUCTIVE=1 to run against a disposable instance.")
+    sys.exit(2)
+
 BASE = os.environ.get("GT_URL", "http://127.0.0.1:8766")
 PASS_FILE = os.environ.get("GT_SECRETS", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".gt_secrets.json"))
 try:
@@ -51,7 +56,7 @@ def check(name, cond, info=""):
 print("=== 1. ПУБЛІЧНЕ / АВТОРИЗАЦІЯ ===")
 st, d = call("/api/health", auth=False)
 check("health без пароля", st == 200 and d.get("ok"), st)
-check("версія 1.51.1", d.get("version") == "1.60.1", d)
+check("версія 1.51.1", d.get("version") == "1.62.0", d)
 st, d = call("/api/settings", auth=False)
 auth_open = (st == 200)
 check("API: режим без пароля (або 401, якщо пароль увімкнено)", st in (200, 401), st)

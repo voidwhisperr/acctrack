@@ -493,6 +493,18 @@ def main():
         check("/api/offers без cookie → ok:false (без падіння)",
               st == 200 and d.get("ok") is False and "error" in d, d)
 
+        print("\n── always online ──")
+        st, d, _ = jreq("/api/online")
+        plats = (d.get("platforms") or {}) if isinstance(d, dict) else {}
+        check("/api/online має 3 платформи", st == 200 and set(plats) == {"zeusx", "funpay", "eldorado"}, list(plats))
+        st, d, _ = jreq("/api/online/config", "POST", {"platform": "bogus", "enabled": True})
+        check("online: невідома платформа = 400", st == 400, st)
+        st, d, _ = jreq("/api/online/config", "POST", {"platform": "zeusx", "enabled": False, "start": "09:00", "end": "23:00", "tz": 120})
+        check("online: конфіг зберігається", st == 200 and d.get("ok"), d)
+        st, d, _ = jreq("/api/online")
+        z = (d.get("platforms") or {}).get("zeusx") or {}
+        check("online: вимкнений стан = off", z.get("state") == "off", z)
+
         print("\n── Бекапи / експорт ──")
         st, d, _ = jreq("/api/backup/list")
         check("GET /api/backup/list", st == 200)

@@ -48,7 +48,7 @@ SCRAPER_API_KEY  = ""   # ← .gt_secrets.json -> "scraper_api_key" (обхід 
 
 import os, sys, json, time, threading, urllib.request, urllib.parse, shutil, datetime
 import http.server, webbrowser, pathlib, base64, hmac, subprocess, socket
-import gzip, hashlib, io, zipfile, tarfile, html as _html_mod, re, random, statistics, csv, struct
+import gzip, hashlib, io, zipfile, tarfile, html as _html_mod, re, random, statistics, csv, struct, shlex
 
 try:
     import ui                     # HTML-шаблон дашборда
@@ -2549,23 +2549,44 @@ def _backup_password():
     return str(sec.get("backup_password") or "")
 
 
+def _ensure_backup_password():
+    """Backups are encrypted by default; create a local key if none exists."""
+    pw = _backup_password()
+    if pw:
+        return pw
+    import secrets as _secrets
+    pw = _secrets.token_urlsafe(24)
+    sec = _read_json(SECRETS_FILE, {}) or {}
+    sec["backup_password"] = pw
+    _atomic_dump(SECRETS_FILE, sec)
+    try:
+        os.chmod(SECRETS_FILE, 0o600)
+    except OSError:
+        pass
+    print("  🔐 Backup encryption key created in .gt_secrets.json", flush=True)
+    return pw
+
+
 def do_backup():
     """Бекап P&L + ELDORADO + цілі у gt_backups/ і, якщо є, у хмару."""
     made = []
     try:
         os.makedirs(BACKUP_DIR, exist_ok=True)
         date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        for src, prefix in ((PL_FILE, "gt_pl"), (ED_FILE, "gt_eldorado"), (GOAL_FILE, "gt_goal")):
-            if not os.path.exists(src):
-                continue
-            name = f"{prefix}_{date_str}.json"
-            shutil.copy2(src, os.path.join(BACKUP_DIR, name))
-            made.append(name)
-            keep = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith(prefix + "_"))
-            for old in keep[:-30]:
-                try: os.remove(os.path.join(BACKUP_DIR, old))
-                except OSError: pass
-        _keepn = max(1, min(365, int((_read_json(SETTINGS_FILE, {}) or {}).get("backup_keep") or 30)))
+        _st0 = _read_json(SETTINGS_FILE, {}) or {}
+        _encrypt = bool(_st0.get("backup_encrypt", True))
+        if not _encrypt:
+            for src, prefix in ((PL_FILE, "gt_pl"), (ED_FILE, "gt_eldorado"), (GOAL_FILE, "gt_goal")):
+                if not os.path.exists(src):
+                    continue
+                name = f"{prefix}_{date_str}.json"
+                shutil.copy2(src, os.path.join(BACKUP_DIR, name))
+                made.append(name)
+                keep = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith(prefix + "_"))
+                for old in keep[:-30]:
+                    try: os.remove(os.path.join(BACKUP_DIR, old))
+                    except OSError: pass
+        _keepn = max(1, min(365, int(_st0.get("backup_keep") or 30)))
         for prefix in ("gt_pl", "gt_eldorado", "gt_goal", "gt_enc"):
             keep = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith(prefix + "_"))
             for old in keep[:-_keepn]:
@@ -2574,8 +2595,8 @@ def do_backup():
         _st = _read_json(SETTINGS_FILE, {}) or {}
         _verify_status = "ok"
         _restore_status = "skip"
-        if _st.get("backup_encrypt"):
-            _pw = _backup_password()
+        if _st.get("backup_encrypt", True):
+            _pw = _ensure_backup_password()
             if _pw:
                 try:
                     _raw, _man = _build_backup_zip()
@@ -4405,6 +4426,73 @@ def _csrf_token():
 
 
 # ─────────────────────────────────────────────────
+# 🛡️  ADMIN SESSION COOKIE (/admin, /hosting)
+# ─────────────────────────────────────────────────
+# The admin token is never accepted in URLs for state changes. GET /admin?token=…
+# (or /hosting?token=…) exchanges a valid token for this signed, HttpOnly cookie
+# once and redirects to the token-less URL. Every later page load and every
+# action uses only the cookie + a CSRF value bound to it.
+_ADMIN_COOKIE = "gt_admin"
+_ADMIN_COOKIE_TTL = 8 * 3600
+_ADMIN_ACTION_PATHS = (
+    "/admin/revoke",
+    "/hosting/save", "/hosting/check", "/hosting/delete",
+    "/hosting/provision", "/hosting/backup", "/hosting/restore", "/hosting/monitor",
+)
+
+
+def _admin_sig_key():
+    """HMAC key for the admin cookie, derived from the existing admin token."""
+    return hmac.new(_license_admin_token().encode("utf-8"),
+                    b"gt-admin-cookie-v1", hashlib.sha256).digest()
+
+
+def _admin_token_ok(token):
+    """Constant-time comparison of a supplied admin token (never logged)."""
+    tok = str(token or "")
+    if not tok:
+        return False
+    try:
+        return hmac.compare_digest(tok.encode("utf-8"),
+                                   _license_admin_token().encode("utf-8"))
+    except Exception:
+        return False
+
+
+def _admin_cookie_value(now=None):
+    """Signed cookie value: v1.<issued>.<csrf-raw>.<hmac>."""
+    ts = str(int(now if now is not None else time.time()))
+    raw = base64.urlsafe_b64encode(os.urandom(24)).decode("ascii").rstrip("=")
+    sig = hmac.new(_admin_sig_key(), ("v1|" + ts + "|" + raw).encode("utf-8"),
+                   hashlib.sha256).hexdigest()
+    return "v1." + ts + "." + raw + "." + sig
+
+
+def _admin_cookie_parse(value):
+    """Return the CSRF raw embedded in a valid signed admin cookie, else None."""
+    parts = str(value or "").split(".")
+    if len(parts) != 4 or parts[0] != "v1":
+        return None
+    _ver, ts, raw, sig = parts
+    if not ts.isdigit() or not raw or not sig:
+        return None
+    try:
+        age = time.time() - int(ts)
+    except Exception:
+        return None
+    if age < -120 or age > _ADMIN_COOKIE_TTL:
+        return None
+    want = hmac.new(_admin_sig_key(), ("v1|" + ts + "|" + raw).encode("utf-8"),
+                    hashlib.sha256).hexdigest()
+    try:
+        if not hmac.compare_digest(sig, want):
+            return None
+    except Exception:
+        return None
+    return raw
+
+
+# ─────────────────────────────────────────────────
 # 🎨 ІКОНКИ (favicon / PWA / iOS) — вшиті в один файл
 # ─────────────────────────────────────────────────
 _LOGOS = {
@@ -4642,6 +4730,179 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not hmac.compare_digest(cookie.encode("utf-8"), header.encode("utf-8")):
             return False
         return self._csrf_token_ok(cookie)
+
+    # ── admin/hosting cookie session (separate from the dashboard session) ──
+    def _admin_cookie_raw(self):
+        return _admin_cookie_parse(self._cookie(_ADMIN_COOKIE))
+
+    def _admin_csrf_ok(self, csrf):
+        """CSRF value must be the random nonce signed inside the admin cookie."""
+        raw = self._admin_cookie_raw()
+        if not raw:
+            return False
+        try:
+            return hmac.compare_digest(str(csrf).encode("utf-8"),
+                                       raw.encode("utf-8"))
+        except Exception:
+            return False
+
+    def _send_admin_cookie(self, location):
+        hdr = ("%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict"
+               % (_ADMIN_COOKIE, _admin_cookie_value(), _ADMIN_COOKIE_TTL))
+        if self._is_https():
+            hdr += "; Secure"
+        self._send(302, "text/html", b"",
+                   extra={"Location": location, "Set-Cookie": hdr})
+
+    def _admin_action_error(self, code, title, detail=""):
+        back = "/hosting" if self.path.split("?")[0].startswith("/hosting") else "/admin"
+        body = ("<!doctype html><meta charset='utf-8'><title>%s</title>"
+                "<body style='font:14px system-ui;background:#0d1017;color:#e9ebf2;padding:40px'>"
+                "<h2>%s</h2><pre style='white-space:pre-wrap'>%s</pre>"
+                "<p><a style='color:#7ad3a1' href='%s'>back</a></p></body>"
+                % (_html_mod.escape(title), _html_mod.escape(title),
+                   _html_mod.escape(str(detail)[:800]), back))
+        self._send(code, "text/html; charset=utf-8", body.encode("utf-8"))
+
+    def _admin_action(self, p):
+        """POST-only admin/hosting action: cookie required, URL token ignored.
+
+        The CSRF value is the nonce embedded in the signed, HttpOnly cookie, so
+        it cannot be guessed or replayed without that cookie. SameSite=Strict and
+        the Origin/Host check defend the browser-reachable endpoints as well.
+        """
+        origin = (self.headers.get("Origin") or "").strip()
+        if origin:
+            try:
+                netloc = urllib.parse.urlsplit(origin).netloc.lower()
+            except Exception:
+                netloc = ""
+            host = (self.headers.get("Host") or "").strip().lower()
+            if not host or netloc != host:
+                self._send(403, "text/plain", b"403 forbidden")
+                return
+        csrf = self._admin_cookie_raw()
+        if not csrf:
+            self._send(403, "text/plain",
+                       b"403 forbidden - admin login required (open /admin or /hosting with the token once)")
+            return
+        try:
+            n = int(self.headers.get("Content-Length", 0) or 0)
+        except Exception:
+            n = 0
+        if n < 0 or n > 64 * 1024:
+            self._send(413, "text/plain", b"413 payload too large")
+            return
+        ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if ctype not in ("", "application/x-www-form-urlencoded"):
+            self._send(415, "text/plain", b"415 unsupported media type")
+            return
+        raw_body = self.rfile.read(n) if n else b""
+        try:
+            form = urllib.parse.parse_qs(raw_body.decode("utf-8", "replace"),
+                                         keep_blank_values=True)
+        except Exception:
+            form = {}
+        got = str((form.get("csrf") or [""])[0])
+        if not self._admin_csrf_ok(got):
+            self._send(403, "text/plain", b"403 invalid CSRF token")
+            return
+
+        def _f(name, default=""):
+            return str((form.get(name) or [default])[0])
+
+        try:
+            if p == "/admin/revoke":
+                kid = _f("key_id").strip()[:64]
+                if kid:
+                    d = _lic_registry()
+                    rec = d["keys"].get(kid)
+                    if rec:
+                        rec["revoked"] = True
+                        rec["instance"] = ""
+                        _lic_registry_save(d)
+                        _audit("license.revoke", key_id=kid)
+                self._send(303, "text/html", b"", extra={"Location": "/admin"})
+                return
+            if p == "/hosting/monitor":
+                try:
+                    _monitor_clients(alert=False)
+                except Exception as e:
+                    print("  ⚠ monitor: %s" % e, flush=True)
+                self._send(303, "text/html", b"", extra={"Location": "/hosting"})
+                return
+            clients = _clients_load()
+            cid = _f("id").strip()
+            if p in ("/hosting/check", "/hosting/backup", "/hosting/restore",
+                     "/hosting/delete"):
+                if not _valid_client_id(cid):
+                    self._admin_action_error(400, "Invalid client id")
+                    return
+            if p in ("/hosting/backup", "/hosting/restore"):
+                try:
+                    if p.endswith("backup"):
+                        bk = _backup_client(cid)
+                        _audit("hosting.backup", client=cid, file=bk.get("name"))
+                    else:
+                        rs = _restore_client(cid)
+                        _audit("hosting.restore", client=cid, file=rs)
+                except Exception as e:
+                    self._admin_action_error(500, "Operation failed", str(e))
+                    return
+            elif p == "/hosting/save":
+                if cid and not _valid_client_id(cid):
+                    self._admin_action_error(400, "Invalid client id")
+                    return
+                rec = next((c for c in clients if c.get("id") == cid), None)
+                if not rec:
+                    rec = {"id": os.urandom(6).hex(), "created": int(time.time())}
+                    clients.append(rec)
+                for k in ("name", "contact", "plan", "url", "paid_until", "notes"):
+                    if _f(k):
+                        rec[k] = _f(k)[:300]
+                _clients_save(clients)
+                _audit("hosting.save", client=rec.get("id"))
+            elif p == "/hosting/provision":
+                try:
+                    name, port, sub = _validate_instance_params(
+                        _f("name").strip() or "Client", _f("port"), _f("subdomain"))
+                except ValueError as e:
+                    self._admin_action_error(400, "Invalid provisioning data", str(e))
+                    return
+                plan = (_f("plan").strip() or "solo")[:40]
+                try:
+                    rec = _provision_instance(name, port, sub, plan,
+                                              _f("paid_until"))
+                except Exception as e:
+                    self._admin_action_error(500, "Provision failed", str(e))
+                    return
+                clients.append(rec)
+                _clients_save(clients)
+                _audit("hosting.provision", client=rec.get("id"),
+                       port=rec.get("port"))
+            elif p == "/hosting/delete":
+                rec = next((c for c in clients if c.get("id") == cid), None)
+                if rec and rec.get("service"):
+                    try:
+                        _deprovision_instance(cid, purge=bool(_f("purge")))
+                    except Exception as e:
+                        print("  ⚠ deprovision: %s" % e, flush=True)
+                _clients_save([c for c in clients if c.get("id") != cid])
+                _audit("hosting.delete", client=cid)
+            else:  # /hosting/check
+                for c in clients:
+                    if c.get("id") == cid:
+                        ok, ver = _client_health(c.get("url"))
+                        c["last_ok"] = ok
+                        c["last_check"] = int(time.time())
+                        c["version"] = ver
+                        c["status"] = "active" if ok else "down"
+                _clients_save(clients)
+            self._send(303, "text/html", b"", extra={"Location": "/hosting"})
+        except Exception as e:
+            _log_error("POST " + p, e)
+            self._admin_action_error(500, "Admin action failed",
+                                     "%s: %s" % (type(e).__name__, e))
 
     def _origin_ok(self):
         """CSRF-захист: мутація з браузера мусить нести токен із cookie.
@@ -4906,7 +5167,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.29", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.30", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5308,119 +5569,46 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     cookie += "; Secure"
                 _audit("team.join", member=mid, role=role)
                 self._send(302, "text/html", b"", extra={"Location": "/", "Set-Cookie": cookie})
-        elif p == "/hosting/monitor":
-            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
-            _tok = (qs.get("token") or [""])[0]
-            if _tok == _license_admin_token():
-                try:
-                    _monitor_clients(alert=False)
-                except Exception as e:
-                    print("  ⚠ monitor: %s" % e, flush=True)
-                self._send(302, "text/html", b"", extra={"Location": "/hosting?token=" + _tok})
-            else:
-                self._send(403, "text/plain", b"403 forbidden")
+        elif p in _ADMIN_ACTION_PATHS:
+            # State-changing admin/hosting endpoints are POST-only (cookie+CSRF).
+            self._send(405, "text/plain", b"405 Method Not Allowed - use POST",
+                       extra={"Allow": "POST"})
         elif p == "/pricing":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             _lang = (qs.get("lang") or [""])[0] or str((_read_json(SETTINGS_FILE, {}) or {}).get("lang") or "uk")
             self._send(200, "text/html; charset=utf-8", _pricing_page(_lang).encode("utf-8"))
         elif p == "/hosting":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
-            self._send(200, "text/html; charset=utf-8",
-                       _hosting_page((qs.get("token") or [""])[0]).encode("utf-8"))
-        elif p in ("/hosting/save", "/hosting/check", "/hosting/delete", "/hosting/provision",
-                   "/hosting/backup", "/hosting/restore"):
-            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             _tok = (qs.get("token") or [""])[0]
-            if _tok != _license_admin_token():
-                self._send(403, "text/plain", b"403 forbidden")
+            if _tok:
+                if not _admin_token_ok(_tok):
+                    self._send(403, "text/plain", b"403 forbidden")
+                    return
+                self._send_admin_cookie("/hosting")
                 return
-            clients = _clients_load()
-            if p in ("/hosting/backup", "/hosting/restore"):
-                _id = (qs.get("id") or [""])[0]
-                try:
-                    if p.endswith("backup"):
-                        _bk = _backup_client(_id)
-                        _audit("hosting.backup", client=_id, file=_bk.get("name"))
-                    else:
-                        _rs = _restore_client(_id)
-                        _audit("hosting.restore", client=_id, file=_rs)
-                except Exception as e:
-                    self._send(500, "text/html; charset=utf-8",
-                               ("<h3>Operation failed</h3><pre>%s</pre>"
-                                "<a href='/hosting?token=%s'>back</a>"
-                                % (_html_mod.escape(str(e)[:500]), _tok)).encode("utf-8"))
-                    return
-            elif p == "/hosting/save":
-                _id = (qs.get("id") or [""])[0]
-                rec = next((c for c in clients if c.get("id") == _id), None)
-                if not rec:
-                    rec = {"id": os.urandom(6).hex(), "created": int(time.time())}
-                    clients.append(rec)
-                for k in ("name", "contact", "plan", "url", "paid_until", "notes"):
-                    if qs.get(k):
-                        rec[k] = str(qs[k][0])[:300]
-                _clients_save(clients)
-                _audit("hosting.save", client=rec.get("id"))
-            elif p == "/hosting/provision":
-                _name = (qs.get("name") or [""])[0].strip() or "Client"
-                _port = int((qs.get("port") or ["0"])[0] or 0)
-                _sub = (qs.get("subdomain") or [""])[0].strip()
-                _plan = (qs.get("plan") or ["solo"])[0]
-                _paid = (qs.get("paid_until") or [""])[0]
-                try:
-                    rec = _provision_instance(_name, _port, _sub, _plan, _paid)
-                except Exception as e:
-                    self._send(500, "text/html; charset=utf-8",
-                               ("<h3>Provision failed</h3><pre>%s</pre>"
-                                "<a href='/hosting?token=%s'>back</a>"
-                                % (_html_mod.escape(str(e)[:800]), _tok)).encode("utf-8"))
-                    return
-                clients.append(rec)
-                _clients_save(clients)
-                _audit("hosting.provision", client=rec.get("id"), port=rec.get("port"))
-            elif p == "/hosting/delete":
-                _id = (qs.get("id") or [""])[0]
-                _rec = next((c for c in clients if c.get("id") == _id), None)
-                if _rec and _rec.get("service"):
-                    try:
-                        _deprovision_instance(_id, purge=bool(qs.get("purge")))
-                    except Exception as e:
-                        print("  ⚠ deprovision: %s" % e, flush=True)
-                _clients_save([c for c in clients if c.get("id") != _id])
-                _audit("hosting.delete", client=_id)
-            else:
-                _id = (qs.get("id") or [""])[0]
-                for c in clients:
-                    if c.get("id") == _id:
-                        ok, ver = _client_health(c.get("url"))
-                        c["last_ok"] = ok
-                        c["last_check"] = int(time.time())
-                        c["version"] = ver
-                        c["status"] = "active" if ok else "down"
-                _clients_save(clients)
-            self._send(302, "text/html", b"", extra={"Location": "/hosting?token=" + _tok})
+            _csrf = self._admin_cookie_raw()
+            if not _csrf:
+                self._send(200, "text/html; charset=utf-8",
+                           _admin_login_page("/hosting").encode("utf-8"))
+                return
+            self._send(200, "text/html; charset=utf-8",
+                       _hosting_page(_csrf).encode("utf-8"))
         elif p == "/admin":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             _tok = (qs.get("token") or [""])[0]
-            self._send(200, "text/html; charset=utf-8", _admin_page(_tok).encode("utf-8"))
-        elif p == "/admin/revoke":
-            qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
-            _tok = (qs.get("token") or [""])[0]
-            _kid = (qs.get("key_id") or [""])[0]
-            if _tok != _license_admin_token():
-                self._send(403, "text/plain", b"403 forbidden")
+            if _tok:
+                if not _admin_token_ok(_tok):
+                    self._send(403, "text/plain", b"403 forbidden")
+                    return
+                self._send_admin_cookie("/admin")
                 return
-            if _kid:
-                d = _lic_registry()
-                rec = d["keys"].get(_kid)
-                if rec:
-                    rec["revoked"] = True
-                    rec["instance"] = ""
-                    _lic_registry_save(d)
-                    _audit("license.revoke", key_id=_kid)
+            _csrf = self._admin_cookie_raw()
+            if not _csrf:
+                self._send(200, "text/html; charset=utf-8",
+                           _admin_login_page("/admin").encode("utf-8"))
+                return
             self._send(200, "text/html; charset=utf-8",
-                       ("<!doctype html><meta http-equiv='refresh' content='0;url=/admin?token=%s'>"
-                        % urllib.parse.quote(_tok, safe="")).encode("utf-8"))
+                       _admin_page(_csrf).encode("utf-8"))
         elif p == "/api/team":
             if self._role() != "owner":
                 self._json({"ok": False, "error": "owner only"}, code=403)
@@ -5476,7 +5664,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "backup_keep": int(st.get("backup_keep") or 30),
                 "backup_last_ts": int(st.get("backup_last_ts") or 0),
                 "backup_last_status": str(st.get("backup_last_status") or ""),
-                "backup_encrypt": bool(st.get("backup_encrypt")),
+                "backup_encrypt": bool(st.get("backup_encrypt", True)),
                 "backup_last_verify": str(st.get("backup_last_verify") or ""),
                 "backup_last_restore_test": str(st.get("backup_last_restore_test") or ""),
                 "backup_password_protected": bool((_read_json(SECRETS_FILE, {}) or {}).get("backup_password_dpapi")),
@@ -5585,7 +5773,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.29",
+            self._json({"ok": True, "version": "1.66.30",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5768,6 +5956,11 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": True}, extra={"Set-Cookie": cookie})
             _audit("auth.login", ip=ip)
             print(f"  🔑 device login · IP {ip}", flush=True)
+            return
+        _admin_p = self.path.split("?")[0]
+        if _admin_p in _ADMIN_ACTION_PATHS:
+            # Separate cookie session: do not fall through to dashboard CSRF.
+            self._admin_action(_admin_p)
             return
         if not self._require_auth():
             return
@@ -7172,10 +7365,58 @@ def _client_health(url):
         return False, str(e)[:80]
 
 
+# ── validation for host-controlled instance parameters (shell-injection guard) ──
+_ID_RE = re.compile(r"^[0-9a-f]{8,16}$")
+_SUBDOMAIN_LABEL_RE = re.compile(r"^[a-z0-9-]{1,40}$")
+_CLIENT_NAME_RE = re.compile(r"^[\w .@+'\-]{1,80}$", re.UNICODE)
+
+
+def _valid_client_id(cid):
+    """Client ids are generated as 8..16 lowercase hex chars (os.urandom().hex())."""
+    return bool(_ID_RE.match(str(cid or "")))
+
+
+def _validate_instance_params(name, port, subdomain):
+    """Validate every client-controlled provision field before use.
+
+    Commands below are argument lists executed with shell=False, so validated
+    values are never parsed by a shell. A subdomain may be a single label
+    matching ^[a-z0-9-]{1,40}$ or a dotted FQDN whose labels match it (the
+    documented client1.<host> form); uppercase, whitespace, ';', '$', quotes
+    and '..' are rejected.
+    """
+    name = str(name or "").strip()
+    if not name or not _CLIENT_NAME_RE.match(name):
+        raise ValueError("invalid client name (letters, digits, space, . _ @ + ' - only)")
+    try:
+        port = int(port or 0)
+    except (TypeError, ValueError):
+        raise ValueError("invalid port (integer required)")
+    if port and (port < 1024 or port > 65535):
+        raise ValueError("port must be between 1024 and 65535")
+    sub = str(subdomain or "").strip()
+    if sub:
+        labels = sub.split(".")
+        if len(sub) > 253 or any(not _SUBDOMAIN_LABEL_RE.match(x) for x in labels):
+            raise ValueError("invalid subdomain (lowercase letters, digits, '-' only)")
+    return name, port, sub
+
+
 def _run(cmd, timeout=90):
+    """Run a command WITHOUT a shell; `cmd` must be an argument list.
+
+    No shell is used on this path: client-controlled id/name/subdomain
+    values are validated and passed as argv entries, never interpolated into a
+    command string.
+    """
     import subprocess
     try:
-        p = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+        if isinstance(cmd, str):
+            cmd = shlex.split(cmd)   # legacy callers only; never evaluated by a shell
+        else:
+            cmd = [str(x) for x in cmd]
+        p = subprocess.run(cmd, shell=False, capture_output=True, text=True,
+                           timeout=timeout)
         return p.returncode, (p.stdout or "")[-2000:], (p.stderr or "")[-2000:]
     except Exception as e:
         return 1, "", str(e)[:300]
@@ -7187,11 +7428,13 @@ def _caddyfile():
 
 def _provision_instance(name, port, subdomain, plan, paid_until):
     """Create an isolated Ledger instance as a systemd service + Caddy site."""
+    name, port, subdomain = _validate_instance_params(name, port, subdomain)
     if os.name != "posix" or not shutil.which("systemctl"):
         raise ValueError("provisioning requires Linux with systemd")
     cid = os.urandom(4).hex()
-    port = int(port or 0)
-    if port < 1024 or port > 65000:
+    if not _valid_client_id(cid):
+        raise ValueError("internal id generation failed")
+    if not port:
         port = 8800 + (int(cid[:4], 16) % 1000)
     root = os.environ.get("GT_CLIENTS_ROOT") or "/root/clients"
     app = os.path.join(root, cid, "app")
@@ -7217,7 +7460,11 @@ def _provision_instance(name, port, subdomain, plan, paid_until):
     upath = "/etc/systemd/system/gametracker-%s.service" % cid
     with open(upath, "w", encoding="utf-8") as fh:
         fh.write(unit)
-    rc, out, err = _run("systemctl daemon-reload && systemctl enable --now gametracker-%s" % cid)
+    rc, out, err = _run(["systemctl", "daemon-reload"])
+    if rc != 0:
+        raise ValueError("systemd failed: " + (err or out))
+    rc, out, err = _run(["systemctl", "enable", "--now",
+                         "gametracker-%s" % cid])
     if rc != 0:
         raise ValueError("systemd failed: " + (err or out))
     url = "http://127.0.0.1:%d" % port
@@ -7236,12 +7483,12 @@ def _provision_instance(name, port, subdomain, plan, paid_until):
                 fh.write(old)
             with open(cf, "a", encoding="utf-8") as fh:
                 fh.write(block)
-            rc, out, err = _run("caddy validate --config %s" % cf)
+            rc, out, err = _run(["caddy", "validate", "--config", cf])
             if rc != 0:
                 with open(cf, "w", encoding="utf-8") as fh:
                     fh.write(old)
                 raise ValueError("caddy validate failed: " + (err or out))
-            rc, out, err = _run("systemctl reload caddy")
+            rc, out, err = _run(["systemctl", "reload", "caddy"])
             if rc != 0:
                 with open(cf, "w", encoding="utf-8") as fh:
                     fh.write(old)
@@ -7253,7 +7500,7 @@ def _provision_instance(name, port, subdomain, plan, paid_until):
                 try:
                     with open(cf, "w", encoding="utf-8") as fh:
                         fh.write(backup)
-                    _run("systemctl reload caddy")
+                    _run(["systemctl", "reload", "caddy"])
                 except Exception:
                     pass
             raise
@@ -7267,14 +7514,17 @@ def _provision_instance(name, port, subdomain, plan, paid_until):
 
 
 def _deprovision_instance(cid, purge=False):
+    cid = str(cid or "").strip()
+    if not _valid_client_id(cid):
+        raise ValueError("invalid client id")
     if os.name != "posix":
         raise ValueError("deprovisioning requires Linux")
-    _run("systemctl disable --now gametracker-%s" % cid)
+    _run(["systemctl", "disable", "--now", "gametracker-%s" % cid])
     try:
         os.remove("/etc/systemd/system/gametracker-%s.service" % cid)
     except OSError:
         pass
-    _run("systemctl daemon-reload")
+    _run(["systemctl", "daemon-reload"])
     cf = _caddyfile()
     try:
         with open(cf, encoding="utf-8") as fh:
@@ -7287,7 +7537,7 @@ def _deprovision_instance(cid, purge=False):
                 fh.write(text)
             with open(cf, "w", encoding="utf-8") as fh:
                 fh.write(text[:start] + text[end:])
-            _run("systemctl reload caddy")
+            _run(["systemctl", "reload", "caddy"])
     except OSError:
         pass
     if purge:
@@ -7300,6 +7550,8 @@ def _backup_root():
 
 
 def _client_backups(cid):
+    if not _valid_client_id(str(cid or "")):
+        return []
     d = os.path.join(_backup_root(), cid)
     if not os.path.isdir(d):
         return []
@@ -7315,6 +7567,9 @@ def _client_backups(cid):
 
 
 def _backup_client(cid, keep=7):
+    cid = str(cid or "").strip()
+    if not _valid_client_id(cid):
+        raise ValueError("invalid client id")
     data = os.path.join(os.environ.get("GT_CLIENTS_ROOT") or "/root/clients", cid, "data")
     if not os.path.isdir(data):
         raise ValueError("client data dir not found")
@@ -7322,7 +7577,7 @@ def _backup_client(cid, keep=7):
     os.makedirs(dest, exist_ok=True)
     name = time.strftime("%Y%m%d-%H%M%S") + ".tar.gz"
     path = os.path.join(dest, name)
-    rc, out, err = _run("tar czf %s -C %s ." % (path, data), timeout=300)
+    rc, out, err = _run(["tar", "czf", path, "-C", data, "."], timeout=300)
     if rc != 0:
         raise ValueError("tar failed: " + (err or out))
     old = _client_backups(cid)
@@ -7335,6 +7590,9 @@ def _backup_client(cid, keep=7):
 
 
 def _restore_client(cid):
+    cid = str(cid or "").strip()
+    if not _valid_client_id(cid):
+        raise ValueError("invalid client id")
     backups = _client_backups(cid)
     if not backups:
         raise ValueError("no backups")
@@ -7342,25 +7600,28 @@ def _restore_client(cid):
     if not rec:
         raise ValueError("client not found")
     data = os.path.join(os.environ.get("GT_CLIENTS_ROOT") or "/root/clients", cid, "data")
-    stop = ("systemctl stop gametracker-%s" % cid) if rec.get("service") else "true"
-    _run(stop)
+    if rec.get("service"):
+        _run(["systemctl", "stop", "gametracker-%s" % cid])
     stamp = time.strftime("%Y%m%d-%H%M%S")
     if os.path.isdir(data):
-        _run("mv %s %s.before-restore-%s" % (data, data, stamp))
+        _run(["mv", data, "%s.before-restore-%s" % (data, stamp)])
     os.makedirs(data, exist_ok=True)
     path = os.path.join(_backup_root(), cid, backups[0]["name"])
-    rc, out, err = _run("tar xzf %s -C %s" % (path, data), timeout=300)
-    start = ("systemctl start gametracker-%s" % cid) if rec.get("service") else "true"
-    _run(start)
+    rc, out, err = _run(["tar", "xzf", path, "-C", data], timeout=300)
+    if rec.get("service"):
+        _run(["systemctl", "start", "gametracker-%s" % cid])
     if rc != 0:
         raise ValueError("restore failed: " + (err or out))
     return backups[0]["name"]
 
 
 def _client_disk(cid):
+    if not _valid_client_id(str(cid or "")):
+        return "—"
     data = os.path.join(os.environ.get("GT_CLIENTS_ROOT") or "/root/clients", cid, "data")
-    rc, out, err = _run("du -sh %s 2>/dev/null | cut -f1" % data, timeout=20)
-    return out.strip() if rc == 0 and out.strip() else "—"
+    rc, out, err = _run(["du", "-sh", data], timeout=20)
+    parts = out.split() if rc == 0 else []
+    return parts[0] if parts else "—"
 
 
 def _monitor_clients(alert=True):
@@ -7502,18 +7763,35 @@ def _pricing_page(lang="uk"):
                  _html_mod.escape(payoneer), t["tg"], t["cta"], t["note"])
 
 
-def _hosting_page(token):
-    if not token or token != _license_admin_token():
-        return ("<!doctype html><meta charset='utf-8'><title>Hosting admin</title>"
-                "<body style='font:14px system-ui;background:#0d1017;color:#e9ebf2;padding:40px'>"
-                "<h2>Hosting admin</h2><form method='get' action='/hosting'>"
-                "<input name='token' placeholder='admin token' style='padding:8px;width:320px'>"
-                "<button style='padding:8px 14px'>Open</button></form></body>")
+def _admin_login_page(back="/admin"):
+    """Token bootstrap form: GET exchanges the token for a signed cookie once."""
+    back = "/hosting" if back == "/hosting" else "/admin"
+    title = "Hosting admin" if back == "/hosting" else "Ledger admin"
+    return ("<!doctype html><meta charset='utf-8'><title>%s</title>"
+            "<body style='font:14px system-ui;background:#0d1017;color:#e9ebf2;padding:40px'>"
+            "<h2>%s</h2><form method='get' action='%s'>"
+            "<input name='token' type='password' placeholder='admin token' autocomplete='off' "
+            "style='padding:8px;width:320px'>"
+            "<button style='padding:8px 14px'>Open</button></form>"
+            "<p style='color:#8b93a1;max-width:540px'>The token is exchanged once for a signed, "
+            "HttpOnly, SameSite=Strict session cookie; later pages and all actions use only that "
+            "cookie plus a CSRF token.</p></body>"
+            % (title, title, back))
+
+
+def _hosting_page(csrf):
+    """Rendered only for a valid admin cookie; every action is a POST form."""
+    csrf = _html_mod.escape(str(csrf or ""))
     clients = _clients_load()
     import datetime as _dt
     today = _dt.date.today()
     rows, expiring = [], 0
     down = sum(1 for x in clients if x.get("last_ok") is False)
+    row_action = ("<form method='post' action='%s' style='display:inline'>"
+                  "<input type='hidden' name='csrf' value='%s'>"
+                  "<input type='hidden' name='id' value='%s'>"
+                  "<button style='color:%s;background:none;border:0;cursor:pointer;"
+                  "font:inherit;padding:0 2px'>%s</button></form>")
     for c in sorted(clients, key=lambda x: str(x.get("paid_until") or "")):
         try:
             left = (_dt.date.fromisoformat(str(c.get("paid_until"))) - today).days
@@ -7523,11 +7801,15 @@ def _hosting_page(token):
             expiring += 1
         ok = c.get("last_ok")
         state = "—" if ok is None else ("up" if ok else "down")
-        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
-                    "<td><a style='color:#7ad3a1' href='/hosting/check?token=%s&id=%s'>check</a> "
-                    "<a style='color:#7ad3a1' href='/hosting/backup?token=%s&id=%s'>backup</a> "
-                    "<a style='color:#e0b24a' href='/hosting/restore?token=%s&id=%s'>restore</a> "
-                    "<a style='color:#ff7a59' href='/hosting/delete?token=%s&id=%s'>delete</a></td></tr>"
+        cid = _html_mod.escape(str(c.get("id") or ""))
+        actions = " ".join((
+            row_action % ("/hosting/check", csrf, cid, "#7ad3a1", "check"),
+            row_action % ("/hosting/backup", csrf, cid, "#7ad3a1", "backup"),
+            row_action % ("/hosting/restore", csrf, cid, "#e0b24a", "restore"),
+            row_action % ("/hosting/delete", csrf, cid, "#ff7a59", "delete"),
+        ))
+        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
+                    "<td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
                     % (_html_mod.escape(str(c.get("name") or "")),
                        _html_mod.escape(str(c.get("plan") or "")),
                        _html_mod.escape(str(c.get("paid_until") or "")),
@@ -7535,7 +7817,7 @@ def _hosting_page(token):
                        _html_mod.escape(str(c.get("url") or "")),
                        _html_mod.escape(state),
                        _html_mod.escape(str(c.get("notes") or "")[:60]),
-                       token, c.get("id"), token, c.get("id"), token, c.get("id"), token, c.get("id")))
+                       actions))
         if c.get("password"):
             _bs = _client_backups(c.get("id"))
             rows.append("<tr><td colspan='8' style='color:#8b93a1;font-size:11px'>"
@@ -7547,8 +7829,8 @@ def _hosting_page(token):
                            _html_mod.escape(_client_disk(c.get("id"))),
                            len(_bs),
                            (" · last: " + _bs[0]["name"]) if _bs else ""))
-    form = ("<h3>Provision new instance</h3><form method='get' action='/hosting/provision'>"
-            "<input type='hidden' name='token' value='%s'>"
+    form = ("<h3>Provision new instance</h3><form method='post' action='/hosting/provision'>"
+            "<input type='hidden' name='csrf' value='%s'>"
             "<input name='name' placeholder='Client name' required style='padding:6px;margin:2px'>"
             "<input name='subdomain' placeholder='client1.70-34-243-50.sslip.io' style='padding:6px;margin:2px;width:300px'>"
             "<input name='port' placeholder='port (auto)' style='padding:6px;margin:2px;width:90px'>"
@@ -7557,35 +7839,34 @@ def _hosting_page(token):
             "<button style='padding:7px 12px'>Provision</button></form>"
             "<p style='color:#8b93a1'>Creates /root/clients/&lt;id&gt;, a systemd unit gametracker-&lt;id&gt;.service, "
             "and (with subdomain) a Caddy reverse-proxy site. Client gets its own password shown after creation.</p>"
-            "<h3>Manual record</h3><form method='get' action='/hosting/save'>"
-            "<input type='hidden' name='token' value='%s'>"
+            "<h3>Manual record</h3><form method='post' action='/hosting/save'>"
+            "<input type='hidden' name='csrf' value='%s'>"
             "<input name='name' placeholder='Name' required style='padding:6px;margin:2px'>"
             "<input name='contact' placeholder='Telegram/email' style='padding:6px;margin:2px'>"
             "<input name='plan' placeholder='solo/team' value='solo' style='padding:6px;margin:2px;width:90px'>"
             "<input name='url' placeholder='https://...' style='padding:6px;margin:2px;width:280px'>"
             "<input name='paid_until' placeholder='YYYY-MM-DD' style='padding:6px;margin:2px;width:120px'>"
             "<input name='notes' placeholder='notes' style='padding:6px;margin:2px'>"
-            "<button style='padding:7px 12px'>Add</button></form>") % (token, token)
+            "<button style='padding:7px 12px'>Add</button></form>") % (csrf, csrf)
+    monitor = ("<form method='post' action='/hosting/monitor' style='display:inline'>"
+               "<input type='hidden' name='csrf' value='%s'>"
+               "<button style='color:#7ad3a1;background:none;border:0;cursor:pointer;"
+               "font:inherit;padding:0'>check all</button></form>" % csrf)
     hint = ("<p style='color:#8b93a1'>Suggested instance: <code>GT_DATA_DIR=/root/client-&lt;id&gt; PORT=&lt;port&gt; "
             "python3 game_tracker.py</code>, then a Caddy block for &lt;subdomain&gt;. Health check uses <code>/api/health</code>.</p>")
     return ("<!doctype html><meta charset='utf-8'><title>Hosting admin</title>"
             "<body style='font:13px system-ui;background:#0d1017;color:#e9ebf2;padding:24px'>"
             "<h2>Hosting clients</h2>"
             "<p>clients: <b>%d</b> · down: <b>%d</b> · expiring in 7 days: <b>%d</b> · "
-            "<a style='color:#7ad3a1' href='/hosting/monitor?token=%s'>check all</a> · "
-            "<a style='color:#7ad3a1' href='/admin?token=%s'>keys/payments</a></p>"
+            "%s · <a style='color:#7ad3a1' href='/admin'>keys/payments</a></p>"
             "%s<h3>Clients</h3><table border='1' cellpadding='6' style='border-collapse:collapse;border-color:#2a2f37'>"
             "<tr><th>name</th><th>plan</th><th>paid until</th><th>days left</th><th>url</th><th>health</th><th>notes</th><th></th></tr>%s</table>%s</body>"
-            ) % (len(clients), down, expiring, token, token, form, "".join(rows), hint)
+            ) % (len(clients), down, expiring, monitor, form, "".join(rows), hint)
 
 
-def _admin_page(token):
-    if not token or token != _license_admin_token():
-        return ("<!doctype html><meta charset='utf-8'><title>Ledger admin</title>"
-                "<body style='font:14px system-ui;background:#0d1017;color:#e9ebf2;padding:40px'>"
-                "<h2>Ledger admin</h2><form method='get' action='/admin'>"
-                "<input name='token' placeholder='admin token' style='padding:8px;width:320px'>"
-                "<button style='padding:8px 14px'>Open</button></form></body>")
+def _admin_page(csrf):
+    """Rendered only for a valid admin cookie; revoke is a POST form."""
+    csrf = _html_mod.escape(str(csrf or ""))
     d = _lic_registry()
     pays = _payments_load()
     bound = sum(1 for x in d["keys"].values() if x.get("instance"))
@@ -7594,14 +7875,20 @@ def _admin_page(token):
     for x in pays:
         cur = str(x.get("currency") or "?")
         total[cur] = total.get(cur, 0) + int(x.get("amount") or 0)
+    revoke_form = ("<form method='post' action='/admin/revoke' style='display:inline'>"
+                   "<input type='hidden' name='csrf' value='%s'>"
+                   "<input type='hidden' name='key_id' value='%s'>"
+                   "<button style='color:#ff7a59;background:none;border:0;cursor:pointer;"
+                   "font:inherit;padding:0'>revoke</button></form>")
     rows = []
     for kid, rec in sorted(d["keys"].items(), key=lambda kv: kv[1].get("activated_at") or 0, reverse=True):
         state = "revoked" if rec.get("revoked") else ("bound" if rec.get("instance") else "free")
         rows.append("<tr><td><code>%s</code></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
-                    "<td><a style='color:#ff7a59' href='/admin/revoke?token=%s&key_id=%s'>revoke</a></td></tr>"
+                    "<td>%s</td></tr>"
                     % (_html_mod.escape(kid), _html_mod.escape(str(rec.get("plan"))),
                        _html_mod.escape(str(rec.get("exp"))), _html_mod.escape(state),
-                       _html_mod.escape(str(rec.get("instance") or "")[:16]), token, kid))
+                       _html_mod.escape(str(rec.get("instance") or "")[:16]),
+                       revoke_form % (csrf, _html_mod.escape(str(kid)))))
     prows = []
     for x in pays[-50:]:
         prows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><code>%s</code></td></tr>"
@@ -7613,12 +7900,12 @@ def _admin_page(token):
             "<body style='font:13px system-ui;background:#0d1017;color:#e9ebf2;padding:24px'>"
             "<h2>Ledger admin</h2>"
             "<p>keys: <b>%d</b> · bound: <b>%d</b> · revoked: <b>%d</b> · revenue: <b>%s</b> · "
-            "<a style='color:#7ad3a1' href='/hosting?token=%s'>hosting clients</a></p>"
+            "<a style='color:#7ad3a1' href='/hosting'>hosting clients</a></p>"
             "<h3>Keys</h3><table border='1' cellpadding='6' style='border-collapse:collapse;border-color:#2a2f37'>"
             "<tr><th>key id</th><th>plan</th><th>exp</th><th>state</th><th>instance</th><th></th></tr>%s</table>"
             "<h3>Payments</h3><table border='1' cellpadding='6' style='border-collapse:collapse;border-color:#2a2f37'>"
             "<tr><th>time</th><th>platform</th><th>plan</th><th>amount</th><th>key</th></tr>%s</table>"
-            "</body>") % (len(d["keys"]), bound, revoked, total, token, "".join(rows), "".join(prows))
+            "</body>") % (len(d["keys"]), bound, revoked, total, "".join(rows), "".join(prows))
 
 
 def _team_load():
@@ -8199,7 +8486,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.29")
+    print("  ▲  Ledger v1.66.30")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
