@@ -1226,7 +1226,9 @@ button:disabled{opacity:.55;cursor:default}
     <a onclick="setL('ru')" id="l-ru">RU</a>
   </div>
   <div style="margin-top:18px;text-align:center;font-size:12px">
-    <a href="https://t.me/ledger_os" target="_blank" rel="noopener" style="color:#7ad3a1;text-decoration:none">✈️ Ledger OS — Telegram channel</a>
+    <a href="https://t.me/ledger_os" target="_blank" rel="noopener" style="color:#7ad3a1;text-decoration:none">Telegram</a>
+    <span style="color:#566070">·</span>
+    <a href="https://discord.gg/eMBXnKA3Pa" target="_blank" rel="noopener" style="color:#7ad3a1;text-decoration:none">Discord</a>
   </div>
 </form>
 <script>
@@ -4756,7 +4758,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.20", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.21", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5422,7 +5424,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.20",
+            self._json({"ok": True, "version": "1.66.21",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7296,7 +7298,9 @@ def _pricing_page(lang="uk"):
             "<h3>%s</h3><p style='line-height:1.8'>USDT (TRC20/BEP20): <code>%s</code><br>"
             "Binance Pay: <code>%s</code><br>Payoneer: <code>%s</code><br>%s</p>"
             "<p><a href='https://t.me/ledger_os' style='display:inline-block;background:#7ad3a1;color:#08110b;"
-            "padding:10px 18px;border-radius:9px;text-decoration:none;font-weight:700'>%s</a></p>"
+            "padding:10px 18px;border-radius:9px;text-decoration:none;font-weight:700'>%s</a> "
+            "<a href='https://discord.gg/eMBXnKA3Pa' style='display:inline-block;background:#5865F2;color:#fff;"
+            "padding:10px 18px;border-radius:9px;text-decoration:none;font-weight:700'>Discord</a></p>"
             "<p style='color:#8b93a1;font-size:12px'>%s</p>"
             "<p style='color:#8b93a1;font-size:12px'>Free app: "
             "<a href='https://github.com/voidwhisperr/ledger/releases/latest' style='color:#7ad3a1'>GitHub releases</a></p>"
@@ -8008,7 +8012,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.20")
+    print("  ▲  Ledger v1.66.21")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
