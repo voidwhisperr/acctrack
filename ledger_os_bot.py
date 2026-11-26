@@ -1,0 +1,296 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Ledger OS Telegram helper bot.
+
+Token is read from (first found):
+  $LEDGER_OS_BOT_TOKEN
+  ./ledger-os-bot.token
+  %USERPROFILE%/Downloads/Ledger-Desktop/ledger-os-bot.token
+
+Never commit the token file.
+
+Usage:
+  python ledger_os_bot.py --poll
+  python ledger_os_bot.py --post "text"
+  python ledger_os_bot.py --post-file post.txt
+  python ledger_os_bot.py --chat @ledger_os --post "text"
+"""
+import json
+import os
+import pathlib
+import sys
+import time
+import urllib.request
+
+API = "https://api.telegram.org/bot%s/%s"
+CHANNEL = "@ledger_os"
+SITE = "https://ledger.70-34-243-50.sslip.io"
+
+
+def _token():
+    tok = (os.environ.get("LEDGER_OS_BOT_TOKEN") or "").strip()
+    if tok:
+        return tok
+    here = pathlib.Path(__file__).resolve().parent
+    for p in (here / "ledger-os-bot.token",
+              pathlib.Path.home() / "Downloads" / "Ledger-Desktop" / "ledger-os-bot.token",
+              pathlib.Path.home() / "ledger-os-bot.token"):
+        try:
+            if p.is_file():
+                return p.read_text(encoding="utf-8-sig").strip()
+        except OSError:
+            pass
+    raise SystemExit("No bot token: set LEDGER_OS_BOT_TOKEN or save ledger-os-bot.token next to this script.")
+
+
+def api(method, payload=None, timeout=30):
+    import urllib.error
+    last = None
+    for attempt in range(4):
+        req = urllib.request.Request(
+            API % (_token(), method),
+            data=json.dumps(payload or {}, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode("utf-8", "replace"))
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "replace")
+            try:
+                data = json.loads(body)
+            except Exception:
+                data = {}
+            if e.code == 429:
+                wait = float((data.get("parameters") or {}).get("retry_after") or 2)
+                time.sleep(min(wait, 30))
+                last = e
+                continue
+            if e.code >= 500 and attempt < 3:
+                time.sleep(2 * (attempt + 1))
+                last = e
+                continue
+            raise RuntimeError("Telegram %s: %s" % (e.code, body[:300]))
+    raise RuntimeError("Telegram failed after retries: %s" % last)
+
+
+def health():
+    try:
+        with urllib.request.urlopen(SITE + "/api/health", timeout=10) as r:
+            return json.loads(r.read().decode("utf-8", "replace"))
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:80]}
+
+
+def help_text():
+    return ("Ledger OS - reseller OS for game accounts.\n\n"
+            "Commands:\n"
+            "/status - Ledger server status\n"
+            "/pricing - free vs Ledger+\n"
+            "/channel - Telegram channel\n"
+            "/discord - Discord community\n"
+            "/github - latest release\n"
+            "/id - your Telegram id\n\n"
+            "Channel: https://t.me/ledger_os")
+
+
+def reply(chat_id, text, preview=False):
+    return api("sendMessage", {"chat_id": chat_id, "text": text,
+                               "disable_web_page_preview": not preview})
+
+
+def handle(msg):
+    chat = msg.get("chat") or {}
+    cid = chat.get("id")
+    text = (msg.get("text") or "").strip()
+    if not cid or not text.startswith("/"):
+        return
+    cmd = text.split()[0].split("@")[0].lower()
+    if cmd in ("/start", "/help"):
+        reply(cid, "👋 " + help_text())
+    elif cmd == "/status":
+        h = health()
+        if h.get("ok"):
+            reply(cid, "✅ Ledger online · v%s · uptime %ss" % (h.get("version", "?"), h.get("uptime", "?")))
+        else:
+            reply(cid, "⚠️ Ledger unavailable: %s" % h.get("error", "unknown"))
+    elif cmd == "/pricing":
+        reply(cid, "Ledger free · Ledger+ Solo $7/mo · Team $29/mo\n" + SITE + "/pricing", preview=True)
+    elif cmd == "/channel":
+        reply(cid, "Telegram channel: https://t.me/ledger_os", preview=True)
+    elif cmd == "/discord":
+        reply(cid, "Discord community: https://discord.gg/eMBXnKA3Pa", preview=True)
+    elif cmd == "/github":
+        reply(cid, "Latest release: https://github.com/voidwhisperr/ledger/releases/latest", preview=True)
+    elif cmd == "/id":
+        reply(cid, "chat_id: %s" % cid)
+
+
+def poll():
+    offset = 0
+    print("polling as", api("getMe").get("result", {}).get("username"))
+    while True:
+        try:
+            data = api("getUpdates", {"offset": offset, "timeout": 25}, timeout=35)
+            for upd in data.get("result", []):
+                offset = max(offset, int(upd.get("update_id", 0)) + 1)
+                msg = upd.get("message") or upd.get("channel_post")
+                if msg:
+                    handle(msg)
+        except KeyboardInterrupt:
+            return
+        except Exception as e:
+            print("poll error:", e, file=sys.stderr)
+            time.sleep(3)
+
+
+def _deepl_key():
+    k = (os.environ.get("DEEPL_API_KEY") or "").strip()
+    if k:
+        return k
+    here = pathlib.Path(__file__).resolve().parent
+    for p in (here / "deepl.key",
+              pathlib.Path.home() / "Downloads" / "Ledger-Desktop" / "deepl.key",
+              pathlib.Path("/root/deepl.key")):
+        try:
+            if p.is_file():
+                return p.read_text(encoding="utf-8").strip()
+        except OSError:
+            pass
+    return ""
+
+
+_BRANDS = ("Ledger OS", "Reseller OS", "Ledger+", "FunPay", "ZeusX",
+           "Eldorado", "Taobao", "P&L", "GitHub", "Telegram", "Discord")
+
+
+def _protect(text):
+    terms = []
+    for i, term in enumerate(_BRANDS):
+        if term in text:
+            tok = "[[[%d]]]" % i
+            text = text.replace(term, tok)
+            terms.append((tok, term))
+    return text, terms
+
+
+def _restore(text, terms):
+    for tok, term in terms:
+        text = text.replace(tok, term)
+    return text
+
+
+def deepl(text, target):
+    key = _deepl_key()
+    text, terms = _protect(text)
+    if not key:
+        raise RuntimeError("no DeepL key (deepl.key / DEEPL_API_KEY)")
+    host = "api-free.deepl.com" if key.endswith(":fx") else "api.deepl.com"
+    req = urllib.request.Request(
+        "https://%s/v2/translate" % host,
+        data=json.dumps({"text": [text], "source_lang": "EN",
+                         "target_lang": target}).encode("utf-8"),
+        headers={"Authorization": "DeepL-Auth-Key " + key,
+                 "Content-Type": "application/json"},
+        method="POST")
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        data = json.loads(resp.read().decode("utf-8", "replace"))
+    out = (data.get("translations") or [{}])[0].get("text") or ""
+    return _restore(out, terms)
+
+
+def _val(args, name):
+    if name in args:
+        i = args.index(name)
+        if i + 1 < len(args):
+            return args[i + 1]
+    return ""
+
+
+def _compose(parts):
+    blocks = []
+    labels = {"en": "English", "uk": "Українська", "ru": "Русский"}
+    for lang in ("en", "uk", "ru"):
+        txt = (parts.get(lang) or "").strip()
+        if txt:
+            blocks.append(labels[lang] + "\n" + txt)
+    return "\n\n──────────\n\n".join(blocks)
+
+
+def _chunks(text, limit=4000):
+    out, rest = [], (text or "").strip()
+    while rest:
+        if len(rest) <= limit:
+            out.append(rest)
+            break
+        cut = rest.rfind("\n", 0, limit)
+        if cut < limit // 2:
+            cut = limit
+        out.append(rest[:cut].rstrip())
+        rest = rest[cut:].lstrip()
+    return out
+
+
+def main():
+    args = sys.argv[1:]
+    chat = _val(args, "--chat") or CHANNEL
+    split = "--split" in args
+    dry = "--dry-run" in args
+    allow_partial = "--allow-partial" in args
+    post_mode = any(k in args for k in ("--post", "--post-file", "--post-json",
+                                        "--auto", "--en", "--uk", "--ru"))
+    parts = {}
+
+    if "--post-json" in args:
+        raw = pathlib.Path(_val(args, "--post-json")).read_text(encoding="utf-8")
+        data = json.loads(raw)
+        parts = {k: str(data.get(k) or "") for k in ("en", "uk", "ru")}
+    elif any(k in args for k in ("--en", "--uk", "--ru")):
+        parts = {"en": _val(args, "--en"), "uk": _val(args, "--uk"), "ru": _val(args, "--ru")}
+    elif "--post" in args:
+        parts = {"en": _val(args, "--post")}
+    elif "--post-file" in args:
+        parts = {"en": pathlib.Path(_val(args, "--post-file")).read_text(encoding="utf-8")}
+
+    if "--auto" in args and parts.get("en"):
+        try:
+            if not parts.get("uk"):
+                parts["uk"] = deepl(parts["en"], "UK")
+            if not parts.get("ru"):
+                parts["ru"] = deepl(parts["en"], "RU")
+        except Exception as e:
+            print("deepl error:", e, file=sys.stderr)
+            if not allow_partial:
+                raise SystemExit("auto-translation failed; use --allow-partial to post English only")
+
+    body = _compose(parts) if parts else ""
+    if not body:
+        if post_mode:
+            print("post mode produced an empty body", file=sys.stderr)
+            raise SystemExit(2)
+        poll()
+        return
+    if dry:
+        print(body)
+        return
+
+    labels = {"en": "English", "uk": "Українська", "ru": "Русский"}
+    if split:
+        messages = [labels[k] + "\n" + parts[k].strip() for k in ("en", "uk", "ru") if (parts.get(k) or "").strip()]
+    else:
+        messages = [body]
+
+    results = []
+    for text in messages:
+        for chunk in _chunks(text, 4000):
+            r = api("sendMessage", {"chat_id": chat, "text": chunk,
+                                    "disable_web_page_preview": False,
+                                    "allowed_mentions": {"parse": []}})
+            results.append({"ok": r.get("ok"),
+                            "message_id": (r.get("result") or {}).get("message_id"),
+                            "error": r.get("description")})
+    print(json.dumps(results, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
