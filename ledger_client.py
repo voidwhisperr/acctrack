@@ -18,7 +18,7 @@ APP_DIR = pathlib.Path(sys.executable).resolve().parent if getattr(sys, "frozen"
 sys.path.insert(0, str(APP_DIR))
 ASSET_DIR = pathlib.Path(getattr(sys, "_MEIPASS", APP_DIR)) / "assets"
 CONFIG = APP_DIR / "client.json"
-PREFS = APP_DIR / "desktop.json"
+PREFS = APP_DIR / "desktop-plus.json"
 DEFAULT_URL = "https://ledger.70-34-243-50.sslip.io/"
 LOG = APP_DIR / "client.log"
 

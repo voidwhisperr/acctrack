@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.14 — collector token auth fix
+- Fixed `_role_gate` blocking `X-GT-TOKEN` requests with 401 on password-protected instances; Taobao collector now works on hosted Ledger+ again (verify_auth 14/14).
+- CI runs `tests/verify_auth.py`; `tests/test_license.py` runs standalone without pytest.
+
 ## v1.66.13 — orders header wraps on mobile
 - Panel header controls now wrap (`flex-wrap`) so “звук”, “авто в P&L”, Demo and Refresh stay visible on narrow screens.
 

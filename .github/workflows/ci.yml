@@ -23,3 +23,5 @@ jobs:
         run: python -m pytest -q tests/fee_pct_test.py
       - name: Local API test
         run: python tests/local_test.py
+      - name: Auth and collector-token test
+        run: python tests/verify_auth.py

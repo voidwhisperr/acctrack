@@ -35,3 +35,17 @@ def test_bound_requires_instance():
     code = lic.make_code(raw, b'\x00' * 64)
     assert lic.verify(code) is None
 
+
+
+if __name__ == "__main__":
+    import inspect as _inspect
+    _failed = 0
+    for _name, _fn in sorted(globals().items()):
+        if _name.startswith("test_") and callable(_fn):
+            try:
+                _fn()
+                print("ok", _name)
+            except Exception as _e:
+                _failed += 1
+                print("FAIL", _name, _e)
+    raise SystemExit(1 if _failed else 0)
