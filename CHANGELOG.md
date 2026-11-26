@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.8 — smaller Ledger+ badge
+- Redesigned Ledger+ mark: the green plus badge is smaller and moved inward; content stays within 80% of the canvas on iOS and inside the Android maskable safe circle.
+- New full-bleed SVG/PNG/ICO assets; iOS 180 at 85%, PWA any 85%, maskable 70%.
+
 ## v1.66.7 — icon safe areas
 - iOS apple-touch icon at 75% logo size (no clipping under the squircle mask).
 - PWA manifest now has separate `any` (80%) and `maskable` (55%, inside the Android 80% safe circle) icons.
