@@ -130,7 +130,7 @@ with sync_playwright() as pw:
     diag = p.evaluate("document.getElementById('diagBox').innerText")
     check("діагностика показує дані", "версія" in diag or "version" in diag.lower(), diag[:60])
     check("панель контактів", p.evaluate("!!document.getElementById('contactPanel')"))
-    check("email у контактах", "dhdueu564@gmail.com" in p.evaluate("document.getElementById('contactPanel').innerText"))
+    check("email у контактах", "ledgeros.gg@gmail.com" in p.evaluate("document.getElementById('contactPanel').innerText"))
     check("discord у контактах", "facemyfear" in p.evaluate("document.getElementById('contactPanel').innerText"))
 
     print()

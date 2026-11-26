@@ -44,7 +44,7 @@
 
 **Taobao недоступний.** Taobao блокує серверні IP і вимагає капчу.
 Це окремий агент (Playwright + браузер на вашому ПК) — він не входить у цей репозиторій.
-Потрібна автоматизація — Telegram **@ledger_os**, email **dhdueu564@gmail.com**, Discord **facemyfear**.
+Потрібна автоматизація — Telegram **@ledger_os**, email **ledgeros.gg@gmail.com**, Discord: https://discord.gg/eMBXnKA3Pa.
 
 **Замовлення з пошти не приходять.** Потрібен Gmail із **App Password**
 (Google → Security → 2-Step → App passwords), звичайний пароль не підійде.

@@ -1418,6 +1418,10 @@ body.compact-ui .tabs{gap:4px}
       <div style="flex:1;min-width:240px;font-size:13px;line-height:1.55">
         <div style="font-weight:700;font-size:15px;margin-bottom:6px">Ledger OS community</div>
         <div style="color:var(--mu);margin-bottom:10px" data-i18n="ph.contact.desc">Автоматизація, гайди та оновлення — приєднуйся до Telegram або Discord.</div>
+        <div style="font-size:12.5px;margin-bottom:8px">
+          <span style="color:var(--mu)">Email</span>
+          <a href="mailto:ledgeros.gg@gmail.com" style="color:var(--tx);text-decoration:none">ledgeros.gg@gmail.com</a>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <a class="social tg" href="https://t.me/ledger_os" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><use href="#ic-tg"/></svg><span>Telegram</span></a>
           <a class="social dc" href="https://discord.gg/eMBXnKA3Pa" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><use href="#ic-dc"/></svg><span>Discord</span></a>

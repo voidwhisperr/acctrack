@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.66.23 — contact email
+- Contact panel and pricing page use ledgeros.gg@gmail.com; docs and tests updated.
+
 ## v1.66.22 — catalog tab and supplier cache fixes
 - Settings panels are now inside the Setup tab again; they no longer appear under Catalog/other tabs.
 - Supplier refresh refuses to wipe the cache when no suppliers are configured (restores the lost list from cache/settings).

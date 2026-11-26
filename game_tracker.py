@@ -4765,7 +4765,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.22", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.23", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5431,7 +5431,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.22",
+            self._json({"ok": True, "version": "1.66.23",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7309,6 +7309,7 @@ def _pricing_page(lang="uk"):
             "<a href='https://discord.gg/eMBXnKA3Pa' style='display:inline-block;background:#5865F2;color:#fff;"
             "padding:10px 18px;border-radius:9px;text-decoration:none;font-weight:700'>Discord</a></p>"
             "<p style='color:#8b93a1;font-size:12px'>%s</p>"
+            "<p style='color:#8b93a1;font-size:12px'>Email: <a href='mailto:ledgeros.gg@gmail.com' style='color:#7ad3a1'>ledgeros.gg@gmail.com</a></p>"
             "<p style='color:#8b93a1;font-size:12px'>Free app: "
             "<a href='https://github.com/voidwhisperr/ledger/releases/latest' style='color:#7ad3a1'>GitHub releases</a></p>"
             "</div></body>"
@@ -8019,7 +8020,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.22")
+    print("  ▲  Ledger v1.66.23")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
