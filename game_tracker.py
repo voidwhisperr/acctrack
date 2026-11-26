@@ -5167,7 +5167,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.32", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.33", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5182,7 +5182,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 and "X-GT-TOKEN" in self.headers and self._collector_ok()):
             pass  # колектор з валідним токеном
         elif (p.startswith("/admin") or p == "/join" or p.startswith("/hosting")
-              or p == "/pricing" or p.startswith("/app-icon") or p == "/manifest.json"
+              or p == "/pricing" or p.startswith("/docs/") or p == "/demo"
+              or p.startswith("/app-icon") or p == "/manifest.json"
               or p in _ICON_ALIASES):
             pass  # admin token / public icons and manifest
         elif AUTH_MODE != "off" and not self._device_ok() and not self._basic_ok_quiet():
@@ -5773,7 +5774,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.32",
+            self._json({"ok": True, "version": "1.66.33",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -8589,7 +8590,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.32")
+    print("  ▲  Ledger v1.66.33")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
