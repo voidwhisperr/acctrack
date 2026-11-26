@@ -1,6 +1,12 @@
 # Changelog
 
-## v1.66.23 — contact email
+## v1.66.25 — always online (5-min keepalive)
+
+## v1.66.25 — always online for ZeusX and FunPay
+- Channels cards get an “Always online” toggle with a daily time window, server-side activity keepalive, and a real status (online / scheduled / off / error + last check).
+- Eldorado has no public API, so it stays accounting-only.
+
+## v1.66.24 — contact email
 - Contact panel and pricing page use ledgeros.gg@gmail.com; docs and tests updated.
 
 ## v1.66.22 — catalog tab and supplier cache fixes

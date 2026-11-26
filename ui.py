@@ -6288,17 +6288,65 @@ async function loadPlatforms(force){
         row('Джерело',esc(e.source||'—'))
       : errBox(e.error||'немає даних');
     el.innerHTML='<div style="display:flex;gap:14px;flex-wrap:wrap">'
-      + card('⚡ ZeusX','var(--a1)',zrows,z.ok?'<span style="color:var(--gr);font-size:12px">✓ онлайн</span>':'')
-      + card('🔵 FunPay','var(--a3)',frows,f.ok?'<span style="color:var(--gr);font-size:12px">✓ онлайн</span>':'')
-      + card('🟡 Eldorado','var(--yw)',erows,e.ok?'<span style="color:var(--gr);font-size:12px">✓ облік</span>':'')
+      + card('⚡ ZeusX','var(--a1)',zrows+'<div class="online-w" data-plat="zeusx"></div>',z.ok?'<span style="color:var(--gr);font-size:12px">✓ онлайн</span>':'')
+      + card('🔵 FunPay','var(--a3)',frows+'<div class="online-w" data-plat="funpay"></div>',f.ok?'<span style="color:var(--gr);font-size:12px">✓ онлайн</span>':'')
+      + card('🟡 Eldorado','var(--yw)',erows+'<div class="online-w" data-plat="eldorado"></div>',e.ok?'<span style="color:var(--gr);font-size:12px">✓ облік</span>':'')
       + '</div>'
       + ((d.zeusx_imported||d.funpay_imported)?`<div class="al ok" style="margin-top:14px">📥 У чергу додано нових продажів: ZeusX ${d.zeusx_imported||0} · FunPay ${d.funpay_imported||0} — відкрийте вкладку «ЗАМОВЛЕННЯ».</div>`:'')
       + `<div style="font-size:12px;color:var(--mu);margin-top:10px">Eldorado не має публічного API — дані беруться з пошти та вашого ручного обліку.</div>`;
   calcMarkets();
   loadOffers();
+  loadOnline();
   }catch(e){ el.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
 }
 
+let ONLINE = null;
+const ONL_TXT = {
+ uk:{always:'Завжди онлайн',from:'з',to:'до',online:'онлайн',scheduled:'за розкладом',off:'вимкнено',error:'помилка',waiting:'перевіряю…',checked:'перевірено',refresh:'Оновити',saved:'Збережено',eld:'Eldorado не має публічного API — онлайн неможливий'},
+ en:{always:'Always online',from:'from',to:'to',online:'online',scheduled:'scheduled',off:'off',error:'error',waiting:'checking…',checked:'checked',refresh:'Refresh',saved:'Saved',eld:'Eldorado has no public API — online is not possible'},
+ ru:{always:'Всегда онлайн',from:'с',to:'до',online:'онлайн',scheduled:'по расписанию',off:'выключено',error:'ошибка',waiting:'проверяю…',checked:'проверено',refresh:'Обновить',saved:'Сохранено',eld:'Eldorado не имеет публичного API — онлайн невозможен'}
+};
+function onlT(){ return ONL_TXT[LANG] || ONL_TXT.uk; }
+async function loadOnline(){
+  try{ const r=await fetch('/api/online'); ONLINE=await r.json(); }catch(e){ ONLINE=null; }
+  renderOnline();
+}
+function renderOnline(){
+  document.querySelectorAll('.online-w').forEach(el=>{
+    const p=el.dataset.plat, T=onlT();
+    const d=ONLINE && ONLINE.platforms ? ONLINE.platforms[p] : null;
+    if(p==='eldorado'){
+      el.innerHTML='<div style="border-top:1px solid var(--brd);margin-top:10px;padding-top:8px;font-size:11.5px;color:var(--mu)">'+T.eld+'</div>';
+      return;
+    }
+    if(!d){ el.innerHTML='<div style="font-size:11px;color:var(--mu);margin-top:8px">'+T.waiting+'</div>'; return; }
+    const st=d.state||'off';
+    const color = st==='online'?'var(--gr)':(st==='error'?'var(--rd)':(st==='scheduled'?'var(--yw)':'var(--mu)'));
+    const label = st==='online'?T.online:(st==='scheduled'?T.scheduled:(st==='error'?T.error:(st==='off'?T.off:T.waiting)));
+    const ago = d.last_ts ? Math.max(0, Math.round((Date.now()/1000-d.last_ts)/60)) : null;
+    el.innerHTML='<div style="border-top:1px solid var(--brd);margin-top:10px;padding-top:8px;font-size:11.5px">'
+      +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px"><input type="checkbox" data-onl-en="'+p+'" '+(d.enabled?'checked':'')+' onchange="saveOnline(\''+p+'\')"> <b>'+T.always+'</b></label>'
+      +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:5px"><span style="color:var(--mu)">'+T.from+'</span>'
+      +'<input type="time" data-onl-start="'+p+'" value="'+esc(d.start||'')+'" onchange="saveOnline(\''+p+'\')" style="font-size:11px;padding:2px 4px">'
+      +'<span style="color:var(--mu)">'+T.to+'</span>'
+      +'<input type="time" data-onl-end="'+p+'" value="'+esc(d.end||'')+'" onchange="saveOnline(\''+p+'\')" style="font-size:11px;padding:2px 4px"></div>'
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="color:'+color+';font-weight:700">● '+label+'</span>'
+      +(ago!==null?'<span style="color:var(--mu)">'+T.checked+' '+ago+' хв</span>':'')
+      +(d.error?'<span style="color:var(--mu);font-size:10.5px">'+esc(d.error.slice(0,80))+'</span>':'')
+      +'<button class="btn" style="padding:2px 7px;font-size:10.5px" onclick="saveOnline(\''+p+'\',true)">↻ '+T.refresh+'</button></div></div>';
+  });
+}
+async function saveOnline(p, force){
+  const el=document.querySelector('.online-w[data-plat="'+p+'"]');
+  if(!el) return;
+  const en=el.querySelector('[data-onl-en]')?.checked||false;
+  const start=el.querySelector('[data-onl-start]')?.value||'';
+  const end=el.querySelector('[data-onl-end]')?.value||'';
+  try{
+    await fetch('/api/online/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:p,enabled:en,start:start,end:end,tz:-new Date().getTimezoneOffset()})});
+    await loadOnline();
+  }catch(e){}
+}
 let mailItems=[];
 let _lastMailNew=null;
 let _favTimer=null, _titleTimer=null, _alertCount=0, _favTick=0;

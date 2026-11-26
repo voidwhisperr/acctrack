@@ -2162,6 +2162,120 @@ _supplier_match = _platforms_mod._supplier_match
 _title_tokens = _platforms_mod._title_tokens
 
 
+ONLINE_FILE = str(_BASE_DIR / ".gt_online.json")
+_online_lock = threading.Lock()
+_ONLINE_PLATFORMS = ("zeusx", "funpay")
+_ONLINE_CALLS = {"zeusx": lambda: _platform_zeusx(), "funpay": lambda: _platform_funpay()}
+
+
+def _online_cfg():
+    st = _read_json(SETTINGS_FILE, {}) or {}
+    raw = st.get("keep_online") or {}
+    out = {}
+    for key in ("zeusx", "funpay"):
+        v = raw.get(key) or {}
+        out[key] = {
+            "enabled": bool(v.get("enabled")),
+            "start": str(v.get("start") or "")[:5],
+            "end": str(v.get("end") or "")[:5],
+            "tz": int(v.get("tz") if v.get("tz") is not None else 120),
+        }
+    return out
+
+
+def _online_window(cfg, now=None):
+    start = (cfg.get("start") or "").strip()
+    end = (cfg.get("end") or "").strip()
+    if not start or not end:
+        return True
+    try:
+        sh, sm = [int(x) for x in start.split(":")]
+        eh, em = [int(x) for x in end.split(":")]
+    except ValueError:
+        return True
+    tz = int(cfg.get("tz") or 0)
+    utc = now or datetime.datetime.utcnow()
+    local = utc + datetime.timedelta(minutes=tz)
+    cur = local.hour * 60 + local.minute
+    a, b = sh * 60 + sm, eh * 60 + em
+    return (a <= cur <= b) if a <= b else (cur >= a or cur <= b)
+
+
+def _online_state():
+    return _read_json(ONLINE_FILE, {}) or {}
+
+
+def _online_check_once(force=False):
+    st = _read_json(SETTINGS_FILE, {}) or {}
+    cfg = _online_cfg()
+    state = _online_state()
+    now = time.time()
+    changed = False
+    for key in _ONLINE_PLATFORMS:
+        c = cfg[key]
+        prev = state.get(key) or {}
+        if not c["enabled"]:
+            state[key] = {**prev, "state": "off", "error": ""}
+            changed = True
+            continue
+        if not force and not _online_window(c):
+            state[key] = {**prev, "state": "scheduled", "error": ""}
+            changed = True
+            continue
+        try:
+            data = _ONLINE_CALLS[key]() or {}
+            if data.get("ok"):
+                state[key] = {"state": "online", "ts": int(now), "ok_ts": int(now), "error": ""}
+            else:
+                state[key] = {**prev, "state": "error", "ts": int(now),
+                              "error": str(data.get("error") or "no data")[:200]}
+        except Exception as e:
+            state[key] = {**prev, "state": "error", "ts": int(now), "error": str(e)[:200]}
+        changed = True
+    if changed:
+        try:
+            _atomic_dump(ONLINE_FILE, state)
+        except Exception as e:
+            print(f"  ⚠ online state: {e}", flush=True)
+
+
+def _online_loop():
+    while True:
+        try:
+            _online_check_once()
+        except Exception as e:
+            print(f"  ⚠ keep-online: {e}", flush=True)
+        time.sleep(300)
+
+
+def _online_payload():
+    cfg = _online_cfg()
+    state = _online_state()
+    now = time.time()
+    out = {}
+    for key in ("zeusx", "funpay"):
+        c = cfg[key]
+        s = state.get(key) or {}
+        last_ok = int(s.get("ok_ts") or 0)
+        if not c["enabled"]:
+            stt = "off"
+        elif not _online_window(c):
+            stt = "scheduled"
+        elif s.get("state") == "online" and now - last_ok < 900:
+            stt = "online"
+        elif s.get("state") == "error":
+            stt = "error"
+        else:
+            stt = "waiting"
+        out[key] = {**c, "state": stt, "last_ts": int(s.get("ts") or 0),
+                    "last_ok": last_ok, "error": str(s.get("error") or "")[:200],
+                    "in_window": _online_window(c)}
+    out["eldorado"] = {"enabled": False, "state": "unsupported",
+                       "error": "no public API"}
+    return {"ok": True, "now": int(now), "platforms": out}
+
+
+
 _taobao_load()
 
 RATE_TTL = 6 * 3600
@@ -4765,7 +4879,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.23", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.25", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5431,7 +5545,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.23",
+            self._json({"ok": True, "version": "1.66.25",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5484,6 +5598,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": True, **platforms_data(force=("refresh=1" in self.path))})
         elif p == "/api/tunnel":
             self._json({"ok": True, "url": _tunnel_url(), "log": _tunnel_log_path()})
+        elif p == "/api/online":
+            self._json(_online_payload())
         elif p == "/api/suppliers/status":
             st = _sup_status()
             now = time.time()
@@ -6019,6 +6135,29 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     _team_save(d)
                     _audit("team.revoke_invite", token=_tok[:8])
                     self._json({"ok": True})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:200]}, code=400)
+            return
+        if self.path == "/api/online/config":
+            try:
+                _key = str(body.get("platform") or "").lower()
+                if _key not in ("zeusx", "funpay"):
+                    self._json({"ok": False, "error": "unknown platform"}, code=400)
+                    return
+                _st = _read_json(SETTINGS_FILE, {}) or {}
+                _ko = _st.get("keep_online") or {}
+                _ko[_key] = {
+                    "enabled": bool(body.get("enabled")),
+                    "start": str(body.get("start") or "")[:5],
+                    "end": str(body.get("end") or "")[:5],
+                    "tz": int(body.get("tz") if body.get("tz") is not None else 120),
+                }
+                _st["keep_online"] = _ko
+                with _WRITE_LOCK:
+                    _atomic_dump(SETTINGS_FILE, _st)
+                threading.Thread(target=_online_check_once,
+                                 kwargs={"force": True}, daemon=True).start()
+                self._json({"ok": True, "online": _online_payload()})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)[:200]}, code=400)
             return
@@ -8020,7 +8159,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.23")
+    print("  ▲  Ledger v1.66.25")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
@@ -8083,6 +8222,7 @@ def main():
     threading.Thread(target=_tg_bot_loop, daemon=True).start()
     threading.Thread(target=_watchdog_loop, daemon=True).start()
     threading.Thread(target=_agent_watchdog_loop, daemon=True).start()
+    threading.Thread(target=_online_loop, daemon=True).start()
     threading.Thread(target=_fx_usd_cny_loop, daemon=True).start()
     threading.Thread(target=_currency_rate_loop, daemon=True).start()
     threading.Thread(target=_funpay_orders_loop, daemon=True).start()
