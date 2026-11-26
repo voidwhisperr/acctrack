@@ -185,7 +185,7 @@ def _val(args, name):
 
 def _compose(parts):
     blocks = []
-    labels = {"en": "🇬🇧 English", "uk": "🇺🇦 Українська", "ru": "Русский"}
+    labels = {"en": "English", "uk": "Українська", "ru": "Русский"}
     for lang in ("en", "uk", "ru"):
         txt = (parts.get(lang) or "").strip()
         if txt:
