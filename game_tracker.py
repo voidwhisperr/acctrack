@@ -4515,8 +4515,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _role_gate(self):
         p = self.path.split("?")[0]
-        if (p in ("/join", "/pricing", "/api/license/register", "/api/license/release")
-                or p.startswith("/admin") or p.startswith("/hosting")):
+        if (p in ("/join", "/pricing", "/api/license/register", "/api/license/release",
+                 "/manifest.json", "/favicon.ico", "/favicon-32.png", "/apple-touch-icon.png",
+                 "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg", "/demo")
+                or p.startswith("/admin") or p.startswith("/hosting")
+                or p.startswith("/app-icon") or p.startswith("/logo/")
+                or p.startswith("/docs/") or p in _ICONS_B64):
             return True
         role = self._role()
         if role == "owner":
@@ -4609,6 +4613,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.split("?")[0] in ("/icon.svg", "/icon.png", "/ledger.svg")
                 or self.path.startswith("/logo/") or self.path.startswith("/app-icon") or self.path.split("?")[0] == "/demo"
                 or self.path.startswith("/docs/")
+                or self.path.split("?")[0].startswith("/app-icon")
+                or self.path.split("?")[0] in ("/manifest.json", "/favicon.ico", "/favicon-32.png")
                 or self.path.split("?")[0] in ("/api/license/register", "/api/license/release",
                                                 "/admin", "/admin/revoke", "/join", "/hosting",
                                                 "/hosting/save", "/hosting/check", "/hosting/delete",
@@ -4680,7 +4686,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.63.0", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.65.0", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -4693,8 +4699,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 and (p.startswith("/api/taobao") or p.startswith("/api/secrets/"))
                 and "X-GT-TOKEN" in self.headers and self._collector_ok()):
             pass  # колектор з валідним токеном
-        elif p.startswith("/admin") or p == "/join" or p.startswith("/hosting") or p == "/pricing":
-            pass  # admin token / team invite token are checked in the route
+        elif (p.startswith("/admin") or p == "/join" or p.startswith("/hosting")
+              or p == "/pricing" or p.startswith("/app-icon") or p == "/manifest.json"):
+            pass  # admin token / public icons and manifest
         elif AUTH_MODE != "off" and not self._device_ok() and not self._basic_ok_quiet():
             if p == "/login":
                 self._send(200, "text/html", LOGIN_HTML.encode("utf-8"))
@@ -4729,9 +4736,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 "background_color": "#0d1017",
                 "theme_color": "#0d1017",
                 "icons": [
-                    {"src": "/app-icon-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-                    {"src": "/app-icon-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
-                    {"src": "/app-icon.svg?v=3", "sizes": "any", "type": "image/svg+xml"},
+                    {"src": "/app-icon-192.png?v=4", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                    {"src": "/app-icon-512.png?v=4", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+                    {"src": "/app-icon.svg?v=4", "sizes": "any", "type": "image/svg+xml"},
                 ],
             }
             self._send(200, "application/json", json.dumps(manifest))
@@ -4744,7 +4751,7 @@ self.addEventListener('fetch', e => {});
 self.addEventListener('push', e => {
   const d = e.data ? e.data.json() : {};
   e.waitUntil(self.registration.showNotification(d.title||'GameTracker', {
-    body: d.body||'', icon: '/app-icon-192.png?v=3', badge: '/app-icon-32.png?v=3', vibrate: [200,100,200]
+    body: d.body||'', icon: '/app-icon-192.png?v=4', badge: '/app-icon-32.png?v=4', vibrate: [200,100,200]
   }));
 });
 self.addEventListener('notificationclick', e => { e.notification.close(); clients.openWindow('/'); });
@@ -5310,7 +5317,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.63.0",
+            self._json({"ok": True, "version": "1.65.0",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7876,7 +7883,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.63.0")
+    print("  ▲  Ledger v1.65.0")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

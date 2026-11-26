@@ -18,6 +18,7 @@ APP_DIR = pathlib.Path(sys.executable).resolve().parent if getattr(sys, "frozen"
 sys.path.insert(0, str(APP_DIR))
 ASSET_DIR = pathlib.Path(getattr(sys, "_MEIPASS", APP_DIR)) / "assets"
 CONFIG = APP_DIR / "client.json"
+PREFS = APP_DIR / "desktop.json"
 DEFAULT_URL = "https://ledger.70-34-243-50.sslip.io/"
 LOG = APP_DIR / "client.log"
 
@@ -28,6 +29,24 @@ def log(msg):
             fh.write(time.strftime("%Y-%m-%d %H:%M:%S ") + str(msg) + "\n")
     except Exception:
         pass
+
+
+def load_prefs():
+    try:
+        d = json.loads(PREFS.read_text(encoding="utf-8")) or {}
+    except Exception:
+        d = {}
+    if not isinstance(d, dict):
+        d = {}
+    d.setdefault("close_to_tray", True)
+    return d
+
+
+def save_prefs(d):
+    try:
+        PREFS.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    except Exception:
+        log("prefs save failed:\n" + traceback.format_exc())
 
 
 def load_cfg():
@@ -90,6 +109,15 @@ class Api:
     def notify_order(self, n, subject, lang="uk"):
         notify(n, subject, lang)
         return True
+
+    def get_prefs(self):
+        return load_prefs()
+
+    def set_close_to_tray(self, value):
+        d = load_prefs()
+        d["close_to_tray"] = bool(value)
+        save_prefs(d)
+        return {"ok": True, "close_to_tray": d["close_to_tray"]}
 
 
 def main():
@@ -173,10 +201,12 @@ def main():
 
     def on_closing():
         try:
-            window.hide()
+            if bool(load_prefs().get("close_to_tray", True)) and tray is not None:
+                window.hide()
+                return False
         except Exception:
-            pass
-        return False
+            log("close handler failed:\n" + traceback.format_exc())
+        return True
 
     try:
         window.events.closing += on_closing

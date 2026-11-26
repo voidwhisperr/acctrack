@@ -9,6 +9,7 @@ same records, so the browser and the desktop app stay in sync.
 """
 import os
 import sys
+import json
 import time
 import pathlib
 import threading
@@ -20,6 +21,7 @@ LOG = APP_DIR / "desktop.log"
 # Ledger+ uses client.json; the free Ledger must not pick up the hosted
 # account by accident, so it has its own file.
 CONFIG = APP_DIR / "ledger.client.json"
+PREFS = APP_DIR / "desktop.json"
 
 
 def log(msg):
@@ -28,6 +30,35 @@ def log(msg):
             fh.write(time.strftime("%Y-%m-%d %H:%M:%S ") + str(msg) + "\n")
     except Exception:
         pass
+
+
+def load_prefs():
+    try:
+        d = json.loads(PREFS.read_text(encoding="utf-8")) or {}
+    except Exception:
+        d = {}
+    if not isinstance(d, dict):
+        d = {}
+    d.setdefault("close_to_tray", True)
+    return d
+
+
+def save_prefs(d):
+    try:
+        PREFS.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    except Exception:
+        log("prefs save failed:\n" + traceback.format_exc())
+
+
+class DesktopApi:
+    def get_prefs(self):
+        return load_prefs()
+
+    def set_close_to_tray(self, value):
+        d = load_prefs()
+        d["close_to_tray"] = bool(value)
+        save_prefs(d)
+        return {"ok": True, "close_to_tray": d["close_to_tray"]}
 
 
 def start_local(is_plus):
@@ -94,10 +125,76 @@ def main():
         webview.start()
         return
 
-    webview.create_window(title, url, width=1500, height=950, min_size=(980, 620),
-                          background_color="#0d1017", text_select=True)
-    webview.start(debug=False, private_mode=False)
-    os._exit(0)
+    prefs = load_prefs()
+    api = DesktopApi()
+    start_hidden = ("--tray" in sys.argv) and bool(prefs.get("close_to_tray", True))
+    window = webview.create_window(title, url, width=1500, height=950, min_size=(980, 620),
+                                   background_color="#0d1017", text_select=True,
+                                   js_api=api, hidden=start_hidden)
+
+    tray = None
+    try:
+        import pystray
+        from PIL import Image
+        icon_path = APP_DIR / "assets" / ("ledger-192.png" if not is_plus else "ledger-plus-192.png")
+        if not icon_path.exists():
+            icon_path = pathlib.Path(getattr(sys, "_MEIPASS", APP_DIR)) / "assets" / "ledger-192.png"
+        image = Image.open(icon_path)
+
+        def show_window(icon=None, item=None):
+            try:
+                window.show()
+                window.restore()
+            except Exception:
+                pass
+
+        def quit_app(icon=None, item=None):
+            try:
+                if tray:
+                    tray.stop()
+            except Exception:
+                pass
+            try:
+                window.destroy()
+            except Exception:
+                pass
+            os._exit(0)
+
+        tray = pystray.Icon("Ledger", image, "Ledger", pystray.Menu(
+            pystray.MenuItem("Відкрити Ledger", show_window, default=True),
+            pystray.MenuItem("Вихід", quit_app)))
+        tray.run_detached()
+    except Exception:
+        log("tray failed:\n" + traceback.format_exc())
+
+    def on_closing():
+        # "Close to tray" setting: hide the window when a tray icon exists,
+        # otherwise let the app exit (no way to bring it back without a tray).
+        try:
+            if bool(load_prefs().get("close_to_tray", True)) and tray is not None:
+                window.hide()
+                return False
+        except Exception:
+            log("close handler failed:\n" + traceback.format_exc())
+        return True
+
+    try:
+        window.events.closing += on_closing
+    except Exception:
+        pass
+
+    try:
+        _win_icon = APP_DIR / "assets" / "ledger.ico"
+        if not _win_icon.exists():
+            _win_icon = pathlib.Path(getattr(sys, "_MEIPASS", APP_DIR)) / "assets" / "ledger.ico"
+        webview.start(debug=False, private_mode=False, icon=str(_win_icon))
+    finally:
+        try:
+            if tray:
+                tray.stop()
+        except Exception:
+            pass
+        os._exit(0)
 
 
 if __name__ == "__main__":

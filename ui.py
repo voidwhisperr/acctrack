@@ -18,11 +18,11 @@ HTML = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-title" content="Ledger">
 <meta name="theme-color" content="#0d1017">
 <script>window.__pwaEarly=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaEarly=e;});</script>
-<link rel="manifest" href="/manifest.json?v=3">
-<link rel="icon" href="/app-icon-32.png?v=3" sizes="32x32">
-<link rel="icon" type="image/svg+xml" href="/app-icon.svg?v=3">
-<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png?v=3">
-<link rel="apple-touch-icon" sizes="180x180" href="/app-icon-180.png?v=3">
+<link rel="manifest" href="/manifest.json?v=4">
+<link rel="icon" href="/app-icon-32.png?v=4" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/app-icon.svg?v=4">
+<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png?v=4">
+<link rel="apple-touch-icon" sizes="180x180" href="/app-icon-180.png?v=4">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -507,7 +507,7 @@ code{
   <div class="tsep"></div>
   <div class="tab" onclick="sw('stats',this);renderStats();setTimeout(renderRevenueChart,80)"><svg class="ic"><use href="#ic-chart"/></svg><span data-i18n="nav.analytics">Аналітика</span></div>
   <div class="tab" onclick="sw('plus',this);loadPlus()"><span style="font-size:14px;font-weight:900;color:var(--gr)">✦</span><span data-i18n="nav.plus">Ledger+</span></div>
-  <div class="tab" onclick="sw('setup',this);loadBackupList();loadSettings();loadMobile()"><svg class="ic"><use href="#ic-gear"/></svg></div>
+  <div class="tab" onclick="sw('setup',this);loadBackupList();loadSettings();loadMobile();initDesktopPrefs()"><svg class="ic"><use href="#ic-gear"/></svg></div>
 </div>
 
 <nav id="mnav" aria-label="Mobile navigation">
@@ -1244,6 +1244,16 @@ code{
   <div class="panel" id="mobilePanel" style="margin-bottom:14px">
     <div class="ph"><span>📱 <span data-i18n="mobile.title">Мобільний доступ</span></span><button class="btn" onclick="loadMobile()" style="font-size:12px;padding:6px 10px">↻ <span data-i18n="mobile.refresh">Оновити</span></button></div>
     <div id="mobileBody" style="font-size:12.5px;color:var(--mu)">…</div>
+  </div>
+
+  <div class="panel" id="desktopPanel" style="display:none;margin-bottom:14px">
+    <div class="ph"><span>🖥 <span data-i18n="desk.title">Вікно застосунку</span></span></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="closeToTray">
+      <span data-i18n="desk.tray">Закривати у трей, а не виходити</span>
+    </label>
+    <div style="font-size:11.5px;color:var(--mu);margin-top:6px" data-i18n="desk.hint">Хрестик ховає вікно в трей; вийти повністю можна через меню трея.</div>
+    <div style="margin-top:9px"><button class="btn gr" onclick="saveDesktopPrefs()">✓ <span data-i18n="desk.save">Зберегти</span></button></div>
   </div>
 
   <div id="pwaHelpModal" onclick="if(event.target===this)closePwaHelp()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
@@ -3669,6 +3679,20 @@ async function copyMobileLink(){
   const items=window.__mobileItems||[]; const sel=g('mobileSel'); const it=items[Number(sel&&sel.value||0)]; if(!it) return;
   try{ await navigator.clipboard.writeText(it.url); toast('⧉ '+it.url); }catch(e){ prompt('URL', it.url); }
 }
+
+function initDesktopPrefs(){
+  const panel=g('desktopPanel'); if(!panel) return;
+  if(!(window.pywebview && window.pywebview.api && window.pywebview.api.get_prefs)){ panel.style.display='none'; return; }
+  try{ window.pywebview.api.get_prefs().then(p=>{ const cb=g('closeToTray'); if(cb) cb.checked = !!(p&&p.close_to_tray); panel.style.display='block'; }).catch(()=>{ panel.style.display='none'; }); }catch(e){ panel.style.display='none'; }
+}
+async function saveDesktopPrefs(){
+  try{
+    const on=!!(g('closeToTray')&&g('closeToTray').checked);
+    await window.pywebview.api.set_close_to_tray(on);
+    toast((on?'✅ ':'✅ ')+(LANG==='en'?'Close to tray: ':(LANG==='ru'?'Сворачивать в трей: ':'Закривати в трей: '))+(on?'ON':'OFF'));
+  }catch(e){ toast('⚠ '+e, false); }
+}
+window.addEventListener('pywebviewready', ()=>setTimeout(initDesktopPrefs, 300));
 
 async function loadSettings(){
   try{
@@ -6195,7 +6219,7 @@ function _favFrame(phase){
 }
 function _favLinks(){ return Array.from(document.querySelectorAll('link[rel~="icon"]')); }
 function setDefaultFavicon(){
-  const urls=['/app-icon-32.png?v=3','/app-icon.svg?v=3','/app-icon-192.png?v=3','/app-icon-180.png?v=3'];
+  const urls=['/app-icon-32.png?v=4','/app-icon.svg?v=4','/app-icon-192.png?v=4','/app-icon-180.png?v=4'];
   _favLinks().forEach((l,i)=>{ try{ l.type=(i===1?'image/svg+xml':'image/png'); l.href=urls[i]||urls[0]; }catch(e){} });
   window._origFavicons=null;
 }

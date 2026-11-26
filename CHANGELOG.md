@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.65.0 — close to tray for both editions
+- Free Ledger now has a tray icon and the same close-to-tray behavior as Ledger+.
+- New desktop setting “Close to tray instead of exiting” (Settings → Window), persisted in `desktop.json` next to the exe.
+- Closing via X hides the window when the setting is on; full exit is available from the tray menu. If the tray failed to start, closing exits normally.
+
+## v1.64.0 — full-bleed iOS/Android icons
+- Apple touch icon and PWA icons are now full-bleed 180/192/512 with the logo scaled up; no transparent corners or empty padding.
+- Icon/manifest URLs bumped to `?v=4`.
+
 ## v1.63.0 — language and currency are independent
 - Changing the interface language no longer resets the display currency (UA + USD is now possible).
 - Onboarding language buttons no longer overwrite the chosen currency.
