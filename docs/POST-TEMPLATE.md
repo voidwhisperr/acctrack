@@ -22,3 +22,8 @@ python3 ledger_os_bot.py --auto --en "Ledger vX.Y.Z is live. ..."
 ```
 
 Brand names are protected from translation; manual `--uk`/`--ru` override auto output.
+
+
+## Length
+
+Combined trilingual text must fit Telegram's 4096-char limit. Prefer `--split` for long posts (three messages), or keep each language under ~1200 chars.

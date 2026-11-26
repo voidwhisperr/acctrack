@@ -37,20 +37,41 @@ def _token():
               pathlib.Path.home() / "ledger-os-bot.token"):
         try:
             if p.is_file():
-                return p.read_text(encoding="utf-8").strip()
+                return p.read_text(encoding="utf-8-sig").strip()
         except OSError:
             pass
     raise SystemExit("No bot token: set LEDGER_OS_BOT_TOKEN or save ledger-os-bot.token next to this script.")
 
 
 def api(method, payload=None, timeout=30):
-    req = urllib.request.Request(
-        API % (_token(), method),
-        data=json.dumps(payload or {}, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8", "replace"))
+    import urllib.error
+    last = None
+    for attempt in range(4):
+        req = urllib.request.Request(
+            API % (_token(), method),
+            data=json.dumps(payload or {}, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode("utf-8", "replace"))
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "replace")
+            try:
+                data = json.loads(body)
+            except Exception:
+                data = {}
+            if e.code == 429:
+                wait = float((data.get("parameters") or {}).get("retry_after") or 2)
+                time.sleep(min(wait, 30))
+                last = e
+                continue
+            if e.code >= 500 and attempt < 3:
+                time.sleep(2 * (attempt + 1))
+                last = e
+                continue
+            raise RuntimeError("Telegram %s: %s" % (e.code, body[:300]))
+    raise RuntimeError("Telegram failed after retries: %s" % last)
 
 
 def health():
@@ -67,6 +88,7 @@ def help_text():
             "/status - Ledger server status\n"
             "/pricing - free vs Ledger+\n"
             "/channel - Telegram channel\n"
+            "/discord - Discord community\n"
             "/github - latest release\n"
             "/id - your Telegram id\n\n"
             "Channel: https://t.me/ledger_os")
@@ -96,6 +118,8 @@ def handle(msg):
         reply(cid, "Ledger free · Ledger+ Solo $7/mo · Team $29/mo\n" + SITE + "/pricing", preview=True)
     elif cmd == "/channel":
         reply(cid, "Telegram channel: https://t.me/ledger_os", preview=True)
+    elif cmd == "/discord":
+        reply(cid, "Discord community: https://discord.gg/eMBXnKA3Pa", preview=True)
     elif cmd == "/github":
         reply(cid, "Latest release: https://github.com/voidwhisperr/ledger/releases/latest", preview=True)
     elif cmd == "/id":
@@ -193,11 +217,28 @@ def _compose(parts):
     return "\n\n──────────\n\n".join(blocks)
 
 
+def _chunks(text, limit=4000):
+    out, rest = [], (text or "").strip()
+    while rest:
+        if len(rest) <= limit:
+            out.append(rest)
+            break
+        cut = rest.rfind("\n", 0, limit)
+        if cut < limit // 2:
+            cut = limit
+        out.append(rest[:cut].rstrip())
+        rest = rest[cut:].lstrip()
+    return out
+
+
 def main():
     args = sys.argv[1:]
     chat = _val(args, "--chat") or CHANNEL
     split = "--split" in args
     dry = "--dry-run" in args
+    allow_partial = "--allow-partial" in args
+    post_mode = any(k in args for k in ("--post", "--post-file", "--post-json",
+                                        "--auto", "--en", "--uk", "--ru"))
     parts = {}
 
     if "--post-json" in args:
@@ -219,22 +260,35 @@ def main():
                 parts["ru"] = deepl(parts["en"], "RU")
         except Exception as e:
             print("deepl error:", e, file=sys.stderr)
+            if not allow_partial:
+                raise SystemExit("auto-translation failed; use --allow-partial to post English only")
+
     body = _compose(parts) if parts else ""
     if not body:
+        if post_mode:
+            print("post mode produced an empty body", file=sys.stderr)
+            raise SystemExit(2)
         poll()
         return
     if dry:
         print(body)
         return
-    messages = ([parts["en"] or "", parts["uk"] or "", parts["ru"] or ""]
-                if split else [body])
+
+    labels = {"en": "English", "uk": "Українська", "ru": "Русский"}
+    if split:
+        messages = [labels[k] + "\n" + parts[k].strip() for k in ("en", "uk", "ru") if (parts.get(k) or "").strip()]
+    else:
+        messages = [body]
+
     results = []
     for text in messages:
-        if not text.strip():
-            continue
-        r = api("sendMessage", {"chat_id": chat, "text": text, "disable_web_page_preview": False})
-        results.append({"ok": r.get("ok"), "message_id": (r.get("result") or {}).get("message_id"),
-                        "error": r.get("description")})
+        for chunk in _chunks(text, 4000):
+            r = api("sendMessage", {"chat_id": chat, "text": chunk,
+                                    "disable_web_page_preview": False,
+                                    "allowed_mentions": {"parse": []}})
+            results.append({"ok": r.get("ok"),
+                            "message_id": (r.get("result") or {}).get("message_id"),
+                            "error": r.get("description")})
     print(json.dumps(results, ensure_ascii=False))
 
 

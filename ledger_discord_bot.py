@@ -38,15 +38,35 @@ def token():
 
 
 def rest(method, path, payload=None):
-    req = urllib.request.Request(API + path,
-                                 data=json.dumps(payload or {}).encode("utf-8") if payload is not None else None,
-                                 headers={"Authorization": "Bot " + token(),
-                                          "Content-Type": "application/json",
-                                          "User-Agent": "LedgerOSBot/1.0"},
-                                 method=method)
-    with urllib.request.urlopen(req, timeout=30) as r:
-        body = r.read().decode("utf-8", "replace")
-        return json.loads(body) if body else {}
+    import urllib.error, time
+    last = None
+    for attempt in range(4):
+        req = urllib.request.Request(API + path,
+                                     data=json.dumps(payload or {}).encode("utf-8") if payload is not None else None,
+                                     headers={"Authorization": "Bot " + token(),
+                                              "Content-Type": "application/json",
+                                              "User-Agent": "LedgerOSBot/1.0"},
+                                     method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                body = r.read().decode("utf-8", "replace")
+                return json.loads(body) if body else {}
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode("utf-8", "replace")
+            try:
+                data = json.loads(raw)
+            except Exception:
+                data = {}
+            if e.code == 429:
+                time.sleep(min(float(data.get("retry_after") or 2), 30))
+                last = e
+                continue
+            if e.code >= 500 and attempt < 3:
+                time.sleep(2 * (attempt + 1))
+                last = e
+                continue
+            raise RuntimeError("Discord %s: %s" % (e.code, raw[:300]))
+    raise RuntimeError("Discord failed after retries: %s" % last)
 
 
 def channel_id():
@@ -82,7 +102,7 @@ def send_text(cid, text):
         if cut > 200 and len(text) > 0:
             text = chunk[cut + 1:] + text
             chunk = chunk[:cut]
-        rest("POST", "/channels/%s/messages" % cid, {"content": chunk})
+        rest("POST", "/channels/%s/messages" % cid, {"content": chunk, "allowed_mentions": {"parse": []}})
     return True
 
 
@@ -136,6 +156,11 @@ async def pricing_cmd(interaction: discord.Interaction):
 @tree.command(name="channel", description="Telegram channel")
 async def channel_cmd(interaction: discord.Interaction):
     await interaction.response.send_message("Telegram: https://t.me/ledger_os", ephemeral=True)
+
+
+@tree.command(name="discord", description="Discord community invite")
+async def discord_cmd(interaction: discord.Interaction):
+    await interaction.response.send_message("Discord: https://discord.gg/eMBXnKA3Pa", ephemeral=True)
 
 
 @tree.command(name="github", description="Latest Ledger release")

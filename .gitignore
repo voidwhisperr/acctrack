@@ -20,3 +20,7 @@ certs/
 
 # персональний ярлик (створюється make-shortcut.bat)
 AccTrack.lnk
+*.token
+ledger-os-bot.token
+discord-bot.token
+deepl.key

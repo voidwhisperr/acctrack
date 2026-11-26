@@ -39,3 +39,13 @@ Discord verification is not required for a private bot.
 - #announcements is read-only for @everyone and the channel guide is pinned.
 
 Bot permissions now include Manage Channels, Manage Roles, Manage Guild, Manage Messages, Moderate Members.
+
+
+## Live layout
+
+- 📢 Ledger OS: 📢・announcements (read-only, pinned guide), 🔄・updates, 📚・guides, ❓・q-and-a, 💬・off-topic
+- 🗣・STAFF (private): 🗣・admin-chat, 📝・mod-log, 🤖・bot-log
+- Permanent invite: https://discord.gg/eMBXnKA3Pa
+- Bot has Administrator (needed for AutoMod/roles setup); reduce to granular permissions later if desired.
+- AutoMod: anti-spam, mass-mention limit 5, Discord invite block; alerts to 📝・mod-log.
+- @everyone cannot mention @everyone/@here.
