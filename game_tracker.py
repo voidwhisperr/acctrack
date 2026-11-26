@@ -2518,6 +2518,11 @@ def _refresh_suppliers(reason=""):
 
 def _refresh_suppliers_inner(reason=""):
     global _supplier_cache
+    if not SUPPLIERS:
+        print("  ⚠ No suppliers configured — keeping cached products", flush=True)
+        return {"count": len(_supplier_cache), "failed": {},
+                "sale": sum(1 for p in _supplier_cache if p.get("isOnSale") and not p.get("gone")),
+                "gone": sum(1 for p in _supplier_cache if p.get("gone"))}
     if reason:
         print(f"\n  📦 " + _cl(f"Оновлення постачальників ({reason})...", f"Supplier refresh ({reason})...", f"Обновление поставщиков ({reason})..."), flush=True)
     _price_drops.clear()
@@ -3528,6 +3533,8 @@ def _notify_restock(items, limit=5):
 def _merge_supplier_cache(fresh, ok_keys):
     """Свіжі дані + старі для тих сайтів, що не відповіли, + маркери зниклих."""
     global _supplier_cache
+    if not SUPPLIERS:
+        return _supplier_cache or []
     now = int(time.time())
     old = _supplier_cache or []
     old_by_key = {k: [p for p in old if p.get("source") == k] for k in SUPPLIERS}
@@ -4758,7 +4765,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.21", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.22", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5424,7 +5431,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.21",
+            self._json({"ok": True, "version": "1.66.22",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -8012,7 +8019,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.21")
+    print("  ▲  Ledger v1.66.22")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.22 — catalog tab and supplier cache fixes
+- Settings panels are now inside the Setup tab again; they no longer appear under Catalog/other tabs.
+- Supplier refresh refuses to wipe the cache when no suppliers are configured (restores the lost list from cache/settings).
+
 ## v1.66.21 — community links in the app
 - Header now has branded Telegram and Discord buttons (icons + labels; icons only on phones).
 - Contact panel, login page and pricing CTA link to both the Telegram channel and Discord server.

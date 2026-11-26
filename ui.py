@@ -1426,7 +1426,6 @@ body.compact-ui .tabs{gap:4px}
       </div>
       </div>
     </div>
-  </div>
 
   <!-- 🎨 ТЕМА -->
   <div class="panel" style="margin-bottom:14px">
