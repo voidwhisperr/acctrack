@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.3 — single instance and login favicon
+- Desktop app is single-instance: a second launch focuses the existing window instead of opening another copy (important when the first is hidden in the tray).
+- Login page now declares PNG favicons and apple-touch-icon (Safari does not use SVG favicons, so the tab showed a globe before login).
+
 ## v1.66.2 — desktop startup fix
 - Fixed `create_window() got an unexpected keyword argument 'win_x'`: width/height are passed at creation, x/y are applied after the GUI starts.
 

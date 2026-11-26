@@ -32,6 +32,33 @@ def log(msg):
         pass
 
 
+_MUTEX_HANDLE = None
+
+
+def single_instance(mutex_name, title):
+    """Return False when another copy is already running; focus its window."""
+    global _MUTEX_HANDLE
+    if os.name != "nt":
+        return True
+    try:
+        import ctypes
+        k32 = ctypes.windll.kernel32
+        _MUTEX_HANDLE = k32.CreateMutexW(None, False, mutex_name)
+        if k32.GetLastError() == 183:      # ERROR_ALREADY_EXISTS
+            try:
+                u32 = ctypes.windll.user32
+                hwnd = u32.FindWindowW(None, title)
+                if hwnd:
+                    u32.ShowWindow(hwnd, 9)      # SW_RESTORE
+                    u32.SetForegroundWindow(hwnd)
+            except Exception:
+                pass
+            return False
+    except Exception:
+        log("single-instance check failed:\n" + traceback.format_exc())
+    return True
+
+
 def load_prefs():
     try:
         d = json.loads(PREFS.read_text(encoding="utf-8")) or {}
@@ -118,6 +145,8 @@ def main():
     import remote_proxy as rp
     is_plus = ("plus" in pathlib.Path(sys.executable).stem.lower()) or (os.environ.get("LEDGER_PLUS") == "1")
     title = "Ledger+ — Game Account Tracker" if is_plus else "Ledger — Game Account Tracker"
+    if not single_instance("Global\\LedgerDesktopFree", title):
+        return
     cfg = rp.load_config(CONFIG)
     server = str(cfg.get("server") or "").strip()
     url = ""

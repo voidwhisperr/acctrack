@@ -1177,6 +1177,10 @@ LOGIN_HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sign in · Ledger</title>
 <link rel="icon" href="/ledger.svg?v=2" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="/app-icon-32-v5.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-32-v5.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/app-icon-180-v5.png">
+<link rel="shortcut icon" href="/favicon-v5.ico">
 <style>
 :root{--bg:#0b0c0e;--card:#111214;--brd:#26282c;--tx:#edeef0;--mu:#8a8f98;--a1:#edeef0}
 *{box-sizing:border-box}
@@ -4726,7 +4730,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.2", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.3", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5374,7 +5378,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.2",
+            self._json({"ok": True, "version": "1.66.3",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -7940,7 +7944,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.2")
+    print("  ▲  Ledger v1.66.3")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

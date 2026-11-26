@@ -31,6 +31,32 @@ def log(msg):
         pass
 
 
+_MUTEX_HANDLE = None
+
+
+def single_instance(mutex_name, title):
+    global _MUTEX_HANDLE
+    if os.name != "nt":
+        return True
+    try:
+        import ctypes
+        k32 = ctypes.windll.kernel32
+        _MUTEX_HANDLE = k32.CreateMutexW(None, False, mutex_name)
+        if k32.GetLastError() == 183:
+            try:
+                u32 = ctypes.windll.user32
+                hwnd = u32.FindWindowW(None, title)
+                if hwnd:
+                    u32.ShowWindow(hwnd, 9)
+                    u32.SetForegroundWindow(hwnd)
+            except Exception:
+                pass
+            return False
+    except Exception:
+        log("single-instance check failed:\n" + traceback.format_exc())
+    return True
+
+
 def load_prefs():
     try:
         d = json.loads(PREFS.read_text(encoding="utf-8")) or {}
@@ -146,6 +172,8 @@ def main():
     import remote_proxy as rp
 
     cfg = load_cfg()
+    if not single_instance("Global\\LedgerPlusDesktop", "Ledger+ — Game Account Tracker"):
+        return
     server = str(cfg.get("server") or DEFAULT_URL).strip()
     if not server.startswith("http"):
         server = "https://" + server
