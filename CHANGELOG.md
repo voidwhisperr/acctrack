@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.62.2 — mobile hint scope
+- `GT_BIND` hint is shown only when the dashboard's own origin is localhost.
+
 ## v1.62.1 — LAN hint
 - Mobile access shows LAN links only when the server is actually bound beyond 127.0.0.1 and explains `GT_BIND=0.0.0.0` otherwise.
 
