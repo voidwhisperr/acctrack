@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.44 — settings cleanup
+- Removed the unscannable QR/community island from Settings; replaced it with a compact always-visible link row (Telegram, Discord, email, screenshots).
+- Removed legacy duplicate contact panel; settings keep the collapsible islands.
+
 ## v1.66.43 — settings islands and one-click Always online
 - Settings are grouped into six visible sections of collapsible "island" cards with short hints; nothing is hidden behind one category dropdown.
 - The community/contact strip is compact and always visible at the top of Settings.
