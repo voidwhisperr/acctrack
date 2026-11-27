@@ -15,7 +15,6 @@ import threading
 import traceback
 
 APP_DIR = pathlib.Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(APP_DIR))
 ASSET_DIR = pathlib.Path(getattr(sys, "_MEIPASS", APP_DIR)) / "assets"
 CONFIG = APP_DIR / "client.json"
 PREFS = APP_DIR / "desktop-plus.json"
@@ -103,9 +102,18 @@ def load_cfg():
         return {}
 
 
+def _toast_safe(value):
+    # winotify builds a PowerShell here-string; never allow expansion characters.
+    import re as _re
+    s = str(value or "")[:80]
+    s = _re.sub(r"[^0-9A-Za-zА-Яа-яІіЇїЄєҐґ .,:;#/_\-+()\[\]@!?%]", "", s)
+    return s or "order"
+
+
 def notify(n, subject, lang="uk"):
     try:
         from winotify import Notification, audio
+        subject = _toast_safe(subject if subject is not None else n)
         if str(lang).startswith("ru"):
             title, text = "Ledger+", "Новый заказ: " + (subject or str(n))
         elif str(lang).startswith("en"):

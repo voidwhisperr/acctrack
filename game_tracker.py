@@ -374,6 +374,8 @@ def _clean_pl(data):
         rid = rec.get("id")
         if not isinstance(rid, (int, str)) or isinstance(rid, bool) or rid == "":
             rid = now_ms + i
+        if isinstance(rid, str):
+            rid = re.sub(r"[^A-Za-z0-9_.:-]", "", rid)[:64] or (now_ms + i)
         buy  = _fnum(rec.get("buy"), f"запис #{i + 1} buy")
         sell = _fnum(rec.get("sell"), f"запис #{i + 1} sell")
         expenses = _fnum(rec.get("expenses"), f"запис #{i + 1} expenses")
@@ -421,6 +423,8 @@ def _clean_ed(data):
         rid = rec.get("id")
         if not isinstance(rid, (int, str)) or isinstance(rid, bool) or rid == "":
             rid = now_ms + i
+        if isinstance(rid, str):
+            rid = re.sub(r"[^A-Za-z0-9_.:-]", "", rid)[:64] or (now_ms + i)
         if rec.get("price") in (None, ""):
             raise ValueError(f"запис #{i + 1}: price обовʼязковий")
         price = _fnum(rec.get("price"), f"запис #{i + 1} price")
@@ -1100,7 +1104,9 @@ def _mail_key(msg, subject, sender, body):
     import hashlib
     mid = str(msg.get("Message-ID") or "").strip()
     if mid:
-        return "mid:" + mid[:200]
+        mid = re.sub(r"[^A-Za-z0-9@._:+-]", "", mid)[:160]
+        if mid:
+            return "mid:" + mid
     raw = "|".join([subject or "", sender or "", str(msg.get("Date") or ""), (body or "")[:200]])
     return "sha:" + hashlib.sha1(raw.encode("utf-8", "replace")).hexdigest()
 
@@ -1708,6 +1714,7 @@ def _inv_clean(items):
         if not isinstance(r, dict):
             raise ValueError(f"запис #{i + 1}: очікується об'єкт")
         rid = r.get("id") or f"inv-{int(time.time() * 1000)}-{i}"
+        rid = re.sub(r"[^A-Za-z0-9_.:-]", "", str(rid))[:64] or f"inv-{int(time.time() * 1000)}-{i}"
         title = str(r.get("title") or "").strip()[:200]
         if not title:
             raise ValueError(f"запис #{i + 1}: порожня назва")
@@ -3909,6 +3916,13 @@ def _buy_list(limit=20, days=180, fee=0.095):
             "games": len(stats), "days": days, "fee": fee}
 
 
+def _csv_cell(value):
+    s = "" if value is None else str(value)
+    if s[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        s = "'" + s
+    return s
+
+
 def _lots_csv(markup=30.0, source="inventory", limit=50, game=""):
     """CSV для заливки лотів: назва, ціна з націнкою, опис, джерело.
 
@@ -3982,8 +3996,9 @@ def _lots_csv(markup=30.0, source="inventory", limit=50, game=""):
     w = csv.writer(buf, delimiter=";")
     w.writerow(["title", "price", "game", "description", "source", "cost", "url"])
     for r in rows:
-        w.writerow([r["title"], r["price"], r["game"], r["description"],
-                    r["source"], r["cost"], r["url"]])
+        w.writerow([_csv_cell(r["title"]), r["price"], _csv_cell(r["game"]),
+                    _csv_cell(r["description"]), _csv_cell(r["source"]),
+                    r["cost"], _csv_cell(r["url"])])
     return "\ufeff" + buf.getvalue(), len(rows)
 
 
@@ -4409,9 +4424,27 @@ def _is_private_ip(ip):
     return a == 10 or (a == 192 and b == 168) or (a == 172 and 16 <= b <= 31)
 
 
+_SESSION_KEY_CACHE = ""
+
+
 def _csrf_key():
-    """Ключ підпису CSRF: пароль, а в режимі GT_AUTH=off — секрет процесу."""
-    return (AUTH_PASS or _SESSION_SECRET).encode("utf-8")
+    """Random persisted key for CSRF/device/team cookies (not the password)."""
+    global _SESSION_KEY_CACHE
+    if _SESSION_KEY_CACHE:
+        return _SESSION_KEY_CACHE.encode("utf-8")
+    sec = _read_json(SECRETS_FILE, {}) or {}
+    key = str(sec.get("session_key") or "")
+    if not key:
+        import secrets as _secrets
+        key = _secrets.token_urlsafe(32)
+        sec["session_key"] = key
+        _atomic_dump(SECRETS_FILE, sec)
+        try:
+            os.chmod(SECRETS_FILE, 0o600)
+        except OSError:
+            pass
+    _SESSION_KEY_CACHE = key
+    return key.encode("utf-8")
 
 
 def _csrf_token():
@@ -4979,9 +5012,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if role == "owner":
             return True
         _owner_only = ("/api/auth", "/api/demo", "/api/secrets", "/api/gmail", "/api/tg",
-                       "/api/suppliers/add", "/api/taobao/agent-config", "/api/password",
-                       "/api/2fa", "/api/team", "/api/license/admin", "/api/backup",
-                       "/api/diag", "/api/audit", "/api/tunnel", "/api/inventory/secret")
+                       "/api/suppliers", "/api/taobao", "/api/password",
+                       "/api/2fa", "/api/team", "/api/license", "/api/backup",
+                       "/api/diag", "/api/audit", "/api/tunnel", "/api/inventory",
+                       "/api/export", "/api/lots/export", "/api/report/export",
+                       "/api/pl", "/api/eldorado", "/api/cashflow", "/api/mail/queue",
+                       "/api/settings", "/api/tokens", "/api/https", "/api/online",
+                       "/api/import")
         if any(p.startswith(x) for x in _owner_only):
             self._json({"ok": False, "error": "owner only"}, code=403)
             return False
@@ -4994,8 +5031,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return False
             return True
         if role == "manager":
-            blocked = ("/api/settings/save", "/api/backup", "/api/secrets", "/api/2fa",
-                       "/api/team", "/api/license/admin", "/api/password", "/api/logout/all")
+            blocked = ("/api/settings", "/api/backup", "/api/secrets", "/api/2fa",
+                       "/api/team", "/api/license", "/api/password", "/api/logout/all",
+                       "/api/https", "/api/online", "/api/demo", "/api/suppliers",
+                       "/api/import", "/api/taobao", "/api/auth")
             if any(p.startswith(b) for b in blocked) or p.startswith("/admin"):
                 self._json({"ok": False, "error": "manager cannot change this"}, code=403)
                 return False
@@ -5027,9 +5066,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         try:
             peer = self.client_address[0] if self.client_address else "?"
             if peer in ("127.0.0.1", "::1"):
-                xff = (self.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
-                if xff:
-                    return xff
+                # Caddy appends the real peer; the left-most value is user-controlled.
+                xff = (self.headers.get("X-Forwarded-For") or "").split(",")
+                real = xff[-1].strip() if xff else ""
+                if real:
+                    return real
             return peer
         except Exception:
             return "?"
@@ -5084,7 +5125,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.split("?")[0].lstrip("/") in _ICONS_B64
                 or self.path.split("?")[0] in ("/icon.svg", "/icon.png", "/ledger.svg")
                 or self.path.startswith("/logo/") or self.path.startswith("/app-icon") or self.path.split("?")[0] == "/demo"
-                or self.path.startswith("/docs/")
+                or self.path.split("?")[0] in ("/docs/cookie-block-ua.html",
+                                                  "/docs/cookie-block-ru.html",
+                                                  "/docs/cookie-block.png", "/docs/DEMO.html")
+                or self.path.split("?")[0].startswith("/docs/demo/")
                 or self.path.split("?")[0].startswith("/app-icon")
                 or self.path.split("?")[0] in ("/manifest.json", "/favicon.ico", "/favicon-32.png")
                 or self.path.split("?")[0].lstrip("/") in _ICON_ALIASES
@@ -5146,6 +5190,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
                    extra={"WWW-Authenticate": 'Basic realm="Game Tracker"'})
         return False
 
+    def _desktop_host_ok(self):
+        if os.environ.get("GT_DESKTOP") != "1":
+            return True
+        host = (self.headers.get("Host") or "").strip().lower()
+        ok = {"127.0.0.1:%d" % PORT, "localhost:%d" % PORT, "[::1]:%d" % PORT}
+        if host not in ok:
+            self._send(403, "text/plain", b"403 forbidden host")
+            return False
+        return True
+
     def do_HEAD(self):
         self._head_only = True
         try:
@@ -5154,6 +5208,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             pass
 
     def do_GET(self):
+        if not self._desktop_host_ok():
+            return
         try:
             self._route_get()
         except Exception as e:
@@ -5167,7 +5223,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.35", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.37", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5182,11 +5238,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 and "X-GT-TOKEN" in self.headers and self._collector_ok()):
             pass  # колектор з валідним токеном
         elif (p.startswith("/admin") or p == "/join" or p.startswith("/hosting")
-              or p == "/pricing" or p.startswith("/docs/") or p == "/demo"
+              or p == "/pricing"
+              or p in ("/docs/cookie-block-ua.html", "/docs/cookie-block-ru.html",
+                       "/docs/cookie-block.png", "/docs/DEMO.html")
+              or p.startswith("/docs/demo/")
+              or p == "/demo"
               or p.startswith("/app-icon") or p == "/manifest.json"
               or p in _ICON_ALIASES):
             pass  # admin token / public icons and manifest
         elif AUTH_MODE != "off" and not self._device_ok() and not self._basic_ok_quiet():
+            if (self.headers.get("Authorization") or "").strip():
+                self._note_auth_fail()
+                if self._rate_limited():
+                    self._send(429, "text/plain", b"429 Too Many Requests")
+                    return
             if p == "/login":
                 self._send(200, "text/html", LOGIN_HTML.encode("utf-8"))
                 return
@@ -5384,9 +5449,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 data = _read_json(ED_FILE, []) or []
                 head = ["date", "title", "price", "buy", "fee", "profit", "orderId"]
                 for r in (data if isinstance(data, list) else []):
-                    rows.append([r.get("date", ""), r.get("title", ""), r.get("price", 0),
-                                 r.get("buy", 0), r.get("fee", 0), r.get("profit", 0),
-                                 r.get("orderId", "")])
+                    rows.append([_csv_cell(r.get("date", "")), _csv_cell(r.get("title", "")),
+                                 r.get("price", 0), r.get("buy", 0), r.get("fee", 0),
+                                 r.get("profit", 0), _csv_cell(r.get("orderId", ""))])
             buf = io.StringIO()
             w = csv.writer(buf, delimiter=";")
             w.writerow(head)
@@ -5432,13 +5497,15 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": True, "matches": _inv_match((qs.get("title") or [""])[0])})
         elif p == "/api/lots/export":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+            _src = (qs.get("source") or ["inventory"])[0]
+            if _src not in ("inventory", "suppliers", "taobao"):
+                _src = "inventory"
             data, n = _lots_csv((qs.get("markup") or ["30"])[0],
-                                (qs.get("source") or ["inventory"])[0],
+                                _src,
                                 (qs.get("limit") or ["50"])[0],
                                 (qs.get("game") or [""])[0])
             self._send(200, "text/csv", data.encode("utf-8"), extra={
-                "Content-Disposition": 'attachment; filename="lots_%s.csv"'
-                                       % (qs.get("source") or ["inventory"])[0]})
+                "Content-Disposition": 'attachment; filename="lots_%s.csv"' % _src})
         elif p == "/api/insights/restock":
             qs = urllib.parse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
             try:
@@ -5774,7 +5841,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.35",
+            self._json({"ok": True, "version": "1.66.37",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5906,6 +5973,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._send(404, "text/plain", b"404")
 
     def do_POST(self):
+        if not self._desktop_host_ok():
+            return
         try:
             self._route_post()
         except Exception as e:
@@ -5973,6 +6042,15 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": False,
                         "error": "CSRF: онови сторінку (Ctrl+F5) — браузер не надіслав токен"},
                        code=403); return
+        _auth_change_paths = ("/api/auth/toggle", "/api/auth/password",
+                              "/api/2fa/setup", "/api/2fa/enable",
+                              "/api/2fa/disable", "/api/2fa/recovery")
+        if (os.environ.get("GT_ALLOW_AUTH_CHANGES") == "0"
+                and self.path.split("?")[0] in _auth_change_paths):
+            self._json({"ok": False,
+                        "error": "auth changes are disabled on this hosted instance"},
+                       code=403)
+            return
         try:
             n = int(self.headers.get("Content-Length", 0) or 0)
         except Exception:
@@ -7243,6 +7321,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             if self._is_https():
                 self.send_header("Strict-Transport-Security", "max-age=31536000")
             for k, v in (extra or {}).items():
+                if "\r" in str(v) or "\n" in str(v) or "\r" in str(k) or "\n" in str(k):
+                    continue
                 self.send_header(k, v)
             self.end_headers()
             if data and not getattr(self, "_head_only", False):
@@ -8590,7 +8670,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.35")
+    print("  ▲  Ledger v1.66.37")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

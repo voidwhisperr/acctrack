@@ -16,7 +16,6 @@ import threading
 import traceback
 
 APP_DIR = pathlib.Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(APP_DIR))
 LOG = APP_DIR / "desktop.log"
 # Ledger+ uses client.json; the free Ledger must not pick up the hosted
 # account by accident, so it has its own file.

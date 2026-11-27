@@ -9,6 +9,7 @@ import os
 import json
 import time
 import base64
+import hmac
 import socket
 import threading
 import urllib.request
@@ -46,7 +47,8 @@ def seal(text):
     raw = str(text or "").encode("utf-8")
     enc = _dpapi(raw, True)
     if enc is None:
-        return "b64:" + base64.b64encode(raw).decode("ascii")
+        # Never silently store a plaintext fallback (b64) for a saved password.
+        raise RuntimeError("Windows DPAPI unavailable; refusing to save the password")
     return "dpapi:" + base64.b64encode(enc).decode("ascii")
 
 
@@ -101,8 +103,11 @@ OPENER = urllib.request.build_opener(_NoRedirect)
 
 def start_proxy(remote, user="", password="", title="Ledger"):
     import http.server
+    import secrets as _secrets
+    import urllib.parse as _urlparse
 
     remote = remote.rstrip("/")
+    token = _secrets.token_urlsafe(24)
     auth = ""
     if user or password:
         auth = "Basic " + base64.b64encode(("%s:%s" % (user, password)).encode("utf-8")).decode("ascii")
@@ -128,7 +133,42 @@ def start_proxy(remote, user="", password="", title="Ledger"):
                     v = _re.sub(r";\s*Domain=[^;]+", "", v, flags=_re.I)
                 self.send_header(k, v)
 
+        def _deny(self):
+            data = b"403 forbidden"
+            self.send_response(403)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def _proxy_ok(self):
+            host = (self.headers.get("Host") or "").lower()
+            if host not in ("127.0.0.1:%d" % port, "localhost:%d" % port):
+                return False
+            origin = (self.headers.get("Origin") or "").lower()
+            if origin and not (origin == "http://127.0.0.1:%d" % port or origin == "http://localhost:%d" % port):
+                return False
+            cookie = self.headers.get("Cookie") or ""
+            for part in cookie.split(";"):
+                k, _, v = part.strip().partition("=")
+                if k == "gt_proxy":
+                    return hmac.compare_digest(v, token)
+            return False
+
         def _serve(self):
+            path = self.path.split("?", 1)[0]
+            if path == "/__ledger_proxy__":
+                qs = _urlparse.parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+                if (qs.get("t") or [""])[0] != token:
+                    return self._deny()
+                self.send_response(302)
+                self.send_header("Location", "/")
+                self.send_header("Set-Cookie", "gt_proxy=%s; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400" % token)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            if not self._proxy_ok():
+                return self._deny()
             try:
                 length = int(self.headers.get("Content-Length") or 0)
             except Exception:
@@ -184,7 +224,7 @@ def start_proxy(remote, user="", password="", title="Ledger"):
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
     srv.daemon_threads = True
     threading.Thread(target=srv.serve_forever, daemon=True, name="ledger-proxy").start()
-    return port, "http://127.0.0.1:%d/" % port
+    return port, "http://127.0.0.1:%d/__ledger_proxy__?t=%s" % (port, token)
 
 
 def load_config(path):
