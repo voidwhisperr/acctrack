@@ -150,6 +150,14 @@ GT_BIND=0.0.0.0 GT_AUTH=basic GT_AUTH_PASS='a-long-password' python game_tracker
 
 ---
 
+## Build, licences and residual risks
+
+- Windows release builds are reproducible: [scripts/build_release.ps1](scripts/build_release.ps1) builds `Ledger.exe` and `LedgerPlus.exe` from the pinned environment in [scripts/build-requirements.txt](scripts/build-requirements.txt) (Python 3.14.2, PyInstaller 6.22.3), excludes PyQt5/PySide6/Qt, and emits `SHA256SUMS.txt` + `BUILD-INFO.txt`.
+- Third-party components, versions and licences: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). PyQt5/Qt were removed in v1.66.42; older exes still contain them, so rebuild instead of redistributing those.
+- Chart.js 4.4.1 and SheetJS 0.18.5 are loaded from cdnjs with pinned SHA-384 SRI; the Manrope font comes from Google Fonts.
+- Known limitations are listed in [docs/DEPLOY.md](docs/DEPLOY.md#residual-build-risks): runtime CDN dependency, build pins versions but not hashes, PyInstaller onefile extraction, self-signed code-signing certificate, and the end-of-life SheetJS 0.18.5 write-only usage.
+- v1.66.42 release notes: [English](docs/update-16642-en.md) · [Українська](docs/update-16642-ua.md) · [Русский](docs/update-16642-ru.md).
+
 ## Tech
 
 Python 3.11+ standard library, a single-file HTML/JS dashboard, JSON storage, optional `cryptography` for encrypted backups. MIT licensed.

@@ -144,21 +144,34 @@ body::before{
 .online-dot.on{background:var(--gr);box-shadow:0 0 0 3px color-mix(in srgb,var(--gr) 18%,transparent)}
 .online-dot.err{background:var(--rd)}
 .online-dot.wait{background:var(--yw)}
-.online-switch{position:relative;display:inline-block;width:34px;height:20px;flex:none;cursor:pointer}
-.online-switch input{opacity:0;width:0;height:0;position:absolute}
-.online-slider{position:absolute;inset:0;background:var(--brd);border-radius:999px;transition:.18s;cursor:pointer}
-.online-slider:before{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.18s}
-.online-switch input:checked+.online-slider{background:var(--gr)}
-.online-switch input:checked+.online-slider:before{transform:translateX(14px)}
-.online-times{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:7px}
-.online-time{font-size:11px;padding:4px 6px;border:1px solid var(--brd);border-radius:7px;
-  background:var(--card);color:var(--tx);font-family:inherit;width:94px;min-height:0!important}
-.online-tz{font-size:10.5px;padding:3px 4px;border:1px solid var(--brd);border-radius:6px;background:var(--card);color:var(--tx);font-family:inherit;max-width:86px}
 .online-foot{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11px;color:var(--mu)}
 .online-state{font-weight:700}
 .online-refresh{padding:3px 8px;font-size:10.5px;border-radius:6px;border:1px solid var(--brd);
   background:var(--card2);color:var(--tx);cursor:pointer}
 .online-refresh:hover{border-color:var(--a1)}
+
+/* ── always-online: великий перемикач, статус-пілюля, остання перевірка ── */
+.online-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:9px 0 7px}
+.online-toggle{display:inline-flex;align-items:center;gap:10px;padding:8px 14px 8px 10px;border-radius:999px;border:1px solid var(--brd);background:var(--card);color:var(--mu);font-family:var(--font);font-size:13px;font-weight:800;letter-spacing:.05em;cursor:pointer;min-height:44px;transition:.18s}
+.online-toggle:hover{border-color:var(--a1)}
+.online-toggle .online-knob{position:relative;width:48px;height:26px;border-radius:999px;background:var(--brd);transition:.18s;flex:none}
+.online-toggle .online-knob:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.18s}
+.online-toggle.on{border-color:var(--gr);color:var(--gr);background:rgba(52,211,153,.08)}
+.online-toggle.on .online-knob{background:var(--gr)}
+.online-toggle.on .online-knob:before{transform:translateX(22px)}
+.online-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid var(--brd);background:var(--card2);color:var(--mu)}
+.online-pill.on{color:var(--gr);border-color:rgba(52,211,153,.45);background:rgba(52,211,153,.08)}
+.online-pill.err{color:var(--rd);border-color:rgba(248,113,113,.45);background:rgba(248,113,113,.08)}
+.online-pill.wait{color:var(--yw);border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.08)}
+.online-last{font-size:11.5px;color:var(--mu)}
+.online-err{font-size:10.5px;color:var(--rd);opacity:.9;margin-top:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ── категорії налаштувань ── */
+.set-cat{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.set-cat label{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);font-weight:700}
+.set-cat select{min-width:210px;font-size:13.5px}
+.set-cat-hint{font-size:11px;color:var(--mu)}
+@keyframes setFade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+#tab-setup > .panel.set-in{animation:setFade .22s ease}
 /* ── header ── */
 header{
   padding:22px 0 16px;border-bottom:1px solid var(--brd);margin-bottom:20px;
@@ -196,6 +209,10 @@ h1 span b{color:var(--a1);font-weight:700}
 .tab.on{color:var(--a1);border-bottom-color:var(--a1);background:color-mix(in srgb, var(--a1) 8%, transparent)}
 .tc{display:none}.tc.on{display:block}
 #mnav{display:none}
+/* ── доступність: клавіатурна навігація + мобільне меню «Ще» ── */
+.tab:focus-visible,.mn:focus-visible,.mn-more-item:focus-visible{outline:2px solid var(--a1);outline-offset:2px;border-radius:8px}
+#mnavMore{display:none}
+@media(min-width:641px){#mnavMore{display:none!important}}
 
 /* ── кнопки ── */
 .btn{
@@ -440,6 +457,10 @@ canvas{max-width:100%!important}
   .mn .ic{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7}
   .mn.on{color:var(--a1);background:color-mix(in srgb,var(--a1) 9%,transparent)}
   .mn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  #mnavMore.on{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;position:fixed;left:8px;right:8px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:1001;background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:9px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+  #mnavMore .mn-more-item{display:flex;align-items:center;gap:7px;min-width:0;padding:9px 8px;border:1px solid var(--brd);border-radius:9px;background:var(--card2);color:var(--tx);font-family:var(--font);font-size:11.5px;font-weight:600;cursor:pointer}
+  #mnavMore .mn-more-item .ic{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7}
+  #mnavMore .mn-more-item.on{border-color:var(--a1);color:var(--a1)}
   input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px!important;min-height:42px}
   .btn{min-height:40px}
   .bub-acts .bub-btn{width:36px;height:36px;font-size:16px}
@@ -488,8 +509,9 @@ body.compact-ui .tab{padding:7px 10px}
 body.compact-ui .tabs{gap:4px}
 
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+        integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
+        crossorigin="anonymous"></script>
 </head>
 <body>
 <svg style="display:none" aria-hidden="true">
@@ -530,7 +552,7 @@ body.compact-ui .tabs{gap:4px}
 </header>
 <div id="orderBanner"><span style="font-size:17px">🔔</span><b id="orderBannerText" data-i18n="order.new">Нове замовлення</b><button class="btn gr" style="padding:5px 10px;font-size:11px" onclick="goOrders()" data-i18n="order.open">Відкрити</button></div>
 
-<div id="onb" class="onb" style="display:none">
+<div id="onb" class="onb" role="dialog" aria-modal="true" aria-labelledby="onbTitle" aria-hidden="true" style="display:none">
   <div class="onb-card">
     <div class="onb-step" id="onbStepInfo">1 / 3</div>
     <h2 id="onbTitle">Welcome to Ledger</h2>
@@ -542,20 +564,20 @@ body.compact-ui .tabs{gap:4px}
   </div>
 </div>
 
-<div class="tabs">
-  <div class="tab on" onclick="sw('overview',this)"><svg class="ic"><use href="#ic-grid"/></svg><span data-i18n="nav.overview">Огляд</span></div>
-  <div class="tab" onclick="sw('tracker',this)"><svg class="ic"><use href="#ic-receipt"/></svg><span data-i18n="nav.deals">Угоди</span></div>
-  <div class="tab" onclick="sw('mail',this);loadMailQueue()"><svg class="ic"><use href="#ic-inbox"/></svg><span data-i18n="nav.orders">Замовлення</span><span id="mailBadge"></span></div>
-  <div class="tab" onclick="sw('channels',this);loadPlatforms();loadEldorado()"><svg class="ic"><use href="#ic-store"/></svg><span data-i18n="nav.channels">Канали</span></div>
-  <div class="tsep"></div>
-  <div class="tab" onclick="sw('supply',this);loadSupply()"><svg class="ic"><use href="#ic-box"/></svg><span data-i18n="nav.catalog">Каталог</span></div>
-  <div class="tab" onclick="sw('buy',this);loadBuyList(true)"><svg class="ic"><use href="#ic-cart"/></svg><span data-i18n="nav.plan">План</span></div>
-  <div class="tab" onclick="sw('taobao',this);loadTaobao()"><svg class="ic"><use href="#ic-tag"/></svg><span data-i18n="nav.taobao">Taobao</span></div>
-  <div class="tab" onclick="sw('inventory',this);loadInventory()"><svg class="ic"><use href="#ic-layers"/></svg><span data-i18n="nav.inventory">Інвентар</span></div>
-  <div class="tsep"></div>
-  <div class="tab" onclick="sw('stats',this);renderStats();setTimeout(renderRevenueChart,80)"><svg class="ic"><use href="#ic-chart"/></svg><span data-i18n="nav.analytics">Аналітика</span></div>
-  <div class="tab" onclick="sw('plus',this);loadPlus()"><span style="font-size:14px;font-weight:900;color:var(--gr)">✦</span><span data-i18n="nav.plus">Ledger+</span></div>
-  <div class="tab" onclick="sw('setup',this);loadBackupList();loadSettings();loadMobile();initDesktopPrefs()"><svg class="ic"><use href="#ic-gear"/></svg></div>
+<div class="tabs" role="tablist" aria-label="Розділи" data-i18n-aria="nav.sections">
+  <div class="tab on" id="tab-btn-overview" role="tab" tabindex="0" aria-selected="true" aria-controls="tab-overview" onclick="sw('overview',this)"><svg class="ic"><use href="#ic-grid"/></svg><span data-i18n="nav.overview">Огляд</span></div>
+  <div class="tab" id="tab-btn-tracker" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-tracker" onclick="sw('tracker',this)"><svg class="ic"><use href="#ic-receipt"/></svg><span data-i18n="nav.deals">Угоди</span></div>
+  <div class="tab" id="tab-btn-mail" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-mail" onclick="sw('mail',this);loadMailQueue()"><svg class="ic"><use href="#ic-inbox"/></svg><span data-i18n="nav.orders">Замовлення</span><span id="mailBadge"></span></div>
+  <div class="tab" id="tab-btn-channels" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-channels" onclick="sw('channels',this);loadPlatforms();loadEldorado()"><svg class="ic"><use href="#ic-store"/></svg><span data-i18n="nav.channels">Канали</span></div>
+  <div class="tsep" role="presentation" aria-hidden="true"></div>
+  <div class="tab" id="tab-btn-supply" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-supply" onclick="sw('supply',this);loadSupply()"><svg class="ic"><use href="#ic-box"/></svg><span data-i18n="nav.catalog">Каталог</span></div>
+  <div class="tab" id="tab-btn-buy" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-buy" onclick="sw('buy',this);loadBuyList(true)"><svg class="ic"><use href="#ic-cart"/></svg><span data-i18n="nav.plan">План</span></div>
+  <div class="tab" id="tab-btn-taobao" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-taobao" onclick="sw('taobao',this);loadTaobao()"><svg class="ic"><use href="#ic-tag"/></svg><span data-i18n="nav.taobao">Taobao</span></div>
+  <div class="tab" id="tab-btn-inventory" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-inventory" onclick="sw('inventory',this);loadInventory()"><svg class="ic"><use href="#ic-layers"/></svg><span data-i18n="nav.inventory">Інвентар</span></div>
+  <div class="tsep" role="presentation" aria-hidden="true"></div>
+  <div class="tab" id="tab-btn-stats" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-stats" onclick="sw('stats',this);renderStats();setTimeout(renderRevenueChart,80)"><svg class="ic"><use href="#ic-chart"/></svg><span data-i18n="nav.analytics">Аналітика</span></div>
+  <div class="tab" id="tab-btn-plus" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-plus" onclick="sw('plus',this);loadPlus()"><span style="font-size:14px;font-weight:900;color:var(--gr)">✦</span><span data-i18n="nav.plus">Ledger+</span></div>
+  <div class="tab" id="tab-btn-setup" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-setup" aria-label="Налаштування" data-i18n-aria="nav.settings" onclick="sw('setup',this);loadBackupList();loadSettings();loadMobile();initDesktopPrefs()"><svg class="ic"><use href="#ic-gear"/></svg></div>
 </div>
 
 <nav id="mnav" aria-label="Mobile navigation">
@@ -564,9 +586,18 @@ body.compact-ui .tabs{gap:4px}
   <button type="button" class="mn" data-tab="mail" onclick="mnavGo('mail')"><svg class="ic"><use href="#ic-inbox"/></svg><span data-i18n="nav.orders">Замовлення</span></button>
   <button type="button" class="mn" data-tab="inventory" onclick="mnavGo('inventory')"><svg class="ic"><use href="#ic-layers"/></svg><span data-i18n="nav.inventory">Інвентар</span></button>
   <button type="button" class="mn" data-tab="stats" onclick="mnavGo('stats')"><svg class="ic"><use href="#ic-chart"/></svg><span data-i18n="nav.analytics">Аналітика</span></button>
+  <button type="button" class="mn" data-tab="more" id="mnMore" aria-expanded="false" aria-controls="mnavMore" onclick="mnavMoreToggle(event)"><span style="font-size:18px;line-height:1;font-weight:800">⋯</span><span data-i18n="nav.more">Ще</span></button>
 </nav>
+<div id="mnavMore" role="group" aria-label="Розділи" data-i18n-aria="nav.sections">
+  <button type="button" class="mn-more-item" data-tab="channels" onclick="mnavGo('channels')"><svg class="ic"><use href="#ic-store"/></svg><span data-i18n="nav.channels">Канали</span></button>
+  <button type="button" class="mn-more-item" data-tab="supply" onclick="mnavGo('supply')"><svg class="ic"><use href="#ic-box"/></svg><span data-i18n="nav.catalog">Каталог</span></button>
+  <button type="button" class="mn-more-item" data-tab="buy" onclick="mnavGo('buy')"><svg class="ic"><use href="#ic-cart"/></svg><span data-i18n="nav.plan">План</span></button>
+  <button type="button" class="mn-more-item" data-tab="taobao" onclick="mnavGo('taobao')"><svg class="ic"><use href="#ic-tag"/></svg><span data-i18n="nav.taobao">Taobao</span></button>
+  <button type="button" class="mn-more-item" data-tab="plus" onclick="mnavGo('plus')"><span style="font-size:14px;font-weight:900;color:var(--gr)">✦</span><span data-i18n="nav.plus">Ledger+</span></button>
+  <button type="button" class="mn-more-item" data-tab="setup" onclick="mnavGo('setup')"><svg class="ic"><use href="#ic-gear"/></svg><span data-i18n="nav.settings">Налаштування</span></button>
+</div>
 
-<div id="tab-overview" class="tc on">
+<div id="tab-overview" class="tc on" role="tabpanel" aria-labelledby="tab-btn-overview">
   <div class="panel">
     <div class="ph"><span data-i18n="ov.today">Сьогодні</span>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -598,7 +629,7 @@ body.compact-ui .tabs{gap:4px}
   </div>
 </div>
 
-<div id="tab-channels" class="tc">
+<div id="tab-channels" class="tc" role="tabpanel" aria-labelledby="tab-btn-channels">
   <div class="panel">
     <div class="ph"><span data-i18n="ph.allch">Усі канали — останні продажі</span>
       <div style="font-size:12px;color:var(--mu)" id="chAllSum"></div>
@@ -617,7 +648,7 @@ body.compact-ui .tabs{gap:4px}
   </div>
 </div>
 
-<div id="tab-tracker" class="tc">
+<div id="tab-tracker" class="tc" role="tabpanel" aria-labelledby="tab-btn-tracker">
   <!-- Додати запис -->
   <div class="panel">
     <div class="ph"><span data-i18n="ph.newDeal">+ НОВИЙ ПРОДАЖ</span></div>
@@ -629,13 +660,13 @@ body.compact-ui .tabs{gap:4px}
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.title">НАЗВА (необов.)</div>
-        <input id="plTitle" data-i18n-ph="ph.dealTitle" placeholder="напр. Arknights Starter" style="width:220px" oninput="applyProfileFee()">
+        <input id="plTitle" data-i18n-aria="f.title" data-i18n-ph="ph.dealTitle" placeholder="напр. Arknights Starter" style="width:220px" oninput="applyProfileFee()">
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.platform">ПЛАТФОРМА</div>
         <input type="hidden" id="plPlatform" value="zeusx">
         <div class="psel" id="plPlatSel">
-          <button type="button" class="psel-btn" onclick="plPlatToggle(event)">
+          <button type="button" class="psel-btn" data-i18n-aria="f.platform" onclick="plPlatToggle(event)">
             <img class="psel-logo" id="plPlatLogo" src="/logo/zeusx.png" alt="">
             <span id="plPlatName">ZeusX</span><span class="car">▾</span>
           </button>
@@ -653,31 +684,31 @@ body.compact-ui .tabs{gap:4px}
       </div>
       <div id="plZeusRankWrap" style="display:none">
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.zeusRank">РАНГ ZEUSX</div>
-        <select id="plZeusRank" onchange="plZeusRankPick()" style="width:120px"></select>
+        <select id="plZeusRank" data-i18n-aria="f.zeusRank" onchange="plZeusRankPick()" style="width:120px"></select>
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.currency">ВАЛЮТА УГОДИ</div>
-        <select id="plCur" onchange="plCurPick()" style="width:115px;font-size:12px"></select>
+        <select id="plCur" data-i18n-aria="f.currency" onchange="plCurPick()" style="width:115px;font-size:12px"></select>
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.rate">КУРС / USD</div>
-        <input type="number" id="plFx" value="1" step="0.0001" min="0.000001" style="width:95px" oninput="updateFeePreview()">
+        <input type="number" id="plFx" data-i18n-aria="f.rate" value="1" step="0.0001" min="0.000001" style="width:95px" oninput="updateFeePreview()">
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.feePct">КОМІСІЯ %</div>
-        <input type="number" id="plFeePct" value="9.5" step="0.1" min="0" max="100" style="width:82px" oninput="updateFeePreview()">
+        <input type="number" id="plFeePct" data-i18n-aria="f.feePct" value="9.5" step="0.1" min="0" max="100" style="width:82px" oninput="updateFeePreview()">
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.expenses">ІНШІ ВИТРАТИ</div>
-        <input type="number" id="plExpenses" value="0" step="0.01" min="0" style="width:95px" oninput="updateFeePreview()">
+        <input type="number" id="plExpenses" data-i18n-aria="f.expenses" value="0" step="0.01" min="0" style="width:95px" oninput="updateFeePreview()">
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.buy">КУПИВ</div>
-        <input type="number" id="plBuy" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
+        <input type="number" id="plBuy" data-i18n-aria="f.buy" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.sell">ПРОДАВ</div>
-        <input type="number" id="plSell" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
+        <input type="number" id="plSell" data-i18n-aria="f.sell" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.after">ПІСЛЯ КОМІСІЇ</div>
@@ -689,7 +720,7 @@ body.compact-ui .tabs{gap:4px}
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.date">ДАТА</div>
-        <input type="date" id="plDate" style="width:130px">
+        <input type="date" id="plDate" data-i18n-aria="f.date" style="width:130px">
       </div>
       <button class="btn gr" onclick="addPLRecord()" data-i18n="b.add">+ ДОДАТИ</button>
       <button class="btn" style="font-size:13px" onclick="syncPLToServer()" data-i18n="b.sync">СИНХРОНІЗУВАТИ</button>
@@ -703,15 +734,15 @@ body.compact-ui .tabs{gap:4px}
     <div class="ph">
       <span><span data-i18n="k.records">ЗАПИСИ</span> (<span id="purCnt">0</span>)</span>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <input id="purQ" data-i18n-ph="k.search" placeholder="Пошук..." oninput="renderPurchases()" style="width:150px">
-        <select id="purFilter" onchange="renderPurchases()" style="font-size:11px">
+        <input id="purQ" data-i18n-aria="k.search" data-i18n-ph="k.search" placeholder="Пошук..." oninput="renderPurchases()" style="width:150px">
+        <select id="purFilter" data-i18n-aria="f.filterPlatform" onchange="renderPurchases()" style="font-size:11px">
           <option value="" data-i18n="allPlat">Всі платформи</option>
           <option value="zeusx">⚡ ZeusX</option>
           <option value="funpay">🔵 FunPay</option>
           <option value="eldorado">Eldorado</option>
           <option value="notitle" data-i18n="s.noTitle">⚠ Без назви</option>
         </select>
-        <select id="plDateFilter" onchange="toggleCustomDateRange();renderPurchases()" style="font-size:11px">
+        <select id="plDateFilter" data-i18n-aria="f.filterPeriod" onchange="toggleCustomDateRange();renderPurchases()" style="font-size:11px">
           <option value="" data-i18n="per.all">Весь час</option>
           <option value="today" data-i18n="per.today">Сьогодні</option>
           <option value="week" data-i18n="per.week">Цей тиждень</option>
@@ -720,11 +751,11 @@ body.compact-ui .tabs{gap:4px}
           <option value="custom">📅 <span data-i18n="per.custom">Свій період</span></option>
         </select>
         <div id="plCustomRange" style="display:none;align-items:center;gap:4px">
-          <input type="date" id="plDateFrom" onchange="renderPurchases()" style="font-size:11px;padding:3px 5px;background:var(--card2);border:1px solid var(--brd);border-radius:4px;color:var(--tx)">
+          <input type="date" id="plDateFrom" data-i18n-aria="per.from" onchange="renderPurchases()" style="font-size:11px;padding:3px 5px;background:var(--card2);border:1px solid var(--brd);border-radius:4px;color:var(--tx)">
           <span style="color:var(--mu);font-size:11px">—</span>
-          <input type="date" id="plDateTo" onchange="renderPurchases()" style="font-size:11px;padding:3px 5px;background:var(--card2);border:1px solid var(--brd);border-radius:4px;color:var(--tx)">
+          <input type="date" id="plDateTo" data-i18n-aria="per.to" onchange="renderPurchases()" style="font-size:11px;padding:3px 5px;background:var(--card2);border:1px solid var(--brd);border-radius:4px;color:var(--tx)">
         </div>
-        <select id="plSortF" onchange="renderPurchases()" style="font-size:11px">
+        <select id="plSortF" data-i18n-aria="f.sort" onchange="renderPurchases()" style="font-size:11px">
           <option value="date_d" data-i18n="s.dateDesc">Дата ↓</option>
           <option value="date_a" data-i18n="s.dateAsc">Дата ↑</option>
           <option value="profit_d" data-i18n="s.profitDesc">Прибуток ↓</option>
@@ -732,7 +763,7 @@ body.compact-ui .tabs{gap:4px}
         </select>
         <button class="btn" style="font-size:8px" onclick="exportCSV()">⬇ CSV</button>
         <button class="btn gr" style="font-size:8px" onclick="exportFullExcel()">📊 Excel (всі дані)</button>
-        <button class="btn rd" style="font-size:8px" onclick="if(confirm('Очистити всі записи?')){purchases=[];savePL();renderPurchases();}">🗑 Очистити</button>
+        <button class="btn rd" style="font-size:8px" onclick="if(confirm(t('deal.clearConfirm'))){purchases=[];savePL();renderPurchases();}">🗑 Очистити</button>
       </div>
     </div>
     <div id="purList"><div class="none">Ще немає записів</div></div>
@@ -744,18 +775,18 @@ body.compact-ui .tabs{gap:4px}
   <div class="panel">
     <div class="ph"><span data-i18n="ph.edsales">Eldorado — продажі</span></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-      <input type="date" id="edDate" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx)">
-      <input type="text" id="edTitle" data-i18n-ph="ed.title" placeholder="Назва товару" onblur="suggestEdBuy()" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);flex:1;min-width:150px">
-      <input type="number" id="edBuy" data-i18n-ph="ed.buy" placeholder="Ціна купівлі $" step="0.01" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:110px">
-      <input type="number" id="edPrice" data-i18n-ph="ed.sell" placeholder="Ціна продажу $" step="0.01" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:110px">
-      <input type="text" id="edOrderId" data-i18n-ph="ed.oid" placeholder="Order ID (необов'язково)" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:200px">
-      <input type="text" id="edCat" list="edCatList" data-i18n-ph="ed.cat" placeholder="Категорія (необов'язково)" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:190px">
+      <input type="date" id="edDate" data-i18n-aria="f.date" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx)">
+      <input type="text" id="edTitle" data-i18n-aria="ed.title" data-i18n-ph="ed.title" placeholder="Назва товару" onblur="suggestEdBuy()" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);flex:1;min-width:150px">
+      <input type="number" id="edBuy" data-i18n-aria="ed.buy" data-i18n-ph="ed.buy" placeholder="Ціна купівлі $" step="0.01" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:110px">
+      <input type="number" id="edPrice" data-i18n-aria="ed.sell" data-i18n-ph="ed.sell" placeholder="Ціна продажу $" step="0.01" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:110px">
+      <input type="text" id="edOrderId" data-i18n-aria="ed.oid" data-i18n-ph="ed.oid" placeholder="Order ID (необов'язково)" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:200px">
+      <input type="text" id="edCat" list="edCatList" data-i18n-aria="ed.cat" data-i18n-ph="ed.cat" placeholder="Категорія (необов'язково)" style="font-size:13px;padding:5px 8px;background:var(--card2);border:1px solid var(--brd);border-radius:5px;color:var(--tx);width:190px">
       <datalist id="edCatList"></datalist>
-      <button onclick="addEdorado()" class="btn" style="padding:7px 16px;font-size:13px">➕ Додати</button>
-      <label class="btn" style="padding:7px 16px;font-size:13px;cursor:pointer;background:var(--a2)">📥 Імпорт CSV<input type="file" id="edCsvFile" accept=".csv,.tsv" style="display:none" onchange="importEdCsv(this)"></label>
+      <button onclick="addEdorado()" class="btn" style="padding:7px 16px;font-size:13px">➕ <span data-i18n="ed.add">Додати</span></button>
+      <label class="btn" style="padding:7px 16px;font-size:13px;cursor:pointer;background:var(--a2)">📥 <span data-i18n="ed.importCsv">Імпорт CSV</span><input type="file" id="edCsvFile" accept=".csv,.tsv" style="display:none" onchange="importEdCsv(this)"></label>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
-      <input id="edQ" placeholder="🔍 Пошук..." oninput="edPg=1;renderEldorado()" style="width:200px;font-size:13px">
+      <input id="edQ" data-i18n-aria="k.search" placeholder="🔍 Пошук..." oninput="edPg=1;renderEldorado()" style="width:200px;font-size:13px">
       <select id="edDateFilter" onchange="toggleEdRange();edPg=1;renderEldorado()" style="font-size:13px">
         <option value="" data-i18n="per.all">Весь час</option>
         <option value="today" data-i18n="per.today">Сьогодні</option>
@@ -775,10 +806,10 @@ body.compact-ui .tabs{gap:4px}
   </div>
   <div class="panel" style="margin-top:14px">
     <div class="ph"><span data-i18n="ph.cats">РОЗБИВКА ПО КАТЕГОРІЯХ</span></div>
-    <div id="edBreakdown"><div class="none">Немає даних</div></div>
+    <div id="edBreakdown"><div class="none" data-i18n="an.noData">Немає даних</div></div>
   </div>
 </div>
-<div id="tab-buy" class="tc">
+<div id="tab-buy" class="tc" role="tabpanel" aria-labelledby="tab-btn-buy">
   <div class="panel">
     <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
       <span data-i18n="plan.title">ЩО КУПИТИ СЬОГОДНІ</span>
@@ -790,7 +821,7 @@ body.compact-ui .tabs{gap:4px}
   </div>
 </div>
 
-<div id="tab-supply" class="tc">
+<div id="tab-supply" class="tc" role="tabpanel" aria-labelledby="tab-btn-supply">
   <div id="supAl" class="al info">⏳ Завантаження постачальників...</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
     <div class="sc"><div class="sl">ВСЬОГО</div><div class="sv" id="supTotal">—</div></div>
@@ -830,7 +861,7 @@ body.compact-ui .tabs{gap:4px}
 </div>
 
 <!-- 📥 ЗАМОВЛЕННЯ З ПОШТИ -->
-<div id="tab-mail" class="tc">
+<div id="tab-mail" class="tc" role="tabpanel" aria-labelledby="tab-btn-mail">
   <div class="panel">
     <div class="ph"><span data-i18n="ph.orders">ЗАМОВЛЕННЯ З ПОШТИ</span>
       <button class="btn" style="font-size:12px;padding:5px 11px" onclick="clearMailQueue()">🗑 <span data-i18n="order.clear">Очистити всі</span></button>
@@ -852,11 +883,11 @@ body.compact-ui .tabs{gap:4px}
   </div>
 </div>
 
-<div id="replyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
+<div id="replyModal" role="dialog" aria-modal="true" aria-labelledby="replyTitle" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:18px;width:min(920px,96vw);max-height:90vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px">
       <div style="font-size:15px;font-weight:800" id="replyTitle">💬</div>
-      <button class="btn" onclick="closeReplyGenerator()" style="padding:4px 10px">✕</button>
+      <button class="btn" onclick="closeReplyGenerator()" data-i18n-aria="common.close" style="padding:4px 10px">✕</button>
     </div>
     <div id="replyHint" style="font-size:11px;color:var(--mu);margin-bottom:12px"></div>
     <div id="replyBody" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px"></div>
@@ -924,7 +955,7 @@ body.compact-ui .tabs{gap:4px}
 </div>
 
 <!-- 🇨🇳 TAOBAO -->
-<div id="tab-taobao" class="tc">
+<div id="tab-taobao" class="tc" role="tabpanel" aria-labelledby="tab-btn-taobao">
   <div class="panel" id="tbHero" style="margin-bottom:14px;background:radial-gradient(700px 260px at 0% 0%,rgba(52,211,153,.16),transparent 60%),linear-gradient(135deg,var(--card),var(--card2));border-color:color-mix(in srgb,var(--gr) 28%,var(--brd))">
     <div style="display:inline-flex;align-items:center;gap:7px;padding:4px 9px;border:1px solid color-mix(in srgb,var(--gr) 45%,var(--brd));border-radius:999px;font-size:10px;letter-spacing:.14em;color:var(--gr);font-weight:800;margin-bottom:12px">⚡ <span data-i18n="tb.heroBadge">АВТОМАТИЗАЦІЯ TAOBAO</span></div>
     <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap">
@@ -1056,7 +1087,7 @@ body.compact-ui .tabs{gap:4px}
 </div>
 
 <!-- 📦 СКЛАД -->
-<div id="tab-inventory" class="tc">
+<div id="tab-inventory" class="tc" role="tabpanel" aria-labelledby="tab-btn-inventory">
   <div class="panel">
     <div class="ph"><span data-i18n="ph.stock">СКЛАД — куплені акаунти</span>
       <button class="btn" style="font-size:12px;padding:5px 11px" onclick="loadInventory()">↻ Оновити</button></div>
@@ -1094,11 +1125,11 @@ body.compact-ui .tabs{gap:4px}
   </div>
 </div>
 
-<div id="invModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:900;align-items:center;justify-content:center;padding:20px">
+<div id="invModal" role="dialog" aria-modal="true" aria-labelledby="invModalTitle" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:900;align-items:center;justify-content:center;padding:20px">
   <div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;max-width:560px;width:100%;padding:18px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:15px;font-weight:800" id="invModalTitle" data-i18n="inv.account">Дані акаунта</div>
-      <button class="btn" onclick="closeInvSecret()" style="padding:4px 10px">✕</button>
+      <button class="btn" onclick="closeInvSecret()" data-i18n-aria="common.close" style="padding:4px 10px">✕</button>
     </div>
     <pre id="invModalText" style="background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:12px;font-size:13px;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;margin:0"></pre>
     <div style="display:flex;gap:8px;margin-top:12px">
@@ -1109,7 +1140,7 @@ body.compact-ui .tabs{gap:4px}
 </div>
 
 <!-- 📊 СТАТИСТИКА ПО ІГРАХ -->
-<div id="tab-stats" class="tc">
+<div id="tab-stats" class="tc" role="tabpanel" aria-labelledby="tab-btn-stats">
   <div class="panel" style="margin-bottom:14px">
     <div class="ph" style="margin-bottom:12px">📊 <span data-i18n="an.mergedTitle">ЗВЕДЕНО — ВСІ ЦИФРИ В ОДНОМУ МІСЦІ</span></div>
 
@@ -1241,8 +1272,8 @@ body.compact-ui .tabs{gap:4px}
     <div class="ph">📥 <span data-i18n="imp.title">ІМПОРТ ПРОДАЖІВ</span></div>
     <div style="font-size:11.5px;color:var(--mu);margin:-4px 0 9px" data-i18n="imp.hint">CSV з G2G / Gameflip / PlayerAuctions. Колонки: date, title/item, price/amount, fee (необов’язково), order id (необов’язково). Собівартість підтягується зі складу, якщо є збіг.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <select id="impPlatform" style="font-size:12px"><option value="g2g">G2G</option><option value="gameflip">Gameflip</option><option value="pa">PlayerAuctions</option></select>
-      <input id="impFile" type="file" accept=".csv,text/csv" onchange="importCsvFile(this)" style="font-size:11px">
+      <select id="impPlatform" data-i18n-aria="imp.platform" style="font-size:12px"><option value="g2g">G2G</option><option value="gameflip">Gameflip</option><option value="pa">PlayerAuctions</option></select>
+      <input id="impFile" data-i18n-aria="imp.file" type="file" accept=".csv,text/csv" onchange="importCsvFile(this)" style="font-size:11px">
       <label style="font-size:11px;color:var(--mu);display:flex;align-items:center;gap:4px"><input id="impCashflow" type="checkbox" checked> <span data-i18n="imp.createHold">створити Hold</span></label>
       <button class="btn gr" id="impRun" style="display:none" onclick="runSalesImport()" data-i18n="imp.import">Імпортувати</button>
       <span id="impInfo" style="font-size:11px;color:var(--mu)"></span>
@@ -1288,16 +1319,29 @@ body.compact-ui .tabs{gap:4px}
 </div>
 
 <!-- ⚙️ НАЛАШТУВАННЯ -->
-<div id="tab-plus" class="tc" data-no-currency>
+<div id="tab-plus" class="tc" role="tabpanel" aria-labelledby="tab-btn-plus" data-no-currency>
   <div class="panel">
     <div class="ph"><span>LEDGER+</span><span id="plusStatus" style="font-size:12px;color:var(--mu)"></span></div>
     <div id="plusBody"><div class="none">⏳</div></div>
   </div>
 </div>
 
-<div id="tab-setup" class="tc">
+<div id="tab-setup" class="tc" role="tabpanel" aria-labelledby="tab-btn-setup">
+  <div class="set-cat">
+    <label for="setCat" data-i18n="set.catLabel">Категорія</label>
+    <select id="setCat" onchange="setSettingsCat(this.value)" data-i18n-aria="set.catLabel">
+      <option value="security" data-i18n="set.catSecurity">Акаунт і безпека</option>
+      <option value="connections" data-i18n="set.catConnections">Підключення</option>
+      <option value="data" data-i18n="set.catData">Дані й бекапи</option>
+      <option value="appearance" data-i18n="set.catAppearance">Вигляд</option>
+      <option value="devices" data-i18n="set.catDevices">Застосунок і пристрої</option>
+      <option value="updates" data-i18n="set.catUpdates">Оновлення й діагностика</option>
+      <option value="all" data-i18n="set.catAll">Усі</option>
+    </select>
+    <span class="set-cat-hint" data-i18n="set.catHint">Показано лише потрібні розділи. Виберіть «Усі», щоб побачити всі.</span>
+  </div>
 
-  <div class="panel" id="pwaPanel" style="margin-bottom:14px">
+  <div class="panel" id="pwaPanel" data-set-cat="devices" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="app.title">ЗАСТОСУНОК</span></div>
     <div style="font-size:12.5px;color:var(--mu);line-height:1.6;margin-bottom:9px" data-i18n="app.desc">Встанови Ledger як застосунок на телефон або комп’ютер: іконка на робочому столі, повноекранний режим, швидший запуск.</div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1307,13 +1351,13 @@ body.compact-ui .tabs{gap:4px}
     <div style="font-size:11px;color:var(--mu);margin-top:7px" data-i18n="app.hint">Android/Chrome: кнопка вище або меню ⋮ → «Встановити застосунок». iPhone/Safari: «Поділитися» → «На екран Домівки».</div>
   </div>
 
-  <div class="panel" id="mobilePanel" style="margin-bottom:14px">
+  <div class="panel" id="mobilePanel" data-set-cat="devices" style="margin-bottom:14px">
     <div class="ph"><span>📱 <span data-i18n="mobile.title">Мобільний доступ</span></span><button class="btn" onclick="refreshMobile()" style="font-size:12px;padding:6px 10px">↻ <span data-i18n="mobile.refresh">Оновити</span></button></div>
     <div id="mobileBody" style="font-size:12.5px;color:var(--mu)">…</div>
     <div id="mobileUpdated" style="font-size:11px;color:var(--gr);margin-top:4px"></div>
   </div>
 
-  <div class="panel" id="desktopPanel" style="display:none;margin-bottom:14px">
+  <div class="panel" id="desktopPanel" data-set-cat="devices" style="display:none;margin-bottom:14px">
     <div class="ph"><span>🖥 <span data-i18n="desk.title">Вікно застосунку</span></span></div>
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
       <input type="checkbox" id="closeToTray">
@@ -1327,11 +1371,11 @@ body.compact-ui .tabs{gap:4px}
     <div style="margin-top:9px"><button class="btn gr" onclick="saveDesktopPrefs()">✓ <span data-i18n="desk.save">Зберегти</span></button></div>
   </div>
 
-  <div id="pwaHelpModal" onclick="if(event.target===this)closePwaHelp()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div id="pwaHelpModal" role="dialog" aria-modal="true" aria-labelledby="pwaHelpTitle" aria-hidden="true" onclick="if(event.target===this)closePwaHelp()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center;padding:16px">
     <div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:18px;width:min(560px,96vw);max-height:88vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px">
         <div style="font-size:15px;font-weight:800" id="pwaHelpTitle">⬇</div>
-        <button type="button" class="btn" onclick="closePwaHelp();return false" style="padding:4px 10px">✕</button>
+        <button type="button" class="btn" onclick="closePwaHelp();return false" data-i18n-aria="common.close" style="padding:4px 10px">✕</button>
       </div>
       <div id="pwaHelpBody" style="font-size:12.5px;line-height:1.6;color:var(--mu)"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
@@ -1342,19 +1386,19 @@ body.compact-ui .tabs{gap:4px}
     </div>
   </div>
 
-  <div class="panel" id="pwPanel" style="margin-bottom:14px">
+  <div class="panel" id="pwPanel" data-set-cat="security" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="pw.optional">PASSWORD (OPTIONAL)</span></div>
     <div style="font-size:12.5px;color:var(--mu);margin-bottom:10px" id="pwStatus">—</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <label style="font-size:12px;color:var(--mu)"><span data-i18n="pw.new8">New password (min 8)</span>
-        <br><input id="pwEnableNew" type="password" placeholder="••••••••" style="width:220px;margin-top:4px" autocomplete="new-password"></label>
+        <br><input id="pwEnableNew" data-i18n-aria="pw.new8" type="password" placeholder="••••••••" style="width:220px;margin-top:4px" autocomplete="new-password"></label>
       <button class="btn gr" id="pwEnableBtn" onclick="pwEnable()" data-i18n="pw.enable">Enable password</button>
       <button class="btn" id="pwDisableBtn" onclick="pwDisable()" data-i18n="pw.disable">Disable password</button>
     </div>
     <div style="font-size:11.5px;color:var(--mu);margin-top:8px" data-i18n="pw.hint">Without a password anyone who opens the link gets in. Set one if the app is reachable from the internet.</div>
   </div>
 
-  <div class="panel" id="auditPanel" style="margin-bottom:14px">
+  <div class="panel" id="auditPanel" data-set-cat="security" style="margin-bottom:14px">
     <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
       <span data-i18n="audit.title">ЖУРНАЛ ДІЙ</span>
       <button class="btn" style="font-size:11px;padding:4px 10px" onclick="loadAudit()">↻</button>
@@ -1363,7 +1407,7 @@ body.compact-ui .tabs{gap:4px}
     <div id="auditList" style="max-height:280px;overflow:auto"><div class="none">Завантаження…</div></div>
   </div>
 
-  <div class="panel" id="twofaPanel" style="margin-bottom:14px">
+  <div class="panel" id="twofaPanel" data-set-cat="security" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="twofa.title">ДВОФАКТОРНИЙ ВХІД (2FA)</span></div>
     <div style="font-size:12.5px;color:var(--mu);margin-bottom:10px" id="twofaStatus">—</div>
     <div id="twofaSetup" style="display:none">
@@ -1373,14 +1417,14 @@ body.compact-ui .tabs{gap:4px}
       <div style="font-size:10px;color:var(--mu);word-break:break-all;margin-bottom:10px" id="twofaUri"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
         <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="twofa.code">КОД 6 ЦИФР</div>
-          <input id="twofaCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:120px;letter-spacing:.2em"></div>
+          <input id="twofaCode" data-i18n-aria="twofa.code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:120px;letter-spacing:.2em"></div>
         <button class="btn gr" onclick="enable2FA()">✓ <span data-i18n="twofa.enable">Увімкнути 2FA</span></button>
       </div>
     </div>
     <div id="twofaEnabled" style="display:none">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
         <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="twofa.code">КОД 6 ЦИФР</div>
-          <input id="twofaDisableCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:120px;letter-spacing:.2em"></div>
+          <input id="twofaDisableCode" data-i18n-aria="twofa.code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:120px;letter-spacing:.2em"></div>
         <button class="btn rd" onclick="disable2FA()">✕ <span data-i18n="twofa.disable">Вимкнути 2FA</span></button>
         <button class="btn" onclick="regenRecovery()">🔑 <span data-i18n="twofa.recovery">Recovery-коди</span></button>
         <button class="btn rd" onclick="logoutAll()" data-i18n="twofa.logoutAll">Вийти на всіх пристроях</button>
@@ -1398,7 +1442,7 @@ body.compact-ui .tabs{gap:4px}
     <div style="font-size:11px;color:var(--mu);margin-top:8px" data-i18n="twofa.note">2FA працює разом із паролем входу. Пристрій, який уже увійшов, залишається в системі до виходу.</div>
   </div>
 
-  <div class="panel" id="updatePanel" style="margin-bottom:14px">
+  <div class="panel" id="updatePanel" data-set-cat="updates" style="margin-bottom:14px">
     <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
       <span data-i18n="upd.title">ОНОВЛЕННЯ</span>
       <button class="btn" style="font-size:11px;padding:4px 10px" onclick="checkUpdates()">↻ <span data-i18n="upd.check">Перевірити</span></button>
@@ -1406,7 +1450,7 @@ body.compact-ui .tabs{gap:4px}
     <div id="updateInfo" style="font-size:12px;color:var(--mu)" data-i18n="upd.hint">Натисни «Перевірити», щоб дізнатися останню версію.</div>
   </div>
 
-  <div class="panel" id="dataPanel" style="margin-bottom:14px">
+  <div class="panel" id="dataPanel" data-set-cat="data" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="diag.title">ДАНІ Й ДІАГНОСТИКА</span>
       <button class="btn" style="font-size:12px" onclick="diagLoad();tokensCheck()" data-i18n="tk.check">Перевірити токени</button></div>
     <div id="diagBox" style="font-size:12.5px;color:var(--mu);margin-bottom:12px" data-i18n="diag.press">натисніть ↻ Оновити</div>
@@ -1422,15 +1466,15 @@ body.compact-ui .tabs{gap:4px}
     <div style="border-top:1px solid var(--brd);padding-top:12px">
       <div style="font-size:12.5px;color:var(--mu);margin-bottom:6px">Мій постачальник (Shopify)</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-        <input id="supNewName" placeholder="Назва магазину" style="width:190px">
-        <input id="supNewBase" placeholder="https://shop.example.com" style="width:260px">
+        <input id="supNewName" data-i18n-aria="sup.name" placeholder="Назва магазину" style="width:190px">
+        <input id="supNewBase" data-i18n-aria="sup.baseUrl" placeholder="https://shop.example.com" style="width:260px">
         <button class="btn gr" onclick="supAdd()">Додати</button>
       </div>
       <div style="font-size:11.5px;color:var(--mu);margin-top:6px">Працює для Shopify-магазинів (/products.json).</div>
     </div>
   </div>
 
-  <div class="panel" id="contactPanel" style="margin-bottom:14px">
+  <div class="panel" id="contactPanel" data-set-cat="updates" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="ph.contact">ПОТРІБНА АВТОМАТИЗАЦІЯ?</span></div>
     <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
       <img src="data:image/png;base64,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" alt="Telegram QR" width="132" height="132"
@@ -1452,7 +1496,7 @@ body.compact-ui .tabs{gap:4px}
     </div>
 
   <!-- 🎨 ТЕМА -->
-  <div class="panel" style="margin-bottom:14px">
+  <div class="panel" data-set-cat="appearance" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="ph.theme">ТЕМА ІНТЕРФЕЙСУ</span></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px" id="themePicker">
       <div class="theme-btn" onclick="pickTheme('ledger')" data-theme="ledger" title="Ledger — лаконічна, без градієнтів">
@@ -1485,7 +1529,7 @@ body.compact-ui .tabs{gap:4px}
       <button class="btn" onclick="resetFs()" style="padding:5px 12px;font-size:11px" data-i18n="fs.reset">100%</button>
     </div>
   </div>
-  <div class="panel" style="margin-bottom:14px">
+  <div class="panel" data-set-cat="data" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="bk.panelTitle">БЕКАП P&L</span>
       <button class="btn" style="font-size:10px;padding:3px 10px" onclick="runBackup()">↺ <span data-i18n="bk.runNow">Зробити зараз</span></button>
     </div>
@@ -1501,14 +1545,14 @@ body.compact-ui .tabs{gap:4px}
       <span style="font-size:10px;color:var(--mu)" data-i18n="bk.note">P&L + ELDORADO + ціль + налаштування · без паролів і токенів · sha256-перевірка</span>
     </div>
   </div>
-  <div class="panel" style="margin-bottom:14px">
+  <div class="panel" data-set-cat="appearance" style="margin-bottom:14px">
     <div class="ph"><span id="rateTitle">CURRENCY · USD → UAH</span></div>
     <div style="font-size:11px;color:var(--mu);margin:-4px 0 4px" data-i18n="cur.auto">Курс оновлюється автоматично раз на 6 годин. Кнопка ↻ — примусове оновлення.</div>
     <div style="font-size:11px;color:var(--mu);margin:0 0 10px" data-i18n="cur.manualHint">Можна вибрати будь-яку валюту вручну. Після цього зміна мови не змінюватиме валюту.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="cur.title">CURRENCY</div>
-        <select id="curSel" onchange="pickCurrency()" style="font-size:13px">
+        <select id="curSel" data-i18n-aria="cur.title" onchange="pickCurrency()" style="font-size:13px">
           <option value="UAH">UAH ₴</option>
           <option value="EUR">EUR €</option>
           <option value="USD">USD $</option>
@@ -1523,46 +1567,46 @@ body.compact-ui .tabs{gap:4px}
       </div>
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" id="rateLbl" data-no-currency data-i18n="cur.rate">RATE (₴ per $1)</div>
-        <input id="rateVal" type="number" step="0.01" min="0" placeholder="41.50" style="width:120px;font-family:var(--font)">
+        <input id="rateVal" data-i18n-aria="cur.rate" type="number" step="0.01" min="0" placeholder="41.50" style="width:120px;font-family:var(--font)">
       </div>
       <div style="font-size:11px;color:var(--mu);padding-bottom:9px" id="rateInfo">—</div>
       <button class="btn" onclick="refreshRate()">↻ <span data-i18n="cur.refresh">Refresh rate</span></button>
       <button class="btn gr" onclick="saveRate()">✓ <span data-i18n="cur.save">Save</span></button>
     </div>
   </div>
-  <div class="panel" style="margin-bottom:14px">
+  <div class="panel" data-set-cat="connections" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="feeProf.title">КОМІСІЇ ЗА ЗАМОВЧУВАННЯМ</span></div>
     <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="feeProf.hint">Дефолти для нових угод. Старі угоди зберігають свою комісію. ZeusX керується рангом у формі угоди.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-      <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">FunPay %</div><input id="feeFunpay" type="number" step="0.1" min="0" max="100" style="width:90px"></div>
-      <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">Eldorado %</div><input id="feeEldorado" type="number" step="0.1" min="0" max="100" style="width:90px"></div>
+      <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">FunPay %</div><input id="feeFunpay" aria-label="FunPay %" type="number" step="0.1" min="0" max="100" style="width:90px"></div>
+      <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">Eldorado %</div><input id="feeEldorado" aria-label="Eldorado %" type="number" step="0.1" min="0" max="100" style="width:90px"></div>
       <div><div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="f.other">Інше</div><input id="feeOther" type="number" step="0.1" min="0" max="100" style="width:90px"></div>
       <button class="btn gr" onclick="saveFeeProfiles()">✓ <span data-i18n="save">Зберегти</span></button>
     </div>
     <div style="margin-top:10px">
       <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="feeProf.games">ОКРЕМІ ІГРИ (назва | платформа | %)</div>
-      <textarea id="feeGames" placeholder="GTA 5 | eldorado | 30&#10;Fortnite | eldorado | 20" style="width:100%;height:58px;font-family:var(--font);font-size:12px"></textarea>
+      <textarea id="feeGames" data-i18n-aria="feeProf.games" placeholder="GTA 5 | eldorado | 30&#10;Fortnite | eldorado | 20" style="width:100%;height:58px;font-family:var(--font);font-size:12px"></textarea>
       <div style="font-size:10px;color:var(--mu);margin-top:4px" data-i18n="feeProf.gamesHint">Один рядок на гру. Платформа: funpay / eldorado / other. Порожньо — без overrides.</div>
     </div>
   </div>
-  <div class="panel" style="margin-bottom:14px">
+  <div class="panel" data-set-cat="connections" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="ph.tg">TELEGRAM-СПОВІЩЕННЯ</span></div>
     <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="tg.hint">Бот пише лише про те, що прийшло з пошти (нові замовлення й повідомлення FunPay / ZeusX / Eldorado) та про досягнення цілі. Ручне внесення продажу в таблицю не сповіщає. Створи бота у @BotFather, встав токен і свій chat_id (дізнатись у @userinfobot).</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="set.botToken">ТОКЕН БОТА</div>
-        <input id="tgToken" type="password" placeholder="123456789:AA..." autocomplete="off" style="width:250px">
+        <input id="tgToken" data-i18n-aria="set.botToken" type="password" placeholder="123456789:AA..." autocomplete="off" style="width:250px">
       </div>
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">CHAT ID</div>
-        <input id="tgChat" placeholder="123456789" style="width:150px">
+        <input id="tgChat" data-i18n-aria="set.chatId" placeholder="123456789" style="width:150px">
       </div>
       <button class="btn gr" onclick="saveTg()">✓ <span data-i18n="save">Зберегти</span></button>
       <button class="btn" onclick="testTg()">📨 <span data-i18n="set.test">Тест</span></button>
       <button class="btn rd" onclick="tgDisconnect()" data-i18n="set.telegramDisconnect">Disconnect Telegram</button>
     </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;align-items:center">
-      <label style="cursor:pointer"><input type="checkbox" id="tgEnabled"> Увімкнено</label>
+      <label style="cursor:pointer"><input type="checkbox" id="tgEnabled" data-i18n-aria="set.tgEnabled"> Увімкнено</label>
     </div>
     <div style="font-size:12px;color:var(--mu);margin-top:12px" data-i18n="set.whatToSend">Що надсилати в Telegram (кожен тип окремо):</div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:12px;align-items:center">
@@ -1582,7 +1626,7 @@ body.compact-ui .tabs{gap:4px}
     </div>
     <div style="font-size:12px;color:var(--mu);margin-top:10px;line-height:1.6" data-i18n="tg.cmds">Бот відповідає на команди (тільки ваш чат): /stats — продажі сьогодні й за місяць · /balance — баланс ZeusX / FunPay / Eldorado · /new — останні замовлення · /taobao — топ вигідних лотів · /help</div>
   </div>
-  <div class="panel" style="margin-bottom:14px">
+  <div class="panel" data-set-cat="connections" style="margin-bottom:14px">
     <div class="ph">GMAIL → TELEGRAM
       <span id="gmailBadge" style="font-size:10px;color:var(--mu)"></span>
     </div>
@@ -1590,11 +1634,11 @@ body.compact-ui .tabs{gap:4px}
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="set.gmailLabel">GMAIL</div>
-        <input id="gmailUser" placeholder="you@gmail.com" autocomplete="off" style="width:230px">
+        <input id="gmailUser" data-i18n-aria="set.gmailUser" placeholder="you@gmail.com" autocomplete="off" style="width:230px">
       </div>
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="set.appPass">APP PASSWORD</div>
-        <input id="gmailPass" type="password" placeholder="xxxx xxxx xxxx xxxx" autocomplete="off" style="width:200px">
+        <input id="gmailPass" data-i18n-aria="set.appPass" type="password" placeholder="xxxx xxxx xxxx xxxx" autocomplete="off" style="width:200px">
       </div>
       <button class="btn gr" onclick="saveGmail()">✓ <span data-i18n="save">Зберегти</span></button>
       <button class="btn" onclick="checkGmailNow()">📥 <span data-i18n="set.checkNow">Перевірити зараз</span></button>
@@ -1602,62 +1646,62 @@ body.compact-ui .tabs{gap:4px}
     </div>
     <div id="gmailInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
   </div>
-  <div class="panel" style="margin-bottom:14px">
+  <div class="panel" data-set-cat="data" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="ph.cloud">ХМАРНИЙ БЕКАП</span></div>
     <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="set.cloudHint">Копія бекапів у OneDrive (або будь-яка папка). Порожнє поле = авто: OneDrive/GameTrackerBackups.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div style="flex:1;min-width:240px">
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px" data-i18n="set.folder">ПАПКА</div>
-        <input id="cloudDir" placeholder="C:/Users/User/OneDrive/GameTrackerBackups" style="width:100%">
+        <input id="cloudDir" data-i18n-aria="set.folder" placeholder="C:/Users/User/OneDrive/GameTrackerBackups" style="width:100%">
       </div>
       <button class="btn gr" onclick="saveCloud()">✓ <span data-i18n="cloud.save">Зберегти</span></button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:10px">
-      <label style="font-size:11px;color:var(--mu)"><span data-i18n="cloud.every">Кожні</span> <input id="backupHours" type="number" min="1" max="168" style="width:64px"> <span data-i18n="cloud.hours">год</span></label>
-      <label style="font-size:11px;color:var(--mu)"><span data-i18n="cloud.keep">Тримати</span> <input id="backupKeep" type="number" min="1" max="365" style="width:64px"> <span data-i18n="cloud.copies">копій</span></label>
+      <label style="font-size:11px;color:var(--mu)"><span data-i18n="cloud.every">Кожні</span> <input id="backupHours" data-i18n-aria="cloud.every" type="number" min="1" max="168" style="width:64px"> <span data-i18n="cloud.hours">год</span></label>
+      <label style="font-size:11px;color:var(--mu)"><span data-i18n="cloud.keep">Тримати</span> <input id="backupKeep" data-i18n-aria="cloud.keep" type="number" min="1" max="365" style="width:64px"> <span data-i18n="cloud.copies">копій</span></label>
       <button class="btn" style="font-size:11px;padding:5px 10px" onclick="saveBackupSettings()">✓ <span data-i18n="cloud.save">Зберегти</span></button>
       <button class="btn gr" style="font-size:11px;padding:5px 10px" onclick="backupNow()">💾 <span data-i18n="cloud.now">Бекап зараз</span></button>
       <button class="btn" style="font-size:11px;padding:5px 10px" onclick="backupVerify()">🔍 <span data-i18n="cloud.verify">Перевірити</span></button>
       <button class="btn" style="font-size:11px;padding:5px 10px" onclick="backupRestoreTest()">🧪 <span data-i18n="cloud.restoreTest">Тест відновлення</span></button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:9px">
-      <label style="font-size:11px;display:flex;align-items:center;gap:5px"><input id="backupEncrypt" type="checkbox"> 🔒 <span data-i18n="cloud.encrypt">Шифрувати автоматичні бекапи</span></label>
-      <input id="backupPass" type="password" placeholder="Пароль шифрування" data-i18n-ph="cloud.password" autocomplete="new-password" style="width:190px;font-size:11px">
+      <label style="font-size:11px;display:flex;align-items:center;gap:5px"><input id="backupEncrypt" data-i18n-aria="cloud.encrypt" type="checkbox"> 🔒 <span data-i18n="cloud.encrypt">Шифрувати автоматичні бекапи</span></label>
+      <input id="backupPass" data-i18n-aria="cloud.password" type="password" placeholder="Пароль шифрування" data-i18n-ph="cloud.password" autocomplete="new-password" style="width:190px;font-size:11px">
       <button class="btn" style="font-size:11px;padding:4px 9px" onclick="saveBackupEncryption()" data-i18n="cloud.save">Зберегти</button>
       <span style="font-size:10px;color:var(--mu)" data-i18n="cloud.passwordHint">Пароль зберігається в secrets; без нього бекап не відкрити.</span>
     </div>
     <div id="backupInfo" style="font-size:11px;color:var(--mu);margin-top:7px">—</div>
     <div id="cloudInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
   </div>
-  <div class="panel" style="margin-bottom:14px">
+  <div class="panel" data-set-cat="security" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="ph.sec">БЕЗПЕКА</span></div>
     <div id="authModeInfo" style="font-size:13px;margin-bottom:10px;display:none"></div>
     <div style="font-size:11px;color:var(--mu);margin-bottom:10px">Зміна пароля діє одразу (браузер попросить його після перезавантаження). HTTPS — для прямого доступу; на хостингу зазвичай уже є проксі з HTTPS.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">ПОТОЧНИЙ ПАРОЛЬ</div>
-        <input id="pwOld" type="password" autocomplete="current-password" style="width:180px">
+        <input id="pwOld" data-i18n-aria="pw.current" type="password" autocomplete="current-password" style="width:180px">
       </div>
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">НОВИЙ ПАРОЛЬ</div>
-        <input id="pwNew" type="password" autocomplete="new-password" data-i18n-ph="ph.pw6" placeholder="мін. 6 символів" style="width:180px">
+        <input id="pwNew" data-i18n-aria="pw.new" type="password" autocomplete="new-password" data-i18n-ph="ph.pw6" placeholder="мін. 6 символів" style="width:180px">
       </div>
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">ПОВТОРИ</div>
-        <input id="pwNew2" type="password" autocomplete="new-password" style="width:160px">
+        <input id="pwNew2" data-i18n-aria="pw.repeat" type="password" autocomplete="new-password" style="width:160px">
       </div>
       <button class="btn gr" onclick="changePassword()">✓ Змінити пароль</button>
     </div>
     <div style="border-top:1px solid var(--brd);margin:14px 0"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-      <label style="display:flex;align-items:center;gap:7px;font-size:12px;padding-bottom:9px;cursor:pointer"><input type="checkbox" id="httpsEnabled"> HTTPS</label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;padding-bottom:9px;cursor:pointer"><input type="checkbox" id="httpsEnabled" data-i18n-aria="set.https"> HTTPS</label>
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">CERT (pem/crt)</div>
-        <input id="httpsCert" placeholder="C:/certs/server.crt" style="width:220px">
+        <input id="httpsCert" data-i18n-aria="set.cert" placeholder="C:/certs/server.crt" style="width:220px">
       </div>
       <div>
         <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">KEY (pem/key)</div>
-        <input id="httpsKey" placeholder="C:/certs/server.key" style="width:220px">
+        <input id="httpsKey" data-i18n-aria="set.key" placeholder="C:/certs/server.key" style="width:220px">
       </div>
       <button class="btn gr" onclick="saveHttps()">✓ Зберегти</button>
       <button class="btn" onclick="genHttps()">🔑 Згенерувати self-signed</button>
@@ -1669,11 +1713,11 @@ body.compact-ui .tabs{gap:4px}
 </div>
 
 <!-- ➕ МОДАЛ СТВОРЕННЯ ЛОТУ -->
-<div id="bulkRenameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center">
+<div id="bulkRenameModal" role="dialog" aria-modal="true" aria-labelledby="bulkRenameTitle" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:24px;width:min(600px,95vw);max-height:90vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <span style="font-weight:700;font-size:15px">✏ <span data-i18n="deal.bulkTitle">Масове заповнення назв</span></span>
-      <button onclick="g('bulkRenameModal').style.display='none'" style="background:none;border:none;color:var(--mu);font-size:18px;cursor:pointer">✕</button>
+      <span id="bulkRenameTitle" style="font-weight:700;font-size:15px">✏ <span data-i18n="deal.bulkTitle">Масове заповнення назв</span></span>
+      <button onclick="g('bulkRenameModal').style.display='none'" data-i18n-aria="common.close" style="background:none;border:none;color:var(--mu);font-size:18px;cursor:pointer">✕</button>
     </div>
     <div style="font-size:11px;color:var(--mu);margin-bottom:14px" data-i18n="deal.bulkDesc">Записи згруповані по сумі продажу. Введи назву — вона застосується до всіх записів з цією сумою без назви.</div>
     <div id="bulkRenameList"></div>
@@ -1685,11 +1729,11 @@ body.compact-ui .tabs{gap:4px}
 </div>
 
 <!-- 💵 МАСОВА КОМІСІЯ -->
-<div id="bulkFeeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center">
+<div id="bulkFeeModal" role="dialog" aria-modal="true" aria-labelledby="bulkFeeTitle" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:24px;width:min(480px,95vw)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <span style="font-weight:700;font-size:15px">% <span data-i18n="deal.bulkFeeTitle">Масова комісія</span></span>
-      <button onclick="g('bulkFeeModal').style.display='none'" style="background:none;border:none;color:var(--mu);font-size:18px;cursor:pointer">✕</button>
+      <span id="bulkFeeTitle" style="font-weight:700;font-size:15px">% <span data-i18n="deal.bulkFeeTitle">Масова комісія</span></span>
+      <button onclick="g('bulkFeeModal').style.display='none'" data-i18n-aria="common.close" style="background:none;border:none;color:var(--mu);font-size:18px;cursor:pointer">✕</button>
     </div>
     <div style="font-size:12px;color:var(--mu);margin-bottom:12px">
       <span data-i18n="deal.bulkFeeDesc">Застосується до поточного фільтра. Перерахує комісію, after-fee і чистий прибуток.</span><br>
@@ -1710,11 +1754,11 @@ body.compact-ui .tabs{gap:4px}
 </div>
 
 <!-- 💰 КАЛЬКУЛЯТОР ЦІНИ -->
-<div id="lotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center">
+<div id="lotModal" role="dialog" aria-modal="true" aria-labelledby="lotModalTitle" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:24px;width:min(560px,95vw);max-height:90vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <div style="font-family:var(--font);font-size:13px;letter-spacing:2px;color:var(--a1)">💰 <span data-i18n="lot.title">КАЛЬКУЛЯТОР ЦІНИ</span></div>
-      <button onclick="closeLotModal()" style="background:transparent;border:none;color:var(--mu);font-size:20px;cursor:pointer">✕</button>
+      <div id="lotModalTitle" style="font-family:var(--font);font-size:13px;letter-spacing:2px;color:var(--a1)">💰 <span data-i18n="lot.title">КАЛЬКУЛЯТОР ЦІНИ</span></div>
+      <button onclick="closeLotModal()" data-i18n-aria="common.close" style="background:transparent;border:none;color:var(--mu);font-size:20px;cursor:pointer">✕</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px">
       <button id="lmBtnZX" class="btn on" onclick="setLotPlatform('zeusx')" style="flex:1;font-size:11px">⚡ ZeusX (10%)</button>
@@ -1754,29 +1798,29 @@ body.compact-ui .tabs{gap:4px}
     </div>
     <div style="display:flex;gap:8px;margin-top:18px">
       <button onclick="copyLotLink()" class="btn gr" style="flex:1;font-size:12px;padding:10px">📋 <span data-i18n="lot.copy">КОПІЮВАТИ ДЛЯ ЛОТУ</span></button>
-      <button onclick="closeLotModal()" class="btn" style="font-size:12px;padding:10px">✕</button>
+      <button onclick="closeLotModal()" class="btn" data-i18n-aria="common.close" style="font-size:12px;padding:10px">✕</button>
     </div>
     <div id="lmResult" style="margin-top:10px;font-size:12px;text-align:center"></div>
   </div>
 </div>
 
 <!-- ⚖ ПОРІВНЯННЯ ЦІН МІЖ МАГАЗИНАМИ -->
-<div id="cmpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center">
+<div id="cmpModal" role="dialog" aria-modal="true" aria-labelledby="cmpTitle" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:22px;width:min(680px,95vw);max-height:88vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div class="ph" style="margin:0">⚖ <span data-i18n="sup.compareTitle">ПОРІВНЯННЯ ЦІН</span></div>
-      <button onclick="closeCmp()" style="background:none;border:none;color:var(--mu);font-size:20px;cursor:pointer">✕</button>
+      <div id="cmpTitle" class="ph" style="margin:0">⚖ <span data-i18n="sup.compareTitle">ПОРІВНЯННЯ ЦІН</span></div>
+      <button onclick="closeCmp()" data-i18n-aria="common.close" style="background:none;border:none;color:var(--mu);font-size:20px;cursor:pointer">✕</button>
     </div>
     <div id="cmpBody"></div>
   </div>
 </div>
 
 <!-- 📈 ІСТОРІЯ ЦІНИ -->
-<div id="histModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center">
+<div id="histModal" role="dialog" aria-modal="true" aria-labelledby="histTitle" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:22px;width:min(640px,95vw);max-height:88vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div class="ph" style="margin:0">📈 <span data-i18n="sup.historyTitle">ІСТОРІЯ ЦІНИ</span></div>
-      <button onclick="closeHist()" style="background:none;border:none;color:var(--mu);font-size:22px;cursor:pointer">✕</button>
+      <div id="histTitle" class="ph" style="margin:0">📈 <span data-i18n="sup.historyTitle">ІСТОРІЯ ЦІНИ</span></div>
+      <button onclick="closeHist()" data-i18n-aria="common.close" style="background:none;border:none;color:var(--mu);font-size:22px;cursor:pointer">✕</button>
     </div>
     <div id="histBody"></div>
   </div>
@@ -2504,6 +2548,59 @@ Object.assign(I18N.ru, {
   'aud.e.2fa_recovery':'Recovery-коды'
 });
 
+// ═══ task-17 i18n: останні витоки UA у EN/RU + aria-підписи ─══
+Object.assign(I18N.uk, {
+  'nav.settings':'Налаштування','nav.more':'Ще','nav.sections':'Розділи','cmdk.title':'Пошук дії','common.close':'Закрити',
+  'ed.add':'Додати','ed.importCsv':'Імпорт CSV','ed.noMatch':'Нічого не знайдено',
+  'sup.refreshConfirm':'Оновити базу постачальників зараз?\n\nЦе витратить орієнтовно 10–15 кредитів ScraperAPI.',
+  'sup.refreshing':'⏳ Оновлення запущено...','sup.refreshed':'✅ Базу оновлено','sup.error':'помилка',
+  'sup.newsChecking':'⏳ Перевіряю новинки через sitemap...','sup.newsBaseline':'🔔 Базовий список магазинів збережено',
+  'sup.newsNew':'🆕 Нових: %s','sup.newsTg':' — алерт у Telegram',
+  'sup.name':'Назва магазину','sup.baseUrl':'Базова адреса магазину',
+  'f.filterPlatform':'Фільтр платформи','f.filterPeriod':'Фільтр періоду','f.sort':'Сортування',
+  'per.from':'Від','per.to':'До',
+  'set.chatId':'Chat ID','set.tgEnabled':'Увімкнено','set.gmailUser':'Gmail-адреса','set.cert':'Сертифікат','set.key':'Ключ','set.https':'HTTPS',
+  'imp.file':'Файл CSV','imp.platform':'Платформа імпорту',
+  'pw.current':'Поточний пароль','pw.new':'Новий пароль','pw.repeat':'Повторіть новий пароль',
+  'set.catLabel':'Категорія','set.catSecurity':'Акаунт і безпека','set.catConnections':'Підключення','set.catData':'Дані й бекапи',
+  'set.catAppearance':'Вигляд','set.catDevices':'Застосунок і пристрої','set.catUpdates':'Оновлення й діагностика','set.catAll':'Усі',
+  'set.catHint':'Показано лише потрібні розділи. Виберіть «Усі», щоб побачити всі.'
+});
+Object.assign(I18N.en, {
+  'nav.settings':'Settings','nav.more':'More','nav.sections':'Sections','cmdk.title':'Search actions','common.close':'Close',
+  'ed.add':'Add','ed.importCsv':'Import CSV','ed.noMatch':'Nothing found',
+  'sup.refreshConfirm':'Refresh the supplier database now?\n\nThis spends roughly 10–15 ScraperAPI credits.',
+  'sup.refreshing':'⏳ Refresh started...','sup.refreshed':'✅ Database refreshed','sup.error':'error',
+  'sup.newsChecking':'⏳ Checking new items via sitemap...','sup.newsBaseline':'🔔 Baseline store list saved',
+  'sup.newsNew':'🆕 New: %s','sup.newsTg':' — Telegram alert sent',
+  'sup.name':'Store name','sup.baseUrl':'Store base URL',
+  'f.filterPlatform':'Platform filter','f.filterPeriod':'Period filter','f.sort':'Sorting',
+  'per.from':'From','per.to':'To',
+  'set.chatId':'Chat ID','set.tgEnabled':'Enabled','set.gmailUser':'Gmail address','set.cert':'Certificate','set.key':'Key','set.https':'HTTPS',
+  'imp.file':'CSV file','imp.platform':'Import platform',
+  'pw.current':'Current password','pw.new':'New password','pw.repeat':'Repeat new password',
+  'set.catLabel':'Category','set.catSecurity':'Account & security','set.catConnections':'Connections','set.catData':'Data & backups',
+  'set.catAppearance':'Appearance','set.catDevices':'App & devices','set.catUpdates':'Updates & diagnostics','set.catAll':'All',
+  'set.catHint':'Only the sections you need are shown. Pick “All” to see everything.'
+});
+Object.assign(I18N.ru, {
+  'nav.settings':'Настройки','nav.more':'Ещё','nav.sections':'Разделы','cmdk.title':'Поиск действия','common.close':'Закрыть',
+  'ed.add':'Добавить','ed.importCsv':'Импорт CSV','ed.noMatch':'Ничего не найдено',
+  'sup.refreshConfirm':'Обновить базу поставщиков сейчас?\n\nЭто потратит ориентировочно 10–15 кредитов ScraperAPI.',
+  'sup.refreshing':'⏳ Обновление запущено...','sup.refreshed':'✅ База обновлена','sup.error':'ошибка',
+  'sup.newsChecking':'⏳ Проверяю новинки через sitemap...','sup.newsBaseline':'🔔 Базовый список магазинов сохранён',
+  'sup.newsNew':'🆕 Новых: %s','sup.newsTg':' — алерт в Telegram',
+  'sup.name':'Название магазина','sup.baseUrl':'Базовый адрес магазина',
+  'f.filterPlatform':'Фильтр платформы','f.filterPeriod':'Фильтр периода','f.sort':'Сортировка',
+  'per.from':'С','per.to':'По',
+  'set.chatId':'Chat ID','set.tgEnabled':'Включено','set.gmailUser':'Gmail-адрес','set.cert':'Сертификат','set.key':'Ключ','set.https':'HTTPS',
+  'imp.file':'Файл CSV','imp.platform':'Платформа импорта',
+  'pw.current':'Текущий пароль','pw.new':'Новый пароль','pw.repeat':'Повторите новый пароль',
+  'set.catLabel':'Категория','set.catSecurity':'Аккаунт и безопасность','set.catConnections':'Подключения','set.catData':'Данные и бэкапы',
+  'set.catAppearance':'Вид','set.catDevices':'Приложение и устройства','set.catUpdates':'Обновления и диагностика','set.catAll':'Все',
+  'set.catHint':'Показаны только нужные разделы. Выберите «Все», чтобы увидеть всё.'
+});
+
 Object.assign(I18N.uk, {
   'sched.title':'Розклад і ліміти','sched.intro':'Це автоматичні інтервали Ledger: як часто оновлювати ціни, шукати новинки та коли надсилати звіт. Менший інтервал = свіжіші дані, але більше запитів і кредитів.',
   'sched.sup.label':'Оновлення каталогу','sched.sup.desc':'Як часто перевіряти ціни та наявність у постачальників. 6 год = 4 рази на добу.',
@@ -2892,6 +2989,8 @@ function applyLang(){
   if(_mg) _mg.setAttribute('label', t('per.months'));
   document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.setAttribute('title', t(el.dataset.i18nTitle)); });
   if(g('langUk')) g('langUk').classList.toggle('on', LANG==='uk');
   if(g('langEn')) g('langEn').classList.toggle('on', LANG==='en');
   if(g('langRu')) g('langRu').classList.toggle('on', LANG==='ru');
@@ -3058,9 +3157,48 @@ function _mergeChannels(){
 }
 
 function syncMnav(id){
+  const DIRECT=['overview','tracker','mail','inventory','stats'];
   document.querySelectorAll('#mnav .mn').forEach(b=>b.classList.toggle('on', b.dataset.tab===id));
+  const more=g('mnMore'); if(more) more.classList.toggle('on', DIRECT.indexOf(id)<0);
+  document.querySelectorAll('#mnavMore .mn-more-item').forEach(b=>b.classList.toggle('on', b.dataset.tab===id));
+}
+let _SET_CATS = ['security','connections','data','appearance','devices','updates'];
+function setSettingsCat(cat, save){
+  cat = String(cat || 'security');
+  if(cat !== 'all' && _SET_CATS.indexOf(cat) < 0) cat = 'security';
+  const sel=g('setCat');
+  if(sel && sel.value !== cat) sel.value = cat;
+  const panels=[...document.querySelectorAll('#tab-setup > .panel')];
+  panels.forEach(p=>{
+    if(typeof p._setOrig === 'undefined') p._setOrig = p.style.display || '';
+    const c = String(p.getAttribute('data-set-cat') || '');
+    const show = (cat === 'all') || (c === cat) || (c.split(/\s+/).indexOf(cat) >= 0);
+    if(show){
+      p.style.display = p._setOrig;
+      p.classList.remove('set-in'); void p.offsetWidth; p.classList.add('set-in');
+    } else {
+      p.style.display = 'none';
+      p.classList.remove('set-in');
+    }
+  });
+  if(save !== false){ try{ localStorage.setItem('gt_set_cat', cat); }catch(e){} }
+}
+function mnavMoreToggle(ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  const p=g('mnavMore'), b=g('mnMore');
+  if(!p) return;
+  const open = !p.classList.contains('on');
+  p.classList.toggle('on', open);
+  if(b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if(open){ const first=p.querySelector('.mn-more-item'); if(first) setTimeout(()=>{ try{ first.focus(); }catch(e){} }, 0); }
+}
+function mnavMoreClose(){
+  const p=g('mnavMore'), b=g('mnMore');
+  if(p) p.classList.remove('on');
+  if(b) b.setAttribute('aria-expanded','false');
 }
 function mnavGo(id){
+  try{ mnavMoreClose(); }catch(e){}
   const tab=[...document.querySelectorAll('.tabs .tab')].find(x=>String(x.getAttribute('onclick')||'').includes("'"+id+"'"));
   if(!tab) return;
   sw(id,tab);
@@ -3071,9 +3209,9 @@ function mnavGo(id){
   if(id==='stats'){ try{ renderStats(); setTimeout(renderRevenueChart,80); }catch(e){} }
 }
 function sw(id,el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.tabs .tab').forEach(t=>{ t.classList.remove('on'); t.setAttribute('aria-selected','false'); });
   document.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
-  el.classList.add('on'); g('tab-'+id).classList.add('on');
+  el.classList.add('on'); el.setAttribute('aria-selected','true'); g('tab-'+id).classList.add('on');
   try{ syncMnav(id); }catch(e){}
   try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){}
   if(id==='overview'){ renderOverview(); }
@@ -3367,7 +3505,7 @@ async function pwEnable(){
   try{
     const d = await fetch('/api/auth/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({enabled:true,new:pw,current:cur,otp:otp})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
     if(el) el.value='';
     toast(t('pw.enabledToast'));
     setTimeout(()=>location.reload(), 1000);
@@ -3380,7 +3518,7 @@ async function pwDisable(){
   try{
     const d = await fetch('/api/auth/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({enabled:false,current:cur,otp:otp})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
     toast(t('pw.disabledToast'));
     loadSettings();
   }catch(e){ toast('⚠ '+e, false); }
@@ -3681,7 +3819,7 @@ async function setup2FA(){
   const cur=_askCurrent(); if(!cur) return; const otp=_askOtp();
   try{
     const d=await fetch('/api/2fa/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current:cur,otp:otp})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
     g('twofaSecret').textContent=d.secret||'';
     g('twofaUri').textContent=d.uri||'';
     g('twofaSetup').style.display='block';
@@ -3707,7 +3845,7 @@ async function enable2FA(){
   try{
     const d=await fetch('/api/2fa/enable',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code,current:cur,otp:otp})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
     toast(t('twofa.enabledToast')); await load2FA(); showRecovery(d.recovery);
   }catch(e){ toast('⚠ '+e, false); }
 }
@@ -3717,7 +3855,7 @@ async function regenRecovery(){
   try{
     const d=await fetch('/api/2fa/recovery',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
     showRecovery(d.recovery);
     toast(t('twofa.regenDone'));
   }catch(e){ toast('⚠ '+e, false); }
@@ -3726,7 +3864,7 @@ async function logoutAll(){
   if(!confirm(t('twofa.logoutConfirm'))) return;
   try{
     const d=await fetch('/api/logout/all',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
     location.href='/login';
   }catch(e){ toast('⚠ '+e, false); }
 }
@@ -3737,7 +3875,7 @@ async function disable2FA(){
   try{
     const d=await fetch('/api/2fa/disable',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code,current:cur})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
     toast(t('twofa.disabledToast')); await load2FA();
   }catch(e){ toast('⚠ '+e, false); }
 }
@@ -3774,12 +3912,20 @@ async function loadPlus(){
     loadTeam();
   }catch(e){ box.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
 }
-// Переклад відомих англомовних помилок API (сервер віддає їх без локалізації).
+// Переклад відомих помилок API (частину рядків сервер віддає лише українською).
+const API_ERR_MAP = [
+  [/^team plan required\.?$/i, {uk:'Потрібен командний тариф', en:'A team plan is required', ru:'Требуется командный тариф'}],
+  [/потрібен поточний пароль і 2FA-код/i, {uk:'Потрібен поточний пароль і 2FA-код', en:'Current password and 2FA code required', ru:'Нужен текущий пароль и 2FA-код'}],
+  [/Спочатку увімкни пароль входу/i, {uk:'Спочатку увімкни пароль входу', en:'Enable a login password first', ru:'Сначала включи пароль входа'}],
+  [/Спочатку згенеруй секрет/i, {uk:'Спочатку згенеруй секрет', en:'Generate the 2FA secret first', ru:'Сначала сгенерируй секрет'}],
+  [/Невірний код 2FA|Невірний код/i, {uk:'Невірний код 2FA', en:'Wrong 2FA code', ru:'Неверный код 2FA'}],
+  [/Пароль вимкнено/i, {uk:'Пароль вимкнено', en:'Password is disabled', ru:'Пароль отключён'}],
+  [/Невірний поточний пароль|Невірний пароль/i, {uk:'Невірний поточний пароль', en:'Wrong current password', ru:'Неверный текущий пароль'}],
+  [/мінімум 8/i, {uk:'Пароль має бути мінімум 8 символів', en:'Password must be at least 8 characters', ru:'Пароль должен быть минимум 8 символов'}]
+];
 function apiErrText(msg){
   const s = String(msg==null?'':msg).trim();
-  if(/^team plan required\.?$/i.test(s)){
-    return LANG==='ru' ? 'Требуется командный тариф' : LANG==='en' ? 'A team plan is required' : 'Потрібен командний тариф';
-  }
+  for(const pair of API_ERR_MAP){ if(pair[0].test(s)) return pair[1][LANG] || pair[1].uk; }
   return s;
 }
 async function loadTeam(){
@@ -4217,7 +4363,7 @@ async function changePassword(){
       toast(t('pw.changed'));
       setTimeout(()=>location.reload(), 1100);
     } else {
-      let msg = d.error || '';
+      let msg = apiErrText(d.error || '');
       if(d.reason === 'auth_off') msg = LANG==='ru' ? 'Пароль отключён. Включите его в блоке «Пароль» выше.' : LANG==='en' ? 'Password is disabled. Enable it in the Password block above.' : 'Пароль вимкнено. Увімкніть його в блоці «Пароль» вище.';
       else if(/Невірний/i.test(msg)) msg = LANG==='ru' ? 'Неверный текущий пароль' : LANG==='en' ? 'Wrong current password' : 'Невірний поточний пароль';
       else if(/мінімум 8/i.test(msg)) msg = t('pw.short');
@@ -5247,6 +5393,8 @@ async function exportFullExcel(){
     await new Promise((res,rej)=>{
       const s=document.createElement('script');
       s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.integrity='sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw';
+      s.crossOrigin='anonymous';
       s.onload=res; s.onerror=rej;
       document.head.appendChild(s);
     });
@@ -5568,6 +5716,13 @@ function editEdSale(id){
     + `<button class="btn gr" onclick="saveEdEdit(${s.id})">💾 ${t('save')}</button>`
     + `</div></div>`;
   document.body.appendChild(d);
+  try{
+    d.setAttribute('tabindex','-1');
+    d.setAttribute('role','dialog');
+    d.setAttribute('aria-modal','true');
+    d.setAttribute('aria-label', t('ed.editTitle'));
+    if(window.__uiDlgShow) window.__uiDlgShow(d);
+  }catch(e){}
 }
 
 async function saveEdEdit(id){
@@ -5634,7 +5789,7 @@ function renderEldorado(){
   const pag = g('edPag');
 
   if(!edFilt.length){
-    el.innerHTML = '<div class="none">'+(edSales.length?'Нічого не знайдено':'Ще немає записів')+'</div>';
+    el.innerHTML = '<div class="none">'+(edSales.length?t('ed.noMatch'):t('ed.empty'))+'</div>';
     if(sum) sum.innerHTML = '';
     if(pag) pag.style.display='none';
     return;
@@ -5961,7 +6116,7 @@ function renderSupPage(){
       const disc=p.isOnSale?`<span style="background:rgba(239,68,68,.1);color:var(--rd);border:1px solid rgba(239,68,68,.2);padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700">${Number.isFinite(_disc)&&_disc>0?('-'+_disc+'%'):t('sup.sale')}</span>`:'';
       return `<div style="background:var(--card2);border:1px solid var(--brd);border-left:3px solid ${p.gone?'var(--rd)':'transparent'};border-radius:12px;padding:14px;margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
-          <a href="${esc(p.url)}" target="_blank" style="color:var(--tx);text-decoration:none;font-weight:700;font-size:15px;flex:1">${esc((p.title||'').substring(0,70))}</a>
+          <a href="${esc(safeLinkUrl(p.url))}" target="_blank" style="color:var(--tx);text-decoration:none;font-weight:700;font-size:15px;flex:1">${esc((p.title||'').substring(0,70))}</a>
           <span style="font-size:15px;font-weight:800;color:${p.gone?'var(--mu)':'var(--gr)'};white-space:nowrap">$${(p.price||0).toFixed(2)}</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
@@ -5973,7 +6128,7 @@ function renderSupPage(){
             ${supAgeBadge(p, now, DAY)}
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%">
-            <a href="${esc(p.url)}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a>
+            <a href="${esc(safeLinkUrl(p.url))}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a>
             <button class="btn" style="padding:6px 10px" onclick="addTargetFromSup(_supItems[${i}])" title="Цільова ціна">🎯</button>
             <button class="btn" style="padding:6px 10px;gap:5px" data-hist="${esc(p.id)}" title="Історія ціни за 30 днів"><svg class="ic"><use href="#ic-chart"/></svg>${t('cb.history')}</button>
             <button class="btn" style="padding:6px 10px;gap:5px" data-cmp="${esc(p.id)}" title="Порівняти ціну в інших магазинах"><svg class="ic"><use href="#ic-scale"/></svg>${t('cb.compare')}</button>
@@ -5989,13 +6144,13 @@ function renderSupPage(){
       const _disc = Number(p.discount);
       const disc=p.isOnSale?`<span style="background:rgba(239,68,68,.1);color:var(--rd);border:1px solid rgba(239,68,68,.2);padding:1px 5px;border-radius:3px;font-size:11px;font-weight:700">${Number.isFinite(_disc)&&_disc>0?('-'+_disc+'%'):t('sup.sale')}</span>`:'—';
       const cheap=p.cheaper?`<span style="display:block;margin-top:3px;color:var(--rd);font-size:11px">💸 −$${Math.abs(p.cheaper.diff).toFixed(2)} · ${esc(p.cheaper.sourceName)}</span>`:'';
-      return`<tr${p.gone?' style="opacity:.62"':''}><td style="max-width:300px"><a href="${esc(p.url)}" target="_blank" style="text-decoration:none;font-weight:600">${esc(p.title)}</a></td>
+      return`<tr${p.gone?' style="opacity:.62"':''}><td style="max-width:300px"><a href="${esc(safeLinkUrl(p.url))}" target="_blank" style="text-decoration:none;font-weight:600">${esc(p.title)}</a></td>
         <td><span style="display:inline-flex;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;border:1px solid;${bc}">${p.sourceEmoji} ${esc(p.sourceName)}</span></td>
         <td><span style="font-size:14px;font-weight:800;color:${p.gone?'var(--mu)':'var(--gr)'}">$${(p.price||0).toFixed(2)}</span>${p.comparePrice>0?`<span style="font-size:11px;color:var(--mu);text-decoration:line-through;display:block">$${p.comparePrice.toFixed(2)}</span>`:''}${cheap}</td>
         <td>${disc}</td>
         <td>${p.gone?'<span style="color:var(--mu)">—</span>':(p.available?'<span style="color:var(--gr)">✓</span>':'<span style="color:var(--rd)">✗</span>')}</td>
         <td>${supAgeBadge(p, now, DAY)}</td>
-        <td style="white-space:nowrap;text-align:right"><div style="display:inline-flex;gap:5px;align-items:center;justify-content:flex-end"><a href="${esc(p.url)}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a><button class="btn" style="padding:6px 10px" onclick="addTargetFromSup(_supItems[${i}])" title="Цільова ціна">🎯</button><button class="btn" style="padding:6px 10px;gap:5px" data-hist="${esc(p.id)}" title="Історія ціни за 30 днів"><svg class="ic"><use href="#ic-chart"/></svg>${t('cb.history')}</button><button class="btn" style="padding:6px 10px;gap:5px" data-cmp="${esc(p.id)}" title="Порівняти ціну в інших магазинах"><svg class="ic"><use href="#ic-scale"/></svg>${t('cb.compare')}</button><button class="btn" style="padding:6px 10px;gap:5px;white-space:nowrap" onclick="openLotModal(_supItems[${i}])" title="Калькулятор ціни лота"><svg class="ic"><use href="#ic-calc"/></svg>${t('cb.lot')}</button></div></td></tr>`;
+        <td style="white-space:nowrap;text-align:right"><div style="display:inline-flex;gap:5px;align-items:center;justify-content:flex-end"><a href="${esc(safeLinkUrl(p.url))}" target="_blank" class="ilnk" style="padding:6px 10px;gap:5px;display:inline-flex;align-items:center" title="Відкрити в магазині"><svg class="ic"><use href="#ic-ext"/></svg>${t('cb.shop')}</a><button class="btn" style="padding:6px 10px" onclick="addTargetFromSup(_supItems[${i}])" title="Цільова ціна">🎯</button><button class="btn" style="padding:6px 10px;gap:5px" data-hist="${esc(p.id)}" title="Історія ціни за 30 днів"><svg class="ic"><use href="#ic-chart"/></svg>${t('cb.history')}</button><button class="btn" style="padding:6px 10px;gap:5px" data-cmp="${esc(p.id)}" title="Порівняти ціну в інших магазинах"><svg class="ic"><use href="#ic-scale"/></svg>${t('cb.compare')}</button><button class="btn" style="padding:6px 10px;gap:5px;white-space:nowrap" onclick="openLotModal(_supItems[${i}])" title="Калькулятор ціни лота"><svg class="ic"><use href="#ic-calc"/></svg>${t('cb.lot')}</button></div></td></tr>`;
     }).join('')+'</tbody></table>';
   }
   window._supItems=page;
@@ -6134,25 +6289,24 @@ async function loadSupStatus(){
 }
 
 async function checkNews(){
-  toast('⏳ Перевіряю новинки через sitemap...');
+  toast(t('sup.newsChecking'));
   try{
     const d = await fetch('/api/suppliers/news',{method:'POST'}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+(d.error||'помилка'), false); return; }
-    toast(d.baseline ? '🔔 Базовий список магазинів збережено'
-                     : ('🆕 Нових: '+d.new+(d.notified?' — алерт у Telegram':'')));
+    if(!d.ok){ toast('⚠ '+apiErrText(d.error||t('sup.error')), false); return; }
+    toast(d.baseline ? t('sup.newsBaseline') : (t('sup.newsNew').replace('%s', d.new) + (d.notified ? t('sup.newsTg') : '')));
     loadSupStatus();
   }catch(e){ toast('⚠ '+e, false); }
 }
 
 async function refreshSuppliers(){
-  if(!confirm('Оновити базу постачальників зараз?\n\nЦе витратить орієнтовно 10–15 кредитів ScraperAPI.')) return;
-  toast('⏳ Оновлення запущено...');
+  if(!confirm(t('sup.refreshConfirm'))) return;
+  toast(t('sup.refreshing'));
   try{ await fetch('/api/suppliers/refresh',{method:'POST'}); }catch(e){}
   for(let i=0;i<100;i++){
     await new Promise(r=>setTimeout(r,3000));
     try{
       const d = await fetch('/api/suppliers/status').then(r=>r.json());
-      if(!d.busy){ toast('✅ Базу оновлено'); break; }
+      if(!d.busy){ toast(t('sup.refreshed')); break; }
     }catch(e){}
   }
   loadSupStatus(); loadSupply(1,true); loadBuyList();
@@ -6184,7 +6338,7 @@ async function openCompare(id){
         const diff=Number(m.diff||0);
         const cls=diff<0?'pr-cheaper':diff>0?'pr-expensive':'pr-same';
         html+=`<tr><td style="white-space:nowrap">${m.sourceEmoji||''} ${esc(m.sourceName||'')}</td>
-          <td style="max-width:260px"><a href="${esc(m.url)}" target="_blank" style="color:var(--tx);text-decoration:none">${esc((m.title||'').substring(0,80))}</a><span style="color:var(--mu);font-size:9px"> · ${m.match}%</span></td>
+          <td style="max-width:260px"><a href="${esc(safeLinkUrl(m.url))}" target="_blank" style="color:var(--tx);text-decoration:none">${esc((m.title||'').substring(0,80))}</a><span style="color:var(--mu);font-size:9px"> · ${m.match}%</span></td>
           <td style="text-align:right;font-family:var(--font)">$${(m.price||0).toFixed(2)}</td>
           <td style="text-align:right" class="cmp-pr ${cls}">${diff>0?'+':''}${diff.toFixed(2)}$</td></tr>`;
       });
@@ -6425,9 +6579,9 @@ function fmtTz(m){ const sign=m>=0?'+':'-'; const a=Math.abs(m); return 'UTC'+si
 function tzOpts(cur){ const vals=TZ_OPTS.slice(); if(!vals.includes(cur)) vals.push(cur); vals.sort((a,b)=>a-b); return vals.map(v=>'<option value="'+v+'" '+(v===cur?'selected':'')+'>'+fmtTz(v)+'</option>').join(''); }
 let ONLINE = null;
 const ONL_TXT = {
- uk:{always:'Завжди онлайн',from:'з',to:'до',online:'сесія активна',scheduled:'за розкладом',off:'вимкнено',error:'помилка',waiting:'перевіряю…',checked:'перевірено',refresh:'Оновити',saved:'Збережено',eld:'Eldorado не має публічного API — онлайн неможливий'},
- en:{always:'Always online',from:'from',to:'to',online:'session active',scheduled:'scheduled',off:'off',error:'error',waiting:'checking…',checked:'checked',refresh:'Refresh',saved:'Saved',eld:'Eldorado has no public API — online is not possible'},
- ru:{always:'Всегда онлайн',from:'с',to:'до',online:'сессия активна',scheduled:'по расписанию',off:'выключено',error:'ошибка',waiting:'проверяю…',checked:'проверено',refresh:'Обновить',saved:'Сохранено',eld:'Eldorado не имеет публичного API — онлайн невозможен'}
+ uk:{always:'Завжди онлайн',from:'з',to:'до',online:'сесія активна',scheduled:'за розкладом',off:'вимкнено',error:'помилка',waiting:'перевіряю…',checked:'перевірено',refresh:'Оновити',saved:'Збережено',tglOn:'УВІМК',tglOff:'ВИМК',minAgo:' хв тому',notChecked:'перевірок ще не було',eld:'Eldorado не має публічного API — онлайн неможливий'},
+ en:{always:'Always online',from:'from',to:'to',online:'session active',scheduled:'scheduled',off:'off',error:'error',waiting:'checking…',checked:'checked',refresh:'Refresh',saved:'Saved',tglOn:'ON',tglOff:'OFF',minAgo:' min ago',notChecked:'no checks yet',eld:'Eldorado has no public API — online is not possible'},
+ ru:{always:'Всегда онлайн',from:'с',to:'до',online:'сессия активна',scheduled:'по расписанию',off:'выключено',error:'ошибка',waiting:'проверяю…',checked:'проверено',refresh:'Обновить',saved:'Сохранено',tglOn:'ВКЛ',tglOff:'ВЫКЛ',minAgo:' мин назад',notChecked:'проверок ещё не было',eld:'Eldorado не имеет публичного API — онлайн невозможен'}
 };
 function onlT(){ return ONL_TXT[LANG] || ONL_TXT.uk; }
 async function loadOnline(){
@@ -6446,27 +6600,26 @@ function renderOnline(){
     const ago = d.last_ts ? Math.max(0, Math.round((Date.now()/1000-d.last_ts)/60)) : null;
     el.innerHTML='<div class="online-box">'
       +'<div class="online-head"><div class="online-title"><span class="online-dot '+cls+'"></span>'+T.always+'</div>'
-      +'<label class="online-switch"><input type="checkbox" data-onl-en="'+p+'" '+(d.enabled?'checked':'')+' onchange="saveOnline(\''+p+'\')"><span class="online-slider"></span></label></div>'
-      +'<div class="online-times"><span style="color:var(--mu);font-size:11px">'+T.from+'</span>'
-      +'<input type="time" class="online-time" data-onl-start="'+p+'" value="'+esc(d.start||'')+'" onchange="saveOnline(\''+p+'\')">'
-      +'<span style="color:var(--mu);font-size:11px">'+T.to+'</span>'
-      +'<input type="time" class="online-time" data-onl-end="'+p+'" value="'+esc(d.end||'')+'" onchange="saveOnline(\''+p+'\')">'
-      +'<select class="online-tz" data-onl-tz="'+p+'" onchange="saveOnline(\''+p+'\')" title="Timezone">'+tzOpts(Number(d.tz||-new Date().getTimezoneOffset()))+'</select></div>'
-      +'<div class="online-foot"><span class="online-state" style="color:'+color+'">● '+label+'</span>'
-      +(ago!==null?'<span>'+T.checked+' '+ago+' хв</span>':'')
-      +(d.error?'<span style="font-size:10.5px;opacity:.8">'+esc(d.error.slice(0,70))+'</span>':'')
-      +'<button class="online-refresh" onclick="saveOnline(\''+p+'\',true)">↻ '+T.refresh+'</button></div></div>';
+      +'<span class="online-pill '+cls+'" role="status" aria-live="polite">● '+label+'</span></div>'
+      +'<div class="online-row">'
+      +'<button type="button" class="online-toggle '+(d.enabled?'on':'')+'" data-onl-toggle="'+p+'" aria-pressed="'+(d.enabled?'true':'false')+'" onclick="saveOnline(\''+p+'\')" aria-label="'+esc(T.always)+'">'
+      +'<span class="online-knob" aria-hidden="true"></span><span>'+(d.enabled?T.tglOn:T.tglOff)+'</span></button>'
+      +'<span class="online-last">'+(ago!==null?(T.checked+' '+ago+T.minAgo):T.notChecked)+'</span>'
+      +'<button class="online-refresh" onclick="saveOnline(\''+p+'\',true)">↻ '+T.refresh+'</button>'
+      +'</div>'
+      +(d.error?'<div class="online-err">'+esc(String(d.error).slice(0,120))+'</div>':'')
+      +'</div>';
   });
 }
 async function saveOnline(p, force){
   const el=document.querySelector('.online-w[data-plat="'+p+'"]');
   if(!el) return;
-  const en=el.querySelector('[data-onl-en]')?.checked||false;
-  const start=el.querySelector('[data-onl-start]')?.value||'';
-  const end=el.querySelector('[data-onl-end]')?.value||'';
-  const tz=Number(el.querySelector('[data-onl-tz]')?.value ?? (-new Date().getTimezoneOffset()));
+  const btn=el.querySelector('[data-onl-toggle]');
+  const cur=!!btn && btn.getAttribute('aria-pressed')==='true';
+  const en = force ? cur : !cur;             // перемикач перемикає стан, кнопка ↻ — лише перевіряє
+  const tz = -new Date().getTimezoneOffset(); // локальний пояс; без розкладу — 24/7
   try{
-    await fetch('/api/online/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:p,enabled:en,start:start,end:end,tz:tz})});
+    await fetch('/api/online/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:p,enabled:en,start:'00:00',end:'23:59',tz:tz})});
     await loadOnline();
   }catch(e){}
 }
@@ -8937,15 +9090,150 @@ function runCmdk(tab){
 }
 document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='k'){ e.preventDefault(); const m=g('cmdk'); if(m&&m.style.display==='flex') closeCmdk(); else openCmdk(); } else if(e.key==='Escape'){ closeCmdk(); } });
 
+// ═══════════════════════════════════════════════════════════════
+// ДОСТУПНІСТЬ (a11y): клавіатурна навігація вкладками та модальні вікна
+// — role=tab/tablist: Enter/Space, ←/→, Home/End
+// — role=dialog/aria-modal: фокус на перший контрол, focus trap, Esc, повернення фокусу
+// ═══════════════════════════════════════════════════════════════
+(function(){
+  const tabList = document.querySelector('.tabs');
+  if(tabList){
+    tabList.addEventListener('keydown', function(e){
+      const tab = e.target && e.target.closest ? e.target.closest('.tab') : null;
+      if(!tab) return;
+      const tabs = [...tabList.querySelectorAll('.tab')];
+      const i = tabs.indexOf(tab);
+      if(i < 0) return;
+      if(e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){ e.preventDefault(); tab.click(); return; }
+      let ni = -1;
+      if(e.key === 'ArrowRight') ni = (i + 1) % tabs.length;
+      else if(e.key === 'ArrowLeft') ni = (i - 1 + tabs.length) % tabs.length;
+      else if(e.key === 'Home') ni = 0;
+      else if(e.key === 'End') ni = tabs.length - 1;
+      if(ni >= 0){ e.preventDefault(); tabs[ni].focus(); tabs[ni].click(); }
+    });
+  }
+
+  const MODAL_IDS = ['onb','replyModal','invModal','pwaHelpModal','bulkRenameModal','bulkFeeModal','lotModal','cmpModal','histModal','cmdk'];
+  const stack = [];
+  const vis = el => !!el && (el.style.display !== 'none') && getComputedStyle(el).display !== 'none';
+  function closeFn(id){
+    switch(id){
+      case 'onb': return (typeof onbDone === 'function') ? onbDone : null;
+      case 'replyModal': return (typeof closeReplyGenerator === 'function') ? closeReplyGenerator : null;
+      case 'invModal': return (typeof closeInvSecret === 'function') ? closeInvSecret : null;
+      case 'pwaHelpModal': return (typeof window.closePwaHelp === 'function') ? window.closePwaHelp : null;
+      case 'bulkRenameModal': return function(){ const m=g('bulkRenameModal'); if(m) m.style.display='none'; };
+      case 'bulkFeeModal': return function(){ const m=g('bulkFeeModal'); if(m) m.style.display='none'; };
+      case 'lotModal': return (typeof closeLotModal === 'function') ? closeLotModal : null;
+      case 'cmpModal': return (typeof closeCmp === 'function') ? closeCmp : null;
+      case 'histModal': return (typeof closeHist === 'function') ? closeHist : null;
+      case 'cmdk': return (typeof closeCmdk === 'function') ? closeCmdk : null;
+      case 'edModal': return function(){ const m=g('edModal'); if(m) m.remove(); };
+    }
+    return null;
+  }
+  function focusables(el){
+    return [...el.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+      .filter(x => !x.hasAttribute('aria-hidden') && (x.offsetWidth || x.offsetHeight || x.getClientRects().length));
+  }
+  function show(el){
+    if(!el || stack.some(s=>s.el===el)) return;
+    stack.push({el: el, prev: document.activeElement});
+    el.setAttribute('role','dialog');
+    el.setAttribute('aria-modal','true');
+    el.setAttribute('aria-hidden','false');
+    setTimeout(function(){
+      if(!stack.length || stack[stack.length-1].el !== el || !vis(el)) return;
+      const f = focusables(el);
+      try{ (f[0] || el).focus({preventScroll:true}); }catch(e){ try{ (f[0] || el).focus(); }catch(_){} }
+    }, 30);
+  }
+  function hide(el){
+    if(!el) return;
+    const idx = stack.map(s=>s.el).indexOf(el);
+    el.setAttribute('aria-hidden','true');
+    if(idx < 0) return;
+    const rec = stack.splice(idx,1)[0];
+    const prev = rec.prev;
+    if(prev && prev.focus && document.documentElement.contains(prev)){
+      try{ prev.focus({preventScroll:true}); }catch(e){ try{ prev.focus(); }catch(_){} }
+    }
+  }
+  function wire(id){
+    const el = g(id); if(!el) return;
+    if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+    if(!el.hasAttribute('role')) el.setAttribute('role','dialog');
+    if(!el.hasAttribute('aria-modal')) el.setAttribute('aria-modal','true');
+    if(!vis(el)) el.setAttribute('aria-hidden','true');
+    try{ new MutationObserver(function(){ if(vis(el)) show(el); else hide(el); }).observe(el,{attributes:true,attributeFilter:['style','class']}); }catch(e){}
+  }
+  MODAL_IDS.forEach(wire);
+  window.__uiDlgShow = show;
+  window.__uiDlgHide = hide;
+  try{
+    new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        m.addedNodes.forEach(function(n){
+          if(n.nodeType!==1) return;
+          if(n.id==='edModal'){
+            try{ n.setAttribute('role','dialog'); n.setAttribute('aria-modal','true'); n.setAttribute('aria-hidden','false'); }catch(e){}
+            show(n);
+          } else if(n.id==='cmdk'){
+            wire('cmdk');
+          }
+        });
+        m.removedNodes.forEach(function(n){ if(n.nodeType===1 && n.id==='edModal') hide(n); });
+      });
+    }).observe(document.body,{childList:true});
+  }catch(e){}
+  document.addEventListener('keydown', function(e){
+    const mp = g('mnavMore');
+    if(e.key === 'Escape'){
+      if(mp && mp.classList.contains('on')){ try{ mnavMoreClose(); }catch(_){} return; }
+      if(stack.length){
+        const top = stack[stack.length-1].el;
+        const fn = closeFn(top.id);
+        if(fn){ e.preventDefault(); try{ fn(); }catch(_){} }
+      }
+      return;
+    }
+    if(e.key === 'Tab' && stack.length){
+      const el = stack[stack.length-1].el;
+      if(!vis(el)) return;
+      const f = focusables(el);
+      if(!f.length){ e.preventDefault(); try{ el.focus(); }catch(_){} return; }
+      const first=f[0], last=f[f.length-1], act=document.activeElement;
+      if(!el.contains(act)){ e.preventDefault(); try{ first.focus(); }catch(_){} return; }
+      if(e.shiftKey && act===first){ e.preventDefault(); try{ last.focus(); }catch(_){} }
+      else if(!e.shiftKey && act===last){ e.preventDefault(); try{ first.focus(); }catch(_){} }
+    }
+  }, true);
+  document.addEventListener('click', function(e){
+    const p = g('mnavMore');
+    if(!p || !p.classList.contains('on')) return;
+    if(p.contains(e.target)) return;
+    const b = g('mnMore');
+    if(b && (b===e.target || b.contains(e.target))) return;
+    try{ mnavMoreClose(); }catch(_){}
+  });
+})();
+
+// Settings: стартова категорія (щоб не показувати стіну з усіх панелей одразу)
+try{
+  const _sc = localStorage.getItem('gt_set_cat') || 'security';
+  if(document.getElementById('setCat')) setSettingsCat(_sc, false);
+}catch(e){}
+
 function translateAll(){
   clearTimeout(_trTimer);
   _trTimer = setTimeout(()=>{ _trWalk(document.body); }, 60);
 }
 
 </script>
-<div id="cmdk" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:12000;align-items:flex-start;justify-content:center;padding-top:14vh" onclick="if(event.target===this)closeCmdk()">
+<div id="cmdk" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Пошук дії" data-i18n-aria="cmdk.title" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:12000;align-items:flex-start;justify-content:center;padding-top:14vh" onclick="if(event.target===this)closeCmdk()">
   <div style="width:min(560px,94vw);background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
-    <input id="cmdkInput" placeholder="Ctrl+K — пошук дії" oninput="renderCmdk(this.value)" onkeydown="if(event.key==='Escape')closeCmdk();if(event.key==='Enter'){const b=document.querySelector('#cmdkList .cmdk-item');if(b)b.click();}" style="width:100%;font-size:15px;padding:10px 12px;margin-bottom:8px">
+    <input id="cmdkInput" aria-label="Пошук дії" data-i18n-aria="cmdk.title" placeholder="Ctrl+K — пошук дії" oninput="renderCmdk(this.value)" onkeydown="if(event.key==='Escape')closeCmdk();if(event.key==='Enter'){const b=document.querySelector('#cmdkList .cmdk-item');if(b)b.click();}" style="width:100%;font-size:15px;padding:10px 12px;margin-bottom:8px">
     <div id="cmdkList"></div>
   </div>
 </div>

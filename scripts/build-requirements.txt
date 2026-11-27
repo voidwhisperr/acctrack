@@ -1,0 +1,41 @@
+# Pinned Windows build environment for the Ledger / Ledger+ desktop exes.
+#
+# Python: CPython 3.14.2, 64-bit (python.org Windows installer, "py -3.14").
+# Install exactly:
+#   py -3.14 -m pip install --upgrade pip
+#   py -3.14 -m pip install -r scripts/build-requirements.txt
+#
+# scripts/build_release.ps1 refuses to build when any of these versions is
+# different. These are the versions that produced the v1.66.41 exes.
+# Versions are pinned but hashes are not: a hash-pinned lock file
+# (pip --require-hashes) is still a follow-up, see docs/DEPLOY.md
+# "Residual build risks".
+
+# Runtime, bundled into both exes
+pywebview==6.2.1
+pythonnet==3.2.1
+clr_loader==0.3.1
+pystray==0.19.5
+pillow==13.0.0
+cryptography==50.0.2
+qrcode==8.2
+winotify==1.1.0
+numpy==2.4.1
+pywin32==311
+PyYAML==6.0.4
+setuptools==84.2.1
+typing_extensions==4.16.0
+# transitive runtime deps
+cffi==2.1.1
+pycparser==3.12
+colorama==0.4.6
+six==1.17.0
+proxy_tools==0.1.0
+
+# Build tooling (PyInstaller bootloader ends up inside the exes)
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.10
+altgraph==0.17.5
+pefile==2024.8.26
+pywin32-ctypes==0.2.3
+packaging==26.4

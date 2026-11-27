@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.66.42 — reproducible builds, accessibility and documented residual risks
+- Windows release builds are reproducible: `scripts/build_release.ps1` pins Python 3.14.2 + PyInstaller 6.22.3 and the exact dependency versions from `scripts/build-requirements.txt`, builds both exes with a fixed PyInstaller command, refuses to build when `APP_VERSION` and `version_info*.txt` disagree, asserts that no Qt payload is inside the archives, signs when `LEDGER_SIGN_PFX`/`LEDGER_SIGN_PASS` are set, and emits `SHA256SUMS.txt` + `BUILD-INFO.txt`.
+- PyQt5, PySide6 and Qt are no longer bundled. They were pulled in by pywebview's optional Qt backend; the app never imports PyQt5 and uses WebView2 on Windows. Local test builds shrank from 77.6 MB to 44.8 MB (Ledger.exe) and from 68.6 MB to 34.7 MB (LedgerPlus.exe).
+- `THIRD-PARTY-NOTICES.md` documents the version and licence of every bundled component, the CDN scripts and the font, and records that PyQt5/Qt are excluded. v1.66.41 and older exes still contain them — do not redistribute those binaries, rebuild instead.
+- Dashboard: Chart.js 4.4.1 and SheetJS 0.18.5 are pinned with SHA-384 SRI, both hashes verified against cdnjs on 2026-11-27. The Manrope font is still loaded from Google Fonts and cannot be SRI-pinned.
+- Accessibility: navigation tabs are keyboard-operable tab/tablist controls (Enter/Space activate, arrow keys and Home/End move, `aria-selected`, tabindex, labels, visible focus rings); dialogs get `role=dialog`, `aria-modal` and title references, move focus to the first control, trap Tab, close on Escape and restore focus; settings and deal inputs have programmatic labels; the mobile bottom bar has a More menu for secondary sections.
+- Email recovery code is now 8 digits instead of 6 (10^8 space). The 10-minute TTL and rate limits are unchanged, and confirm attempts are counted separately so a valid code is never locked by earlier failures.
+- Backup export strips team invite tokens from `.gt_team.json` and omits `.gt_audit.json` (client IPs); the export response states what is not included, so a backup cannot be reused as live invite links.
+- Carried from v1.66.41 (no behaviour changes in this release): post-audit security fixes, including the Ledger+ proxy CSRF/cookie/config validation fixes.
+- Docs: README / DEPLOY / VERSIONS / CHANGELOG and `docs/update-16642-*.md` refreshed; residual risks documented honestly (CDN runtime dependency, versions-not-hashes build pins, PyInstaller onefile extraction, self-signed certificate, EOL SheetJS 0.18.5).
+
 ## v1.66.41 — post-audit security and reliability fixes
 - Fixed cold-start auth silently disabling on fresh installs.
 - Fixed team roles (manager/viewer business access), backup export/restore completeness and atomicity, recovery lockout, update-version check, cache paths.

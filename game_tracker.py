@@ -82,7 +82,7 @@ BIND = (os.environ.get("GT_BIND") or "127.0.0.1").strip() or "127.0.0.1"
 AUTH_MODE = (os.environ.get("GT_AUTH") or "").strip().lower()  # "" = вирішуємо після налаштувань
 REQUIRE_ACCESS = (os.environ.get("GT_REQUIRE_ACCESS") or "").strip() == "1"
 # Єдине джерело версії: /api/health, /api/diag, /api/update/check, банер старту.
-APP_VERSION = "1.66.41"
+APP_VERSION = "1.66.42"
 _SESSION_SECRET = base64.urlsafe_b64encode(os.urandom(32)).decode("ascii")
 _BASE_DIR   = pathlib.Path(os.environ.get("GT_DATA_DIR") or pathlib.Path(__file__).parent)
 try:
@@ -3238,6 +3238,19 @@ def _news_save():
         pass
 
 
+class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Перевіряє КОЖЕН redirect перед переходом (анти-SSRF після 30x)."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not _url_public_ok(newurl):
+            raise urllib.error.HTTPError(newurl, code,
+                                         "unsafe redirect", headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_safe_opener = urllib.request.build_opener(_SafeRedirectHandler)
+
+
 def _smart_get(url, timeout=40, allow_scraper=True):
     """GET: спершу напряму (безкоштовно), інакше через ScraperAPI з ротацією ключів.
 
@@ -4340,10 +4353,41 @@ def _decrypt_backup(raw, password):
         raise ValueError("невірний пароль або пошкоджений файл")
 
 
+def _backup_team_export(data):
+    """Серіалізує .gt_team.json для бекапу БЕЗ invite-токенів.
+
+    Токен запрошення — це bearer-креденшел: хто його має, той стає учасником
+    команди. Тому токен не вивозиться; решта полів запрошення лишається, щоб
+    бекап зберігав контекст. Формат файлу не змінюється, і _clean_team() на
+    імпорті так само приймає СТАРІ бекапи з токенами — сумісність збережено.
+    """
+    try:
+        team = json.loads(data.decode("utf-8")) if data else {}
+    except Exception:
+        team = {}
+    if not isinstance(team, dict):
+        team = {}
+    invites = []
+    for inv in (team.get("invites") or []):
+        if isinstance(inv, dict):
+            invites.append({k: v for k, v in inv.items() if k != "token"})
+    out = {"members": list(team.get("members") or []),
+           "invites": invites,
+           "invite_tokens_exported": False}
+    return json.dumps(out, ensure_ascii=False).encode("utf-8")
+
+
 def _build_backup_zip():
     """zip з даними трекера + manifest sha256.
 
     Секрети (.gt_secrets.json), паролі й токени НЕ включаються.
+    Приватність: замість «попередити, що всередині є чутливе» обрано
+    безпечніший варіант — чутливе не вивозити:
+      * .gt_audit.json (журнал із клієнтськими IP та історією дій) у бекап
+        не потрапляє взагалі;
+      * з .gt_team.json прибираються invite-токени (див. _backup_team_export).
+    Сумісність відновлення: _BACKUP_IMPORT_MAP/_restore_test_backup досі
+    приймають ці файли, тож бекапи старих версій імпортуються як раніше.
     """
     files = ((".gt_pl.json", PL_FILE), (".gt_eldorado.json", ED_FILE),
              (".gt_goal.json", GOAL_FILE),
@@ -4352,7 +4396,7 @@ def _build_backup_zip():
              (".gt_inventory.json", INVENTORY_FILE),
              (".gt_cashflow.json", CASHFLOW_FILE),
              (".gt_team.json", TEAM_FILE),
-             (".gt_audit.json", AUDIT_FILE),
+             # .gt_audit.json НЕ додаємо: там клієнтські IP та історія дій.
              (".gt_taobao.json", TAOBAO_FILE),
              (".gt_imported.json", IMPORTED_FILE),
              (".gt_sitemap.json", NEWS_STATE_FILE),
@@ -4360,7 +4404,13 @@ def _build_backup_zip():
              (".gt_mail_queue.json", MAIL_QUEUE_FILE))
     manifest = {"app": "GameTracker", "version": APP_VERSION,
                 "created": datetime.datetime.now().isoformat(timespec="seconds"),
-                "files": {}}
+                "files": {},
+                # документація в самому бекапі: що саме не вивезено і чому
+                "excluded": {
+                    ".gt_audit.json": "audit log (client IPs) is not exported",
+                    ".gt_team.json invites[].token":
+                        "team invite tokens are bearer credentials; not exported",
+                }}
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         for name, path in files:
@@ -4368,6 +4418,8 @@ def _build_backup_zip():
                 continue
             with open(path, "rb") as f:
                 data = f.read()
+            if name == ".gt_team.json":
+                data = _backup_team_export(data)
             z.writestr(name, data)
             manifest["files"][name] = {"size": len(data),
                                        "sha256": hashlib.sha256(data).hexdigest()}
@@ -6112,7 +6164,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._json({"ok": False, "error": str(e)}, code=500); return
             name = f"game_tracker_backup_{datetime.datetime.now().strftime('%Y-%m-%d_%H%M')}.zip"
             self._send(200, "application/zip", data,
-                       extra={"Content-Disposition": f'attachment; filename="{name}"'})
+                       extra={"Content-Disposition": f'attachment; filename="{name}"',
+                              # явна відповідь-попередження: чутливі дані не вивезено
+                              "X-Backup-Excluded":
+                                  ".gt_audit.json; .gt_team.json invite tokens"})
         elif p == "/api/backup/list":
             files = sorted(os.listdir(BACKUP_DIR), reverse=True) if os.path.exists(BACKUP_DIR) else []
             self._json({"ok": True, "files": files[:15]})
@@ -6569,7 +6624,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 if len(rows) >= 3:
                     self._json({"ok": False, "error": "too many recovery requests"}, code=429); return
                 rows.append(now); _RECOVERY_REQUESTS[ip] = rows
-            code = "%06d" % _secrets.randbelow(1000000)
+            # 8-значний код (простір 10^8) замість 6-значного: TTL 10 хв і
+            # ліміти спроб ті самі, але перебір дорожчий у 100 разів.
+            code = "%08d" % _secrets.randbelow(100000000)
             exp = int(now + 600)
             sig = hmac.new(_csrf_key(), ("recovery|" + email + "|" + code + "|" + str(exp)).encode("utf-8"), "sha256").hexdigest()
             _save_secrets({"recovery_code_hash": sig, "recovery_exp": exp, "recovery_tries": 0})
@@ -6636,13 +6693,21 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             except Exception:
                 body = {}
             if self.path == "/api/logout":
-                # Server-side revoke: старі gt_device/gt_member cookies стають
-                # недійсними (+1 device_version, новий session_key), не лише очищення.
+                # Hapus cookie selalu; revoke global HANYA jika pemanggil punya sesi
+                # yang valid. Endpoint ini publik, jadi tanpa cek ini siapa pun bisa
+                # melogout semua perangkat (nuisance/DoS).
+                _has_session = False
                 try:
-                    _revoke_sessions()
-                    _audit("auth.logout", revoke_all=True)
-                except Exception as _le:
-                    print(f"  ⚠ logout revoke: {_le}", flush=True)
+                    _has_session = bool(self._device_ok() or self._auth_ok()
+                                        or (self._member() is not None))
+                except Exception:
+                    _has_session = False
+                if _has_session:
+                    try:
+                        _revoke_sessions()
+                        _audit("auth.logout", revoke_all=True)
+                    except Exception as _le:
+                        print(f"  ⚠ logout revoke: {_le}", flush=True)
                 self._json({"ok": True}, extra={"Set-Cookie":
                            "gt_device=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"})
                 return
@@ -6858,7 +6923,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 return
             name = "ledger_backup_%s.ledger.enc" % datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
             self._send(200, "application/octet-stream", enc,
-                       extra={"Content-Disposition": f'attachment; filename="{name}"'})
+                       extra={"Content-Disposition": f'attachment; filename="{name}"',
+                              # те саме для зашифрованого експорту
+                              "X-Backup-Excluded":
+                                  ".gt_audit.json; .gt_team.json invite tokens"})
             return
         if self.path == "/api/backup/restore-test":
             try:

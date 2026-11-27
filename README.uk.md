@@ -146,6 +146,14 @@ GT_BIND=0.0.0.0 GT_AUTH=basic GT_AUTH_PASS='довгий-пароль' python ga
 
 ---
 
+## Збірка, ліцензії та залишкові ризики
+
+- Windows-збірки відтворювані: [scripts/build_release.ps1](scripts/build_release.ps1) збирає `Ledger.exe` і `LedgerPlus.exe` із зафіксованого середовища [scripts/build-requirements.txt](scripts/build-requirements.txt) (Python 3.14.2, PyInstaller 6.22.3), виключає PyQt5/PySide6/Qt і пише `SHA256SUMS.txt` + `BUILD-INFO.txt`.
+- Сторонні компоненти, версії та ліцензії: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). PyQt5/Qt прибрано у v1.66.42; у старіших exe вони ще є, тому ті бінарники треба перезбирати, а не розповсюджувати.
+- Chart.js 4.4.1 і SheetJS 0.18.5 вантажаться з cdnjs із зафіксованим SHA-384 SRI; шрифт Manrope — з Google Fonts.
+- Відомі обмеження описані в [docs/DEPLOY.md](docs/DEPLOY.md#residual-build-risks): залежність від CDN під час роботи, фіксація версій без хешів, розпакування PyInstaller onefile, самопідписаний сертифікат і застарілий SheetJS 0.18.5 (використовується лише для запису).
+- Нотатки до v1.66.42: [English](docs/update-16642-en.md) · [Українська](docs/update-16642-ua.md) · [Русский](docs/update-16642-ru.md).
+
 ## Технології
 
 Python 3.11+, стандартна бібліотека, односторінковий HTML/JS-дашборд, JSON-сховище, опційно `cryptography` для шифрованих бекапів. Ліцензія MIT.
