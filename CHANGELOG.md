@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.66.43 — settings islands and one-click Always online
+- Settings are grouped into six visible sections of collapsible "island" cards with short hints; nothing is hidden behind one category dropdown.
+- The community/contact strip is compact and always visible at the top of Settings.
+- Always online is a one-click 24/7 toggle with status and last check; UTC/time fields removed.
+- Keyboard-accessible tabs, dialogs and island headers; mobile More navigation.
+
 ## v1.66.42 — reproducible builds, accessibility and documented residual risks
 - Windows release builds are reproducible: `scripts/build_release.ps1` pins Python 3.14.2 + PyInstaller 6.22.3 and the exact dependency versions from `scripts/build-requirements.txt`, builds both exes with a fixed PyInstaller command, refuses to build when `APP_VERSION` and `version_info*.txt` disagree, asserts that no Qt payload is inside the archives, signs when `LEDGER_SIGN_PFX`/`LEDGER_SIGN_PASS` are set, and emits `SHA256SUMS.txt` + `BUILD-INFO.txt`.
 - PyQt5, PySide6 and Qt are no longer bundled. They were pulled in by pywebview's optional Qt backend; the app never imports PyQt5 and uses WebView2 on Windows. Local test builds shrank from 77.6 MB to 44.8 MB (Ledger.exe) and from 68.6 MB to 34.7 MB (LedgerPlus.exe).

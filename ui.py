@@ -165,13 +165,45 @@ body::before{
 .online-pill.wait{color:var(--yw);border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.08)}
 .online-last{font-size:11.5px;color:var(--mu)}
 .online-err{font-size:10.5px;color:var(--rd);opacity:.9;margin-top:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* ── категорії налаштувань ── */
-.set-cat{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:10px 12px;margin-bottom:14px}
-.set-cat label{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);font-weight:700}
-.set-cat select{min-width:210px;font-size:13.5px}
-.set-cat-hint{font-size:11px;color:var(--mu)}
-@keyframes setFade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-#tab-setup > .panel.set-in{animation:setFade .22s ease}
+/* ── налаштування: компактний community-рядок і секції-острівці ── */
+.set-community{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);
+  border:1px solid var(--brd);border-radius:14px;padding:10px 14px;margin-bottom:18px}
+.set-comm-logo{flex:none;display:flex}
+.set-comm-qr{width:46px;height:46px;border-radius:8px;border:1px solid var(--brd);background:#fff;padding:3px;display:block}
+.set-comm-text{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 200px}
+.set-comm-title{font-size:13px;font-weight:800;color:var(--tx);letter-spacing:.01em}
+.set-comm-line{font-size:11.5px;line-height:1.4;color:var(--mu)}
+.set-comm-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
+.set-comm-links .social{padding:6px 9px;font-size:11.5px}
+.set-comm-mail{font-size:11.5px;color:var(--mu);text-decoration:none;white-space:nowrap}
+.set-comm-mail:hover{color:var(--tx)}
+.set-community .btn{font-size:11px;padding:6px 10px}
+@media(max-width:640px){.set-comm-qr{width:38px;height:38px}.set-comm-links{margin-left:0}.set-comm-links .social{padding:6px 8px}}
+.set-sec{margin:0 0 18px}
+.set-sec-title{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin:0 0 8px;padding-left:2px}
+.set-sec-title:before{content:"";width:3px;height:12px;border-radius:2px;background:var(--a1);flex:none}
+.panel.set-island{padding:0;border-radius:14px;overflow:hidden}
+.set-island-head{display:flex;align-items:center;gap:10px;padding:12px 16px;flex-wrap:wrap}
+.panel.set-island.set-open .set-island-head{border-bottom:1px solid var(--brd)}
+.set-island-toggle{display:flex;align-items:center;gap:10px;flex:1 1 auto;min-width:0;
+  background:transparent;border:0;color:inherit;font-family:var(--font);text-align:left;
+  cursor:pointer;padding:2px 0;border-radius:8px;min-height:32px}
+.set-island-toggle:focus-visible{outline:2px solid var(--a1);outline-offset:2px}
+.set-island-toggle:hover .set-island-title{opacity:.82}
+.set-island-titlewrap{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 auto}
+.set-island-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+  font-size:.95rem;font-weight:800;letter-spacing:.01em;color:var(--tx)}
+.set-island-hint{font-size:11.5px;line-height:1.35;color:var(--mu)}
+.set-island-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:none}
+.set-island-chev{flex:none;color:var(--mu);font-size:13px;line-height:1;transition:transform .22s ease,color .15s ease}
+.set-island-toggle:hover .set-island-chev{color:var(--tx)}
+.panel.set-island.set-open .set-island-chev{transform:rotate(180deg)}
+.set-island-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .26s ease}
+.panel.set-island.set-open .set-island-body{grid-template-rows:1fr}
+.set-island-inner{overflow:hidden;min-height:0}
+.set-island-pad{padding:0 16px 16px}
+@media(prefers-reduced-motion:reduce){.set-island-body{transition:none}.set-island-chev{transition:none}}
 /* ── header ── */
 header{
   padding:22px 0 16px;border-bottom:1px solid var(--brd);margin-bottom:20px;
@@ -1327,19 +1359,8 @@ body.compact-ui .tabs{gap:4px}
 </div>
 
 <div id="tab-setup" class="tc" role="tabpanel" aria-labelledby="tab-btn-setup">
-  <div class="set-cat">
-    <label for="setCat" data-i18n="set.catLabel">Категорія</label>
-    <select id="setCat" onchange="setSettingsCat(this.value)" data-i18n-aria="set.catLabel">
-      <option value="security" data-i18n="set.catSecurity">Акаунт і безпека</option>
-      <option value="connections" data-i18n="set.catConnections">Підключення</option>
-      <option value="data" data-i18n="set.catData">Дані й бекапи</option>
-      <option value="appearance" data-i18n="set.catAppearance">Вигляд</option>
-      <option value="devices" data-i18n="set.catDevices">Застосунок і пристрої</option>
-      <option value="updates" data-i18n="set.catUpdates">Оновлення й діагностика</option>
-      <option value="all" data-i18n="set.catAll">Усі</option>
-    </select>
-    <span class="set-cat-hint" data-i18n="set.catHint">Показано лише потрібні розділи. Виберіть «Усі», щоб побачити всі.</span>
-  </div>
+  <!-- community-рядок і секції-острівці будуються з існуючих панелей у JS (усі ID/обробники збережено) -->
+  <div id="setSections"></div>
 
   <div class="panel" id="pwaPanel" data-set-cat="devices" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="app.title">ЗАСТОСУНОК</span></div>
@@ -1496,7 +1517,7 @@ body.compact-ui .tabs{gap:4px}
     </div>
 
   <!-- 🎨 ТЕМА -->
-  <div class="panel" data-set-cat="appearance" style="margin-bottom:14px">
+  <div class="panel" id="themePanel" data-set-cat="appearance" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="ph.theme">ТЕМА ІНТЕРФЕЙСУ</span></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px" id="themePicker">
       <div class="theme-btn" onclick="pickTheme('ledger')" data-theme="ledger" title="Ledger — лаконічна, без градієнтів">
@@ -1529,7 +1550,7 @@ body.compact-ui .tabs{gap:4px}
       <button class="btn" onclick="resetFs()" style="padding:5px 12px;font-size:11px" data-i18n="fs.reset">100%</button>
     </div>
   </div>
-  <div class="panel" data-set-cat="data" style="margin-bottom:14px">
+  <div class="panel" id="backupPanel" data-set-cat="data" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="bk.panelTitle">БЕКАП P&L</span>
       <button class="btn" style="font-size:10px;padding:3px 10px" onclick="runBackup()">↺ <span data-i18n="bk.runNow">Зробити зараз</span></button>
     </div>
@@ -1545,7 +1566,7 @@ body.compact-ui .tabs{gap:4px}
       <span style="font-size:10px;color:var(--mu)" data-i18n="bk.note">P&L + ELDORADO + ціль + налаштування · без паролів і токенів · sha256-перевірка</span>
     </div>
   </div>
-  <div class="panel" data-set-cat="appearance" style="margin-bottom:14px">
+  <div class="panel" id="currencyPanel" data-set-cat="appearance" style="margin-bottom:14px">
     <div class="ph"><span id="rateTitle">CURRENCY · USD → UAH</span></div>
     <div style="font-size:11px;color:var(--mu);margin:-4px 0 4px" data-i18n="cur.auto">Курс оновлюється автоматично раз на 6 годин. Кнопка ↻ — примусове оновлення.</div>
     <div style="font-size:11px;color:var(--mu);margin:0 0 10px" data-i18n="cur.manualHint">Можна вибрати будь-яку валюту вручну. Після цього зміна мови не змінюватиме валюту.</div>
@@ -1574,7 +1595,7 @@ body.compact-ui .tabs{gap:4px}
       <button class="btn gr" onclick="saveRate()">✓ <span data-i18n="cur.save">Save</span></button>
     </div>
   </div>
-  <div class="panel" data-set-cat="connections" style="margin-bottom:14px">
+  <div class="panel" id="feePanel" data-set-cat="connections" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="feeProf.title">КОМІСІЇ ЗА ЗАМОВЧУВАННЯМ</span></div>
     <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="feeProf.hint">Дефолти для нових угод. Старі угоди зберігають свою комісію. ZeusX керується рангом у формі угоди.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
@@ -1589,7 +1610,7 @@ body.compact-ui .tabs{gap:4px}
       <div style="font-size:10px;color:var(--mu);margin-top:4px" data-i18n="feeProf.gamesHint">Один рядок на гру. Платформа: funpay / eldorado / other. Порожньо — без overrides.</div>
     </div>
   </div>
-  <div class="panel" data-set-cat="connections" style="margin-bottom:14px">
+  <div class="panel" id="telegramPanel" data-set-cat="connections" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="ph.tg">TELEGRAM-СПОВІЩЕННЯ</span></div>
     <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="tg.hint">Бот пише лише про те, що прийшло з пошти (нові замовлення й повідомлення FunPay / ZeusX / Eldorado) та про досягнення цілі. Ручне внесення продажу в таблицю не сповіщає. Створи бота у @BotFather, встав токен і свій chat_id (дізнатись у @userinfobot).</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
@@ -1626,7 +1647,7 @@ body.compact-ui .tabs{gap:4px}
     </div>
     <div style="font-size:12px;color:var(--mu);margin-top:10px;line-height:1.6" data-i18n="tg.cmds">Бот відповідає на команди (тільки ваш чат): /stats — продажі сьогодні й за місяць · /balance — баланс ZeusX / FunPay / Eldorado · /new — останні замовлення · /taobao — топ вигідних лотів · /help</div>
   </div>
-  <div class="panel" data-set-cat="connections" style="margin-bottom:14px">
+  <div class="panel" id="gmailPanel" data-set-cat="connections" style="margin-bottom:14px">
     <div class="ph">GMAIL → TELEGRAM
       <span id="gmailBadge" style="font-size:10px;color:var(--mu)"></span>
     </div>
@@ -1646,7 +1667,7 @@ body.compact-ui .tabs{gap:4px}
     </div>
     <div id="gmailInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
   </div>
-  <div class="panel" data-set-cat="data" style="margin-bottom:14px">
+  <div class="panel" id="cloudPanel" data-set-cat="data" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="ph.cloud">ХМАРНИЙ БЕКАП</span></div>
     <div style="font-size:11px;color:var(--mu);margin-bottom:10px" data-i18n="set.cloudHint">Копія бекапів у OneDrive (або будь-яка папка). Порожнє поле = авто: OneDrive/GameTrackerBackups.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
@@ -1673,7 +1694,7 @@ body.compact-ui .tabs{gap:4px}
     <div id="backupInfo" style="font-size:11px;color:var(--mu);margin-top:7px">—</div>
     <div id="cloudInfo" style="font-size:11px;color:var(--mu);margin-top:8px">—</div>
   </div>
-  <div class="panel" data-set-cat="security" style="margin-bottom:14px">
+  <div class="panel" id="securityPanel" data-set-cat="security" style="margin-bottom:14px">
     <div class="ph"><span data-i18n="ph.sec">БЕЗПЕКА</span></div>
     <div id="authModeInfo" style="font-size:13px;margin-bottom:10px;display:none"></div>
     <div style="font-size:11px;color:var(--mu);margin-bottom:10px">Зміна пароля діє одразу (браузер попросить його після перезавантаження). HTTPS — для прямого доступу; на хостингу зазвичай уже є проксі з HTTPS.</div>
@@ -2818,6 +2839,67 @@ Object.assign(I18N.ru, {
 'qs.deal':'Добавить сделку','qs.channels':'Подключить канал','qs.orders':'Импорт заказов','qs.demo':'Демо-заказ'
 });
 
+Object.assign(I18N.uk, {
+  'set.communityLine':'Автоматизація, гайди та оновлення',
+  'set.hintApp':'Встановлення застосунку, іконка та повноекранний режим',
+  'set.hintMobile':'Як відкрити Ledger на телефоні',
+  'set.hintDesktop':'Трей і компактний режим вікна',
+  'set.hintPw':'Пароль, що захищає доступ до обліку',
+  'set.hintAudit':'Останні зміни угод, комісій, складу й налаштувань',
+  'set.hint2fa':'Двофакторний вхід і recovery-коди',
+  'set.hintUpdate':'Остання версія та що змінилося',
+  'set.hintData':'Діагностика, демо-дані й постачальник',
+  'set.hintTheme':'Тема, розмір шрифту й контраст',
+  'set.hintBackup':'Ручний бекап і експорт усіх даних',
+  'set.hintCurrency':'Валюта показу та курс USD',
+  'set.hintFee':'Комісії за замовчуванням для нових угод',
+  'set.hintTelegram':'Бот, чат і типи сповіщень',
+  'set.hintGmail':'Читання пошти та пересилання замовлень у Telegram',
+  'set.hintCloud':'Автоматичні зашифровані копії в папку',
+  'set.hintSecurity':'Зміна пароля, HTTPS і тунель',
+  'set.hintGeneric':'Налаштування розділу'
+});
+Object.assign(I18N.en, {
+  'set.communityLine':'Automation, guides and updates',
+  'set.hintApp':'Install the app, icon and fullscreen mode',
+  'set.hintMobile':'How to open Ledger on your phone',
+  'set.hintDesktop':'Tray and compact window mode',
+  'set.hintPw':'Password that protects access to the ledger',
+  'set.hintAudit':'Recent changes to deals, fees, stock and settings',
+  'set.hint2fa':'Two-factor sign-in and recovery codes',
+  'set.hintUpdate':'Latest version and what changed',
+  'set.hintData':'Diagnostics, demo data and supplier',
+  'set.hintTheme':'Theme, font size and contrast',
+  'set.hintBackup':'Manual backup and full data export',
+  'set.hintCurrency':'Display currency and USD rate',
+  'set.hintFee':'Default fees for new deals',
+  'set.hintTelegram':'Bot, chat and notification types',
+  'set.hintGmail':'Read email and forward orders to Telegram',
+  'set.hintCloud':'Automatic encrypted copies to a folder',
+  'set.hintSecurity':'Password change, HTTPS and tunnel',
+  'set.hintGeneric':'Section settings'
+});
+Object.assign(I18N.ru, {
+  'set.communityLine':'Автоматизация, гайды и обновления',
+  'set.hintApp':'Установка приложения, иконка и полноэкранный режим',
+  'set.hintMobile':'Как открыть Ledger на телефоне',
+  'set.hintDesktop':'Трей и компактный режим окна',
+  'set.hintPw':'Пароль, защищающий доступ к учёту',
+  'set.hintAudit':'Последние изменения сделок, комиссий, склада и настроек',
+  'set.hint2fa':'Двухфакторный вход и recovery-коды',
+  'set.hintUpdate':'Последняя версия и что изменилось',
+  'set.hintData':'Диагностика, демо-данные и поставщик',
+  'set.hintTheme':'Тема, размер шрифта и контраст',
+  'set.hintBackup':'Ручной бэкап и экспорт всех данных',
+  'set.hintCurrency':'Валюта отображения и курс USD',
+  'set.hintFee':'Комиссии по умолчанию для новых сделок',
+  'set.hintTelegram':'Бот, чат и типы уведомлений',
+  'set.hintGmail':'Чтение почты и пересылка заказов в Telegram',
+  'set.hintCloud':'Автоматические зашифрованные копии в папку',
+  'set.hintSecurity':'Смена пароля, HTTPS и туннель',
+  'set.hintGeneric':'Настройки раздела'
+});
+
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
   n = Math.abs(Number(n) || 0);
@@ -3162,27 +3244,9 @@ function syncMnav(id){
   const more=g('mnMore'); if(more) more.classList.toggle('on', DIRECT.indexOf(id)<0);
   document.querySelectorAll('#mnavMore .mn-more-item').forEach(b=>b.classList.toggle('on', b.dataset.tab===id));
 }
-let _SET_CATS = ['security','connections','data','appearance','devices','updates'];
-function setSettingsCat(cat, save){
-  cat = String(cat || 'security');
-  if(cat !== 'all' && _SET_CATS.indexOf(cat) < 0) cat = 'security';
-  const sel=g('setCat');
-  if(sel && sel.value !== cat) sel.value = cat;
-  const panels=[...document.querySelectorAll('#tab-setup > .panel')];
-  panels.forEach(p=>{
-    if(typeof p._setOrig === 'undefined') p._setOrig = p.style.display || '';
-    const c = String(p.getAttribute('data-set-cat') || '');
-    const show = (cat === 'all') || (c === cat) || (c.split(/\s+/).indexOf(cat) >= 0);
-    if(show){
-      p.style.display = p._setOrig;
-      p.classList.remove('set-in'); void p.offsetWidth; p.classList.add('set-in');
-    } else {
-      p.style.display = 'none';
-      p.classList.remove('set-in');
-    }
-  });
-  if(save !== false){ try{ localStorage.setItem('gt_set_cat', cat); }catch(e){} }
-}
+/* Фільтр категорій налаштувань прибрано (task-20): усі секції завжди видимі,
+   а панелі згорнуті в "острівці". Функція лишається безпечним no-op для сумісності. */
+function setSettingsCat(){ return false; }
 function mnavMoreToggle(ev){
   if(ev && ev.stopPropagation) ev.stopPropagation();
   const p=g('mnavMore'), b=g('mnMore');
@@ -9219,11 +9283,189 @@ document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&String(e.key
   });
 })();
 
-// Settings: стартова категорія (щоб не показувати стіну з усіх панелей одразу)
-try{
-  const _sc = localStorage.getItem('gt_set_cat') || 'security';
-  if(document.getElementById('setCat')) setSettingsCat(_sc, false);
-}catch(e){}
+// ══════════════════════════════════════════════════════════════
+// Settings: секції та згортувані "острівці" (task-20)
+// — фільтр категорій прибрано; панелі згруповано у 6 видимих секцій;
+// — кожна панель — акордеон: назва + короткий опис + шеврон;
+// — community-блок завжди видимий зверху, компактним рядком;
+// — усі існуючі ID, обробники й значення полів збережено (вузли лише переміщуються).
+// ══════════════════════════════════════════════════════════════
+(function(){
+  const tab = g('tab-setup');
+  if(!tab || tab.dataset.islandsReady === '1') return;
+  tab.dataset.islandsReady = '1';
+
+  const SECTIONS = [
+    ['security','set.catSecurity','Акаунт і безпека'],
+    ['connections','set.catConnections','Підключення'],
+    ['data','set.catData','Дані й бекапи'],
+    ['appearance','set.catAppearance','Вигляд'],
+    ['devices','set.catDevices','Застосунок і пристрої'],
+    ['updates','set.catUpdates','Оновлення й діагностика']
+  ];
+  // id панелі -> [i18n-ключ підказки, український текст за замовчуванням]
+  const HINTS = {
+    pwaPanel:['set.hintApp','Встановлення застосунку, іконка та повноекранний режим'],
+    mobilePanel:['set.hintMobile','Як відкрити Ledger на телефоні'],
+    desktopPanel:['set.hintDesktop','Трей і компактний режим вікна'],
+    pwPanel:['set.hintPw','Пароль, що захищає доступ до обліку'],
+    auditPanel:['set.hintAudit','Останні зміни угод, комісій, складу й налаштувань'],
+    twofaPanel:['set.hint2fa','Двофакторний вхід і recovery-коди'],
+    securityPanel:['set.hintSecurity','Зміна пароля, HTTPS і тунель'],
+    updatePanel:['set.hintUpdate','Остання версія та що змінилося'],
+    dataPanel:['set.hintData','Діагностика, демо-дані й постачальник'],
+    themePanel:['set.hintTheme','Тема, розмір шрифту й контраст'],
+    backupPanel:['set.hintBackup','Ручний бекап і експорт усіх даних'],
+    currencyPanel:['set.hintCurrency','Валюта показу та курс USD'],
+    feePanel:['set.hintFee','Комісії за замовчуванням для нових угод'],
+    telegramPanel:['set.hintTelegram','Бот, чат і типи сповіщень'],
+    gmailPanel:['set.hintGmail','Читання пошти та пересилання замовлень у Telegram'],
+    cloudPanel:['set.hintCloud','Автоматичні зашифровані копії в папку']
+  };
+  const HINT_FALLBACK = ['set.hintGeneric','Налаштування розділу'];
+  const LSKEY = 'gt_set_islands';
+  let openState = {};
+  try{ openState = JSON.parse(localStorage.getItem(LSKEY) || '{}') || {}; }catch(e){ openState = {}; }
+  const saveState = function(){ try{ localStorage.setItem(LSKEY, JSON.stringify(openState)); }catch(e){} };
+
+  // ── 1. Community: компактний рядок, завжди видимий зверху ──
+  const cp = g('contactPanel');
+  if(cp){
+    const qr = cp.querySelector('img');
+    const tg = cp.querySelector('a.social.tg');
+    const dc = cp.querySelector('a.social.dc');
+    const mail = cp.querySelector('a[href^="mailto:"]');
+    const demo = cp.querySelector('#demoBtn');
+    cp.className = 'set-community';
+    cp.removeAttribute('data-set-cat');
+    cp.removeAttribute('style');
+    cp.textContent = '';
+    const logo = document.createElement('div'); logo.className = 'set-comm-logo';
+    if(qr){
+      qr.className = 'set-comm-qr'; qr.removeAttribute('style');
+      qr.setAttribute('width','46'); qr.setAttribute('height','46');
+      logo.appendChild(qr);
+    }
+    const txt = document.createElement('div'); txt.className = 'set-comm-text';
+    const tt = document.createElement('div'); tt.className = 'set-comm-title'; tt.textContent = 'Ledger OS community';
+    const ln = document.createElement('div'); ln.className = 'set-comm-line';
+    ln.setAttribute('data-i18n','set.communityLine');
+    ln.textContent = 'Автоматизація, гайди та оновлення';
+    txt.appendChild(tt); txt.appendChild(ln);
+    const links = document.createElement('div'); links.className = 'set-comm-links';
+    if(tg) links.appendChild(tg);
+    if(dc) links.appendChild(dc);
+    if(mail){ mail.className = 'set-comm-mail'; mail.removeAttribute('style'); links.appendChild(mail); }
+    if(demo) links.appendChild(demo);
+    cp.appendChild(logo); cp.appendChild(txt); cp.appendChild(links);
+    const secHost0 = g('setSections');
+    if(secHost0) tab.insertBefore(cp, secHost0); else tab.insertBefore(cp, tab.firstChild);
+  }
+
+  // ── 2. Секції (порядок важливості) ──
+  const host = g('setSections');
+  if(!host) return;
+  const boxes = {};
+  SECTIONS.forEach(function(def){
+    const sec = document.createElement('section');
+    sec.className = 'set-sec';
+    sec.setAttribute('data-set-sec', def[0]);
+    sec.setAttribute('data-set-cat', def[0]);
+    const h = document.createElement('div');
+    h.className = 'set-sec-title';
+    h.setAttribute('role','heading'); h.setAttribute('aria-level','2');
+    h.setAttribute('data-i18n', def[1]); h.textContent = def[2];
+    const box = document.createElement('div'); box.className = 'set-sec-panels';
+    sec.appendChild(h); sec.appendChild(box); host.appendChild(sec);
+    boxes[def[0]] = box;
+  });
+  const panels = Array.prototype.slice.call(tab.querySelectorAll(':scope > .panel'));
+  panels.forEach(function(p){
+    let key = String(p.getAttribute('data-set-cat') || '').trim().split(/\s+/)[0];
+    if(!key) key = 'updates';
+    let box = boxes[key];
+    if(!box){
+      const sec = document.createElement('section'); sec.className='set-sec';
+      sec.setAttribute('data-set-sec', key);
+      box = document.createElement('div'); box.className='set-sec-panels';
+      sec.appendChild(box); host.appendChild(sec); boxes[key]=box;
+    }
+    box.appendChild(p);
+  });
+
+  // ── 3. Панель -> згортуваний острівець (вузли переміщуються, не перестворюються) ──
+  function isActionNode(node){
+    if(node.nodeType !== 1) return false;
+    if(node.tagName === 'BUTTON' || node.tagName === 'A') return true;
+    try{ return !!node.querySelector('button,a'); }catch(e){ return false; }
+  }
+  let seq = 0;
+  Array.prototype.slice.call(host.querySelectorAll('.panel')).forEach(function(panel){
+    if(panel.classList.contains('set-island')) return;
+    const ph = panel.querySelector(':scope > .ph');
+    const title = document.createElement('span'); title.className = 'set-island-title';
+    const actions = [];
+    if(ph){
+      Array.prototype.slice.call(ph.childNodes).forEach(function(node){
+        if(node.nodeType === 3 && !String(node.nodeValue || '').trim()) return;
+        if(isActionNode(node)) actions.push(node); else title.appendChild(node);
+      });
+      ph.parentNode.removeChild(ph);
+    }
+    if(!title.textContent.trim()) title.textContent = panel.id || 'Settings';
+    const hintDef = HINTS[panel.id] || HINT_FALLBACK;
+    const hint = document.createElement('span');
+    hint.className = 'set-island-hint';
+    hint.setAttribute('data-i18n', hintDef[0]);
+    hint.textContent = hintDef[1];
+    const pid = panel.id || ('setIsland' + (++seq));
+    const bodyId = pid + 'Body';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'set-island-toggle';
+    btn.setAttribute('role','button');
+    btn.setAttribute('aria-expanded','false');
+    btn.setAttribute('aria-controls', bodyId);
+    const tw = document.createElement('span'); tw.className = 'set-island-titlewrap';
+    tw.appendChild(title); tw.appendChild(hint);
+    const chev = document.createElement('span'); chev.className='set-island-chev';
+    chev.setAttribute('aria-hidden','true'); chev.textContent = '▾';
+    btn.appendChild(tw); btn.appendChild(chev);
+    const head = document.createElement('div'); head.className = 'set-island-head';
+    head.appendChild(btn);
+    if(actions.length){
+      const ad = document.createElement('div'); ad.className = 'set-island-actions';
+      actions.forEach(function(a){ ad.appendChild(a); });
+      head.appendChild(ad);
+    }
+    const body = document.createElement('div'); body.className='set-island-body'; body.id = bodyId;
+    const inner = document.createElement('div'); inner.className='set-island-inner';
+    const pad = document.createElement('div'); pad.className='set-island-pad';
+    while(panel.firstChild) pad.appendChild(panel.firstChild);
+    inner.appendChild(pad);
+    body.appendChild(inner);
+    panel.classList.add('set-island');
+    panel.classList.remove('set-in');
+    panel.appendChild(head); panel.appendChild(body);
+    function apply(open){
+      panel.classList.toggle('set-open', !!open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      body.setAttribute('aria-hidden', open ? 'false' : 'true');
+      try{ body.inert = !open; }catch(e){}
+    }
+    apply(!!openState[pid]);
+    head.addEventListener('click', function(ev){
+      if(ev.target && ev.target.closest && ev.target.closest('.set-island-actions')) return;
+      const next = !panel.classList.contains('set-open');
+      apply(next);
+      openState[pid] = next;
+      saveState();
+    });
+  });
+
+  // ── 4. Локалізація нових підписів (UA/EN/RU) ──
+  try{ applyLang(); }catch(e){}
+})();
 
 function translateAll(){
   clearTimeout(_trTimer);
