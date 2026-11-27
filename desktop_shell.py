@@ -185,3 +185,77 @@ button{position:absolute;top:6px;right:8px;background:none;border:0;color:#6f788
 async function tick(){try{if(!window.pywebview||!window.pywebview.api)return;const d=await window.pywebview.api.get_summary();if(!d||!d.ok){document.getElementById('st').textContent='○ offline';return}document.getElementById('st').textContent='●';document.getElementById('p').textContent=(d.profit>=0?'+':'')+d.profit.toFixed(2);document.getElementById('d').textContent=d.deals;document.getElementById('n').textContent=d.new;}catch(e){document.getElementById('st').textContent='○ offline'}}
 setInterval(tick,15000);window.addEventListener('pywebviewready',tick);tick();
 </script></body>"""
+
+
+def first_link(argv):
+    for a in (argv or []):
+        if str(a).lower().startswith("ledger://"):
+            return str(a)
+    return ""
+
+
+def link_tab(arg):
+    s = str(arg or "").lower().split("ledger://", 1)[-1].strip("/")
+    if s in ("deal", "deal/new", "new-deal", "new"):
+        return "tracker"
+    if s in ("orders", "order", "mail"):
+        return "mail"
+    if s in ("channels", "channel"):
+        return "channels"
+    if s in ("settings", "setup"):
+        return "setup"
+    if s in ("inventory",):
+        return "inventory"
+    return "overview"
+
+
+def register_protocol(scheme="ledger", exe=None):
+    if os.name != "nt":
+        return False
+    try:
+        import winreg
+        base = "Software\\Classes\\" + scheme
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, base) as k:
+            winreg.SetValueEx(k, "", 0, winreg.REG_SZ, "URL:" + scheme)
+            winreg.SetValueEx(k, "URL Protocol", 0, winreg.REG_SZ, "")
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, base + "\\shell\\open\\command") as k:
+            winreg.SetValueEx(k, "", 0, winreg.REG_SZ, '"' + str(exe or sys.executable) + '" "%1"')
+        return True
+    except Exception:
+        return False
+
+
+def write_link(path, arg):
+    try:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(str(arg))
+    except Exception:
+        pass
+
+
+def watch_links(path, callback):
+    import pathlib
+    p = pathlib.Path(path)
+    while True:
+        try:
+            if p.exists():
+                raw = p.read_text(encoding="utf-8").strip()
+                try:
+                    p.unlink()
+                except Exception:
+                    pass
+                if raw:
+                    callback(link_tab(raw))
+        except Exception:
+            pass
+        time.sleep(1)
+
+
+def check_update(current):
+    tag, url = latest_release()
+    try:
+        a = tuple(int(x) for x in str(current).split(".")[:3])
+        b = tuple(int(x) for x in str(tag).lstrip("v").split(".")[:3])
+        return {"ok": True, "current": current, "latest": tag, "url": url, "available": b > a}
+    except Exception:
+        return {"ok": False, "current": current, "latest": tag, "url": url, "available": False}

@@ -190,8 +190,14 @@ def main():
     # is activated (D-2).
     is_plus = ("plus" in pathlib.Path(sys.executable).stem.lower()) or (os.environ.get("LEDGER_PLUS") == "1")
     title = "Ledger+ — Game Account Tracker" if is_plus else "Ledger — Game Account Tracker"
+    _link = shell.first_link(sys.argv)
+    shell.register_protocol("ledger", sys.executable)
     if not single_instance("Global\\LedgerDesktopFree", title):
+        if _link:
+            shell.write_link(APP_DIR / ".ledger.link", _link)
         return
+    if _link:
+        shell.write_link(APP_DIR / ".ledger.link", _link)
     cfg = rp.load_config(CONFIG)
     server = str(cfg.get("server") or "").strip()
     url = ""
@@ -351,6 +357,7 @@ def main():
                          args=(url, title, window, lambda: tray, None),
                          daemon=True, name="ledger-badge").start()
         shell.register_hotkeys(show_window, lambda: nav("tracker"))
+        threading.Thread(target=shell.watch_links, args=(APP_DIR / ".ledger.link", nav), daemon=True, name="ledger-deeplink").start()
     except Exception:
         log("tray failed:\n" + traceback.format_exc())
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.66.55 — deep links and desktop integrations
+- ledger:// protocol registration and deep links (new deal, orders, channels, settings).
+- Native File/View/Help menu and mini Today widget.
+- Tray actions, hotkeys, drag-and-drop, update check.
+
 ## v1.66.53 — desktop shell polish
 - Drag-and-drop .zip/.enc backup or .csv onto the window.
 - Tray actions, native-title/tray order count, launch-with-Windows toggle, update check.

@@ -234,8 +234,14 @@ def main():
     import webview
 
     cfg = load_cfg()
+    _link = shell.first_link(sys.argv)
+    shell.register_protocol("ledger", sys.executable)
     if not single_instance("Global\\LedgerPlusDesktop", "Ledger+ — Game Account Tracker"):
+        if _link:
+            shell.write_link(APP_DIR / ".ledger.link", _link)
         return
+    if _link:
+        shell.write_link(APP_DIR / ".ledger.link", _link)
 
     # P-3: validate the configured URL before any Basic credential can be
     # decrypted or injected (https only outside loopback, no userinfo, no
@@ -395,6 +401,7 @@ def main():
                                lambda: tray, (user, password) if password else None),
                          daemon=True, name="ledger-plus-badge").start()
         shell.register_hotkeys(show_window, lambda: nav("tracker"))
+        threading.Thread(target=shell.watch_links, args=(APP_DIR / ".ledger.link", nav), daemon=True, name="ledger-deeplink").start()
     except Exception:
         log("tray failed:\n" + traceback.format_exc())
 
