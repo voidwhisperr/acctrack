@@ -48,7 +48,7 @@ SCRAPER_API_KEY  = ""   # ← .gt_secrets.json -> "scraper_api_key" (обхід 
 
 import os, sys, json, time, threading, urllib.request, urllib.parse, shutil, datetime
 import http.server, webbrowser, pathlib, base64, hmac, subprocess, socket
-import gzip, hashlib, io, zipfile, tarfile, html as _html_mod, re, random, statistics, csv, struct, shlex
+import gzip, hashlib, io, zipfile, tarfile, html as _html_mod, re, random, statistics, csv, struct, shlex, math, ipaddress
 
 try:
     import ui                     # HTML-шаблон дашборда
@@ -81,6 +81,8 @@ BIND = (os.environ.get("GT_BIND") or "127.0.0.1").strip() or "127.0.0.1"
 # від Cloudflare, щоб навіть локальний обхід тунелю не працював.
 AUTH_MODE = (os.environ.get("GT_AUTH") or "").strip().lower()  # "" = вирішуємо після налаштувань
 REQUIRE_ACCESS = (os.environ.get("GT_REQUIRE_ACCESS") or "").strip() == "1"
+# Єдине джерело версії: /api/health, /api/diag, /api/update/check, банер старту.
+APP_VERSION = "1.66.41"
 _SESSION_SECRET = base64.urlsafe_b64encode(os.urandom(32)).decode("ascii")
 _BASE_DIR   = pathlib.Path(os.environ.get("GT_DATA_DIR") or pathlib.Path(__file__).parent)
 try:
@@ -315,6 +317,33 @@ def _fnum(value, field, minimum=0.0, maximum=1e9, default=0.0):
     return num
 
 
+def _json_safe(value, depth=0):
+    """Рекурсивно приводить довільне значення до JSON-безпечного вигляду.
+
+    NaN/±Infinity → 0.0 (json.dumps з allow_nan=True писав би невалідний JSON,
+    який не читають strict-парсери), рядки/колекції обмежуються за розміром.
+    Використовується для «зайвих» полів, які UI зберігає разом із записом.
+    """
+    if depth > 5:
+        return None
+    if value is None or isinstance(value, (bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else 0.0
+    if isinstance(value, str):
+        return value[:2000]
+    if isinstance(value, dict):
+        out = {}
+        for _i, (_k, _v) in enumerate(value.items()):
+            if _i >= 100:
+                break
+            out[str(_k)[:100]] = _json_safe(_v, depth + 1)
+        return out
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(_v, depth + 1) for _v in list(value)[:200]]
+    return str(value)[:300]
+
+
 def _fee_pct_of(rec, default=None):
     """Частка комісії для запису P&L (0…1).
 
@@ -391,8 +420,10 @@ def _clean_pl(data):
                               PLATFORM_FEES.get(src, 0.0))
         after = round(sell * (1 - fee_pct) - buy, 6)
         out.append({
-            **{k: v for k, v in rec.items() if k not in
-               ("id", "title", "src", "srcName", "buy", "sell", "afterFee", "feePct", "expenses", "qty", "date", "platform")},
+            # «зайві» поля зберігаємо, але чистимо: NaN/Infinity та вкладені
+            # структури довільної глибини не мають потрапляти у файл даних.
+            **_json_safe({k: v for k, v in rec.items() if k not in
+               ("id", "title", "src", "srcName", "buy", "sell", "afterFee", "feePct", "expenses", "qty", "date", "platform")}),
             "id": rid,
             "title": str(rec.get("title") or "")[:500],
             "src": src,
@@ -440,8 +471,8 @@ def _clean_ed(data):
         if not _is_date(date):
             raise ValueError(f"запис #{i + 1}: дата обовʼязкова, формат YYYY-MM-DD")
         out.append({
-            **{k: v for k, v in rec.items() if k not in
-               ("id", "date", "title", "price", "buy", "fee", "profit", "orderId", "category")},
+            **_json_safe({k: v for k, v in rec.items() if k not in
+               ("id", "date", "title", "price", "buy", "fee", "profit", "orderId", "category")}),
             "id": rid,
             "date": date,
             "title": str(rec.get("title") or "")[:500],
@@ -549,19 +580,24 @@ def _load_secrets():
 _load_secrets()
 
 def _save_secrets(updates):
-    """Оновлює .gt_secrets.json, не втрачаючи інші ключі."""
-    s = {}
-    if os.path.exists(SECRETS_FILE):
+    """Оновлює .gt_secrets.json, не втрачаючи інші ключі.
+
+    read-modify-write під _WRITE_LOCK (RLock): інакше два паралельні запити
+    (напр. зміна пароля + активація ліцензії) могли затерти оновлення один одного.
+    """
+    with _WRITE_LOCK:
+        s = {}
+        if os.path.exists(SECRETS_FILE):
+            try:
+                s = json.loads(open(SECRETS_FILE, encoding="utf-8").read())
+            except Exception:
+                s = {}
+        s.update(updates)
+        _atomic_dump(SECRETS_FILE, s)
         try:
-            s = json.loads(open(SECRETS_FILE, encoding="utf-8").read())
-        except Exception:
-            s = {}
-    s.update(updates)
-    _atomic_dump(SECRETS_FILE, s)
-    try:
-        os.chmod(SECRETS_FILE, 0o600)      # на Linux — тільки власнику
-    except OSError:
-        pass
+            os.chmod(SECRETS_FILE, 0o600)      # на Linux — тільки власнику
+        except OSError:
+            pass
 
 
 _VAULT_PREFIX = "enc:v1:"
@@ -713,11 +749,20 @@ def _load_extra_suppliers():
     try:
         _st = _read_json(SETTINGS_FILE, {}) or {}
         for x in (_st.get("suppliers_extra") or []):
+            if not isinstance(x, dict):
+                continue
             _k = str(x.get("key") or "")[:16]
             if not _k or not x.get("base"):
                 continue
+            _base = str(x.get("base"))[:200]
+            # збережений раніше URL теж перевіряємо: private/loopback/file-схеми
+            # не мають ставати запитами сервера (SSRF) після перезапуску.
+            if not _url_public_ok(_base):
+                print(f"  ⚠ suppliers_extra «{_k}»: URL не публічний http(s) — пропущено",
+                      flush=True)
+                continue
             SUPPLIERS.setdefault(_k, {"name": str(x.get("name") or _k)[:40],
-                                      "base": str(x.get("base"))[:200],
+                                      "base": _base,
                                       "color": x.get("color") or "#7c8f6a",
                                       "emoji": x.get("emoji") or "\u25cf"})
     except Exception as e:
@@ -733,8 +778,10 @@ SUPPLIERS = {
 _supplier_cache = []
 _supplier_seen  = {}   # {product_id: {"seen_at","updated_at","price","available","history"}}
 _price_drops    = []   # зниження цін за поточне оновлення (для алерту в TG)
-_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".gt_cache.json")
-SUP_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".gt_suppliers.json")
+# Кеші лежать у каталозі даних (_BASE_DIR / GT_DATA_DIR), а не поруч з кодом:
+# інакше один інстанс/тест перезаписує кеш іншого і встановлена копія пише в Program Files.
+_CACHE_FILE = str(_BASE_DIR / ".gt_cache.json")
+SUP_CACHE_FILE = str(_BASE_DIR / ".gt_suppliers.json")
 
 
 
@@ -764,7 +811,9 @@ def _auth_from_settings():
     AUTH_MODE = "basic" if _has_pass else "off"
 
 
-_auth_from_settings()
+# ВАЖЛИВО: виклик _auth_from_settings() перенесено ПІСЛЯ визначення _read_json()
+# (див. нижче). Раніше NameError ковтався, і на холодному старті AUTH_MODE ставав
+# "off" — свіжий інстал з паролем/2FA відкривався без авторизації.
 
 
 def _load_file_cache():
@@ -810,6 +859,12 @@ def _read_json(path, default):
             return json.load(f)
     except Exception:
         return default
+
+
+# Вирішуємо режим входу ЛИШЕ після появи _read_json(), інакше на холодному
+# старті читання налаштувань/секретів падало з NameError і AUTH_MODE = "off"
+# (свіжий інстал з auth_enabled/auth_hash ставав відкритим).
+_auth_from_settings()
 
 
 # ─────────────────────────────────────────────────
@@ -3188,6 +3243,9 @@ def _smart_get(url, timeout=40, allow_scraper=True):
 
     Для новинок викликаємо з allow_scraper=False — перевірка має бути безкоштовною.
     """
+    # анти-SSRF: жодних file://, localhost чи приватних IP — лише публічний http(s)
+    if not _url_public_ok(url):
+        raise ValueError("unsafe URL: дозволено лише публічний http(s)")
     try:
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -3214,6 +3272,8 @@ def _smart_get(url, timeout=40, allow_scraper=True):
 
 def _sitemap_handles(base):
     """{handle: lastmod} із sitemap_products_*.xml (1–2 запити на магазин)."""
+    if not _url_public_ok(base):
+        raise ValueError("unsafe supplier URL")
     xml = _smart_get(base.rstrip("/") + "/sitemap.xml",
                      allow_scraper=False).decode("utf-8", "replace")
     subs = re.findall(r"<loc>\s*([^<]*sitemap_products[^<]*)</loc>", xml)
@@ -3222,6 +3282,11 @@ def _sitemap_handles(base):
     out = {}
     for sm in subs[:3]:
         try:
+            # <loc> приходить із чужого XML — перевіряємо його окремо (SSRF)
+            if not _url_public_ok(sm):
+                print(f"  ⚠ sitemap: пропущено небезпечний <loc> {str(sm)[:80]}",
+                      flush=True)
+                continue
             body = _smart_get(sm, allow_scraper=False).decode("utf-8", "replace")
         except Exception:
             continue
@@ -3327,6 +3392,10 @@ _news_load()
 
 def fetch_supplier(key, is_first_run=False):
     src = SUPPLIERS[key]; products = []; page = 1
+    # «база» може прийти з налаштувань/бандла — перевіряємо перед мережею
+    if not _url_public_ok(src.get("base")):
+        raise RuntimeError(f"{src['name']}: небезпечна адреса постачальника "
+                           "(дозволено лише публічний http/https)")
     blocked = _direct_blocked(key)
     print(f"  {src['emoji']} {src['name']}...{' (blocked directly)' if blocked else ''}",
           end="", flush=True)
@@ -4272,19 +4341,24 @@ def _decrypt_backup(raw, password):
 
 
 def _build_backup_zip():
-    """zip з P&L + ELDORADO + ціль + налаштування + manifest sha256.
+    """zip з даними трекера + manifest sha256.
 
-    Секрети (.gt_secrets.json) і токен Telegram НЕ включаються.
+    Секрети (.gt_secrets.json), паролі й токени НЕ включаються.
     """
     files = ((".gt_pl.json", PL_FILE), (".gt_eldorado.json", ED_FILE),
+             (".gt_goal.json", GOAL_FILE),
              (".gt_settings.json", SETTINGS_FILE),
              # важливі дані, які раніше не потрапляли в бекап:
+             (".gt_inventory.json", INVENTORY_FILE),
+             (".gt_cashflow.json", CASHFLOW_FILE),
+             (".gt_team.json", TEAM_FILE),
+             (".gt_audit.json", AUDIT_FILE),
              (".gt_taobao.json", TAOBAO_FILE),
              (".gt_imported.json", IMPORTED_FILE),
              (".gt_sitemap.json", NEWS_STATE_FILE),
              (".gt_scraper.json", SCRAPER_STATE_FILE),
              (".gt_mail_queue.json", MAIL_QUEUE_FILE))
-    manifest = {"app": "GameTracker", "version": "4.5",
+    manifest = {"app": "GameTracker", "version": APP_VERSION,
                 "created": datetime.datetime.now().isoformat(timespec="seconds"),
                 "files": {}}
     buf = io.BytesIO()
@@ -4335,7 +4409,9 @@ def _restore_test_backup(raw, password=""):
             manifest = json.loads(z.read("manifest.json").decode("utf-8")) if "manifest.json" in names else {}
             allowed = {".gt_pl.json", ".gt_eldorado.json", ".gt_goal.json",
                        ".gt_settings.json", ".gt_taobao.json", ".gt_imported.json",
-                       ".gt_sitemap.json", ".gt_scraper.json", ".gt_mail_queue.json"}
+                       ".gt_sitemap.json", ".gt_scraper.json", ".gt_mail_queue.json",
+                       ".gt_inventory.json", ".gt_cashflow.json", ".gt_team.json",
+                       ".gt_audit.json"}
             counts = {}
             for name in names:
                 if name not in allowed:
@@ -4387,71 +4463,355 @@ def _inspect_backup_zip(raw, password=""):
         raise ValueError("це не zip-бекап")
 
 
+# ── імпорт бекапу: мапа файлів, валідація ВСІХ файлів ДО запису ──────
+_BACKUP_IMPORT_MAP = {
+    ".gt_pl.json": ("pl", PL_FILE),
+    ".gt_eldorado.json": ("ed", ED_FILE),
+    ".gt_goal.json": ("goal", GOAL_FILE),
+    ".gt_settings.json": ("settings", SETTINGS_FILE),
+    ".gt_inventory.json": ("inv", INVENTORY_FILE),
+    ".gt_cashflow.json": ("cashflow", CASHFLOW_FILE),
+    ".gt_team.json": ("team", TEAM_FILE),
+    ".gt_audit.json": ("audit", AUDIT_FILE),
+}
+
+# Налаштування, які дозволено відновлювати з бекапу: (ліміт, тип перевірки).
+_SETTINGS_IMPORT_NUMS = {
+    "usd_uah": (0.0, 1e6), "rate_ts": (0.0, 1e12), "tax_rate": (0.0, 50.0),
+    "taobao_min_cny": (0.0, 10000.0), "deal_x": (1.0, 100.0),
+    "backup_hours": (1.0, 168.0), "backup_keep": (1.0, 365.0),
+    "sup_hours": (1.0, 48.0), "news_hours": (0.25, 24.0),
+    "digest_hour": (0.0, 23.0), "scraper_limit": (1.0, 5000.0),
+}
+_SETTINGS_IMPORT_BOOLS = ("onboarded", "auto_add_orders", "currency_manual",
+                          "backup_encrypt", "alerts_only_my_games",
+                          "https_enabled", "vault_enabled")
+_SETTINGS_IMPORT_STRINGS = {"cloud_dir": 500, "currency": 3, "app_name": 32,
+                            "lang": 2, "zeusx_tier": 16, "https_cert": 1000,
+                            "https_key": 1000, "rate_source": 16,
+                            "pay_usdt": 300, "pay_binance": 300,
+                            "pay_payoneer": 300, "pay_tg": 300, "pay_note": 300}
+
+
+def _clean_cashflow(data):
+    """Валідація cashflow із бекапу: жодного невалідного запису у файл."""
+    if not isinstance(data, list):
+        raise ValueError("cashflow у бекапі має бути списком")
+    if len(data) > 5000:
+        raise ValueError("cashflow: забагато записів (>5000)")
+    out = []
+    for i, rec in enumerate(data):
+        if not isinstance(rec, dict):
+            raise ValueError(f"cashflow #{i + 1}: очікується об'єкт")
+        rid = re.sub(r"[^A-Za-z0-9_.:-]", "",
+                     str(rec.get("id") or ("cf-%d-%d" % (int(time.time() * 1000), i))))[:64]
+        platform = str(rec.get("platform") or "other")[:24]
+        status = str(rec.get("status") or "hold").lower()
+        if status not in ("hold", "available", "withdrawn"):
+            status = "hold"
+        amount = _fnum(rec.get("amount"), f"cashflow #{i + 1} amount", 0, 1e9)
+        date = str(rec.get("date") or "")[:10]
+        if date and not _is_date(date):
+            date = ""
+        ad = str(rec.get("availableDate") or "")[:10]
+        if ad and not _is_date(ad):
+            ad = ""
+        try:
+            ts = int(rec.get("ts") or 0)
+        except (TypeError, ValueError):
+            ts = 0
+        out.append({"id": rid, "platform": platform, "amount": round(amount, 2),
+                    "status": status, "date": date,
+                    "note": str(rec.get("note") or "")[:200], "ts": ts,
+                    "saleId": str(rec.get("saleId") or "")[:80],
+                    "order": str(rec.get("order") or "")[:80],
+                    "availableDate": ad})
+    return out
+
+
+def _clean_team(data):
+    """Валідація team із бекапу: відомі поля, ролі лише manager/viewer."""
+    if not isinstance(data, dict):
+        raise ValueError("team у бекапі має бути об'єктом")
+    members = data.get("members") or []
+    invites = data.get("invites") or []
+    if not isinstance(members, list) or not isinstance(invites, list):
+        raise ValueError("team: members/invites мають бути списками")
+    def _iv(value):
+        try:
+            return int(value or 0)
+        except (TypeError, ValueError):
+            return 0
+    out_m = []
+    for m in members[:200]:
+        if not isinstance(m, dict):
+            continue
+        mid = re.sub(r"[^A-Za-z0-9_.:-]", "", str(m.get("id") or ""))[:64]
+        if not mid:
+            continue
+        role = str(m.get("role") or "viewer")
+        if role not in ("manager", "viewer"):
+            role = "viewer"
+        out_m.append({"id": mid, "name": str(m.get("name") or "Team member")[:60],
+                      "role": role, "created": _iv(m.get("created")),
+                      "last_seen": _iv(m.get("last_seen")),
+                      "active": bool(m.get("active"))})
+    out_i = []
+    for inv in invites[:200]:
+        if not isinstance(inv, dict):
+            continue
+        tok = re.sub(r"[^A-Za-z0-9_-]", "", str(inv.get("token") or ""))[:80]
+        if not tok:
+            continue
+        role = str(inv.get("role") or "viewer")
+        if role not in ("manager", "viewer"):
+            role = "viewer"
+        out_i.append({"token": tok, "role": role,
+                      "name": str(inv.get("name") or "Team member")[:60],
+                      "created": _iv(inv.get("created")),
+                      "expires": _iv(inv.get("expires")),
+                      "used_at": _iv(inv.get("used_at")),
+                      "used_by": re.sub(r"[^A-Za-z0-9_.:-]", "",
+                                        str(inv.get("used_by") or ""))[:64]})
+    return {"members": out_m, "invites": out_i}
+
+
+def _clean_audit(data):
+    """Валідація audit із бекапу: лише list[dict], останні 500 подій."""
+    if not isinstance(data, list):
+        raise ValueError("audit у бекапі має бути списком")
+    out = []
+    for rec in data[-500:]:
+        if isinstance(rec, dict):
+            out.append(_json_safe(rec))
+    return out
+
+
+def _clean_settings_import(data):
+    """Валідація налаштувань із бекапу: відомі ключі з перевіркою ТИПІВ.
+
+    Невалідний тип → ValueError (імпорт відхиляється цілком), інакше після
+    restore налаштування з 'NaN'/рядків у числах давали вічні 500.
+    """
+    if not isinstance(data, dict):
+        raise ValueError("налаштування у бекапі мають бути об'єктом")
+    out = {}
+    for key, (lo, hi) in _SETTINGS_IMPORT_NUMS.items():
+        if key not in data:
+            continue
+        v = data.get(key)
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            raise ValueError(f"налаштування {key}: очікується число")
+        try:
+            fv = _fnum(v, key, lo, hi)
+        except ValueError as e:
+            raise ValueError(f"налаштування {key}: {e}")
+        out[key] = fv
+    for key in _SETTINGS_IMPORT_BOOLS:
+        if key in data:
+            if not isinstance(data[key], bool):
+                raise ValueError(f"налаштування {key}: очікується true/false")
+            out[key] = data[key]
+    if out.get("vault_enabled") and not _vault_available():
+        out["vault_enabled"] = False
+    for key, lim in _SETTINGS_IMPORT_STRINGS.items():
+        if key not in data:
+            continue
+        v = data.get(key)
+        if not isinstance(v, str):
+            raise ValueError(f"налаштування {key}: очікується рядок")
+        out[key] = v.strip()[:lim]
+    if "lang" in out and out["lang"].lower() not in ("uk", "en", "ru"):
+        raise ValueError("налаштування lang: очікується uk/en/ru")
+    if "currency" in out:
+        _c = out["currency"].upper()
+        if not (_c.isalpha() and len(_c) == 3):
+            raise ValueError("налаштування currency: очікується код з 3 літер")
+        out["currency"] = _c
+    if "app_name" in out and not out["app_name"]:
+        out["app_name"] = "Ledger"
+    if "zeusx_tier" in out:
+        _zt = out["zeusx_tier"].lower()
+        out["zeusx_tier"] = _zt if _zt in {t["id"] for t in ZEUSX_TIERS} else "iron"
+    if "fee_profiles" in data:
+        fp = data.get("fee_profiles")
+        if not isinstance(fp, dict):
+            raise ValueError("налаштування fee_profiles: очікується об'єкт")
+        clean = {}
+        for k in ("funpay", "eldorado", "other"):
+            if k not in fp:
+                continue
+            v = fp.get(k)
+            if isinstance(v, bool) or not isinstance(v, (int, float)):
+                raise ValueError(f"fee_profiles.{k}: очікується число")
+            clean[k] = round(_fnum(v, "fee_profiles." + k, 0.0, 1.0), 6)
+        games = {}
+        gsrc = fp.get("games")
+        if gsrc is not None:
+            if not isinstance(gsrc, dict):
+                raise ValueError("fee_profiles.games: очікується об'єкт")
+            for g, row in list(gsrc.items())[:200]:
+                if not isinstance(row, dict):
+                    continue
+                r = {}
+                for pk in ("funpay", "eldorado", "other"):
+                    if pk not in row:
+                        continue
+                    pv = row.get(pk)
+                    if isinstance(pv, bool) or not isinstance(pv, (int, float)):
+                        raise ValueError(
+                            f"fee_profiles.games.{g}.{pk}: очікується число")
+                    r[pk] = round(_fnum(pv, "fee", 0.0, 1.0), 6)
+                if r:
+                    games[str(g)[:80]] = r
+        if clean:
+            out["fee_profiles"] = {**clean, "games": games}
+    if "payout_days" in data:
+        pd = data.get("payout_days")
+        if not isinstance(pd, dict):
+            raise ValueError("налаштування payout_days: очікується об'єкт")
+        clean = {}
+        for k in PAYOUT_DAYS_DEFAULT:
+            if k not in pd:
+                continue
+            v = pd.get(k)
+            if isinstance(v, bool) or not isinstance(v, (int, float)):
+                raise ValueError(f"payout_days.{k}: очікується число")
+            clean[k] = int(_fnum(v, "payout_days." + k, 0, 90))
+        if clean:
+            out["payout_days"] = clean
+    for kind in _TG_DEFAULTS:
+        key = "notify_" + kind
+        if key in data:
+            if not isinstance(data[key], bool):
+                raise ValueError(f"налаштування {key}: очікується true/false")
+            out[key] = data[key]
+    return out
+
+
+def _apply_backup_import(kind, obj, name):
+    """Перетворює розпарсений JSON на безпечний для запису об'єкт."""
+    if kind == "pl":
+        return _clean_pl(obj)
+    if kind == "ed":
+        return _clean_ed(obj)
+    if kind == "goal":
+        if not isinstance(obj, dict):
+            raise ValueError("ціль у бекапі має бути об'єктом")
+        return _json_safe(obj)
+    if kind == "inv":
+        return _inv_clean(obj)
+    if kind == "cashflow":
+        return _clean_cashflow(obj)
+    if kind == "team":
+        return _clean_team(obj)
+    if kind == "audit":
+        return _clean_audit(obj)
+    if kind == "settings":
+        return _clean_settings_import(obj)
+    raise ValueError(f"{name}: невідомий тип файлу")
+
+
 def _import_backup_zip(raw, password=""):
-    """Відновлення з zip: перевіряє manifest/sha256, робить бекап поточного стану."""
+    """Відновлення з zip: manifest/sha256 → валідація ВСІХ файлів → бекап →
+    атомарний запис; будь-яка помилка запису відкочує вже змінені файли."""
     if not raw:
         raise ValueError("порожній файл")
     raw = _decrypt_backup(raw, password)
     if len(raw) > 50 * 1024 * 1024:
         raise ValueError("файл завеликий (>50 МБ)")
-    allowed = {".gt_pl.json": ("pl", PL_FILE), ".gt_eldorado.json": ("ed", ED_FILE),
-               ".gt_goal.json": ("goal", GOAL_FILE), ".gt_settings.json": ("settings", SETTINGS_FILE)}
     try:
         zf = zipfile.ZipFile(io.BytesIO(raw))
     except Exception as e:
         raise ValueError(f"це не zip-бекап: {e}")
-    names = set(zf.namelist())
-    if not names:
-        raise ValueError("zip порожній")
-    manifest = {}
-    if "manifest.json" in names:
-        try:
-            manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
-        except Exception:
-            manifest = {}
-    total_unpacked = sum(i.file_size for i in zf.infolist())
-    if total_unpacked > 80 * 1024 * 1024:
-        raise ValueError("zip розпаковується занадто сильно (>80 МБ)")
-
-    loaded = {}
-    for name in names:
-        if name not in allowed:
-            continue
-        data = zf.read(name)
-        want = ((manifest.get("files") or {}).get(name) or {}).get("sha256")
-        if want and hashlib.sha256(data).hexdigest() != want:
-            raise ValueError(f"{name}: sha256 не збігається — файл пошкоджено")
-        loaded[name] = data
-    if not loaded:
+    with zf:
+        names = set(zf.namelist())
+        if not names:
+            raise ValueError("zip порожній")
+        manifest = {}
+        if "manifest.json" in names:
+            try:
+                manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
+            except Exception:
+                manifest = {}
+        total_unpacked = sum(i.file_size for i in zf.infolist())
+        if total_unpacked > 80 * 1024 * 1024:
+            raise ValueError("zip розпаковується занадто сильно (>80 МБ)")
+        # 1) читання + перевірка sha256
+        loaded_raw = {}
+        for name in names:
+            if name not in _BACKUP_IMPORT_MAP:
+                continue
+            data = zf.read(name)
+            want = ((manifest.get("files") or {}).get(name) or {}).get("sha256")
+            if want and hashlib.sha256(data).hexdigest() != want:
+                raise ValueError(f"{name}: sha256 не збігається — файл пошкоджено")
+            loaded_raw[name] = data
+    if not loaded_raw:
         raise ValueError("у zip немає файлів трекера")
 
-    # бекап поточного стану перед імпортом
-    os.makedirs(BACKUP_DIR, exist_ok=True)
-    ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    for name, (pref, path) in allowed.items():
-        if name in loaded and os.path.exists(path):
-            shutil.copy2(path, os.path.join(BACKUP_DIR, f"{pref}_before_import_{ts}.json"))
+    # 2) розбір/валідація ВСІХ файлів — жодного запису, поки все не перевірено
+    prepared = {}
+    for name, data in loaded_raw.items():
+        kind, path = _BACKUP_IMPORT_MAP[name]
+        try:
+            obj = json.loads(data.decode("utf-8"))
+        except Exception as e:
+            raise ValueError(f"{name}: некоректний JSON ({e})")
+        prepared[name] = (kind, path, _apply_backup_import(kind, obj, name))
 
-    written = {}
-    for name, data in loaded.items():
-        kind, path = allowed[name]
-        obj = json.loads(data.decode("utf-8"))
-        if kind == "pl":
-            obj = _clean_pl(obj)
-        elif kind == "ed":
-            obj = _clean_ed(obj)
-        elif kind == "goal":
-            if not isinstance(obj, dict):
-                raise ValueError("ціль у бекапі має бути об'єктом")
-        elif kind == "settings":
-            if not isinstance(obj, dict):
-                raise ValueError("налаштування у бекапі мають бути об'єктом")
-            obj = {k: v for k, v in obj.items()
-                   if k in ("usd_uah", "rate_ts", "rate_source", "cloud_dir", "currency",
-                            "https_enabled", "https_cert", "https_key")}
-        _atomic_dump(path, obj)
-        written[name] = len(obj) if isinstance(obj, list) else None
-    return {"ok": True, "files": sorted(written), "counts": written}
+    # 3) страхові копії + оригінали в пам'яті (для відкату)
+    try:
+        os.makedirs(BACKUP_DIR, exist_ok=True)
+    except OSError as e:
+        raise ValueError(f"не вдалось створити {os.path.basename(BACKUP_DIR)}: {e}")
+    ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    originals = {}
+    for name, (kind, path, _obj) in prepared.items():
+        if not os.path.exists(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                originals[path] = fh.read()
+            shutil.copy2(path, os.path.join(
+                BACKUP_DIR, f"{kind}_before_import_{ts}.json"))
+        except OSError as e:
+            raise ValueError(f"не вдалось зробити страхову копію {name}: {e}")
+
+    # 4) запис; будь-яка помилка → відкат уже записаних файлів
+    written = []
+    try:
+        with _WRITE_LOCK:
+            for name, (kind, path, obj) in prepared.items():
+                if kind == "settings":
+                    cur = _read_json(SETTINGS_FILE, {}) or {}
+                    if not isinstance(cur, dict):
+                        cur = {}
+                    cur.update(obj)
+                    if "fee_profiles" in obj:
+                        # відновлені комісії застосовуємо одразу, без рестарту
+                        try:
+                            _apply_fee_profiles(cur)
+                        except Exception:
+                            pass
+                    obj = cur
+                _atomic_dump(path, obj)
+                written.append(name)
+    except Exception as e:
+        for name in written:
+            _kind, path, _obj = prepared[name]
+            try:
+                if path in originals:
+                    _atomic_write(path, originals[path])
+                elif os.path.exists(path):
+                    os.remove(path)
+            except Exception as _re:
+                print(f"  ⚠ import rollback {name}: {_re}", flush=True)
+        raise ValueError(f"імпорт перервано ({type(e).__name__}: {e}); "
+                         "дані відкочено до попереднього стану")
+    counts = {name: (len(obj) if isinstance(obj, list) else None)
+              for name, (_k, _p, obj) in prepared.items()}
+    return {"ok": True, "files": sorted(written), "counts": counts}
 def _local_ip():
     """IP цієї машини (для підказки «з телефона» / публічної адреси)."""
     try:
@@ -4482,9 +4842,86 @@ def _is_private_ip(ip):
     return a == 10 or (a == 192 and b == 168) or (a == 172 and 16 <= b <= 31)
 
 
+# ── анти-SSRF: постачальник має бути публічним http(s)-хостом ──────────
+_BLOCKED_HOSTNAMES = {"localhost", "localhost.localdomain", "ip6-localhost",
+                      "ip6-loopback", "metadata", "metadata.google.internal",
+                      "instance-data", "instance-data.ec2.internal"}
+_BLOCKED_NETS_V4 = (
+    ipaddress.ip_network("0.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("100.64.0.0/10"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.0.0.0/24"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("198.18.0.0/15"),
+    ipaddress.ip_network("224.0.0.0/4"),
+    ipaddress.ip_network("240.0.0.0/4"),
+)
+_BLOCKED_NETS_V6 = (
+    ipaddress.ip_network("::/128"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+    ipaddress.ip_network("ff00::/8"),
+)
+
+
+def _ip_is_blocked(ip):
+    """True для приватних/loopback/link-local/metadata та інших непублічних IP."""
+    try:
+        addr = ipaddress.ip_address(str(ip or "").strip())
+    except ValueError:
+        return True
+    if addr.version == 6 and addr.ipv4_mapped is not None:
+        addr = addr.ipv4_mapped
+    if addr.version == 4:
+        return any(addr in net for net in _BLOCKED_NETS_V4)
+    return any(addr in net for net in _BLOCKED_NETS_V6)
+
+
+def _url_public_ok(url):
+    """Чи безпечно робити HTTP-запит на цей URL (анти-SSRF).
+
+    Дозволені лише схеми http/https, без userinfo; хост не може бути
+    localhost/приватним/loopback/link-local/metadata IP (у т.ч. після DNS).
+    """
+    try:
+        u = urllib.parse.urlsplit(str(url or "").strip())
+    except Exception:
+        return False
+    if u.scheme not in ("http", "https") or not u.hostname:
+        return False
+    if u.username or u.password:
+        return False
+    try:
+        host = u.hostname.strip().lower().rstrip(".")
+    except Exception:
+        return False
+    if not host or host in _BLOCKED_HOSTNAMES:
+        return False
+    if host.endswith((".local", ".internal", ".localhost")):
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return not _ip_is_blocked(host)
+    except ValueError:
+        pass
+    try:
+        infos = socket.getaddrinfo(host, u.port or (443 if u.scheme == "https" else 80),
+                                   proto=socket.IPPROTO_TCP)
+    except Exception:
+        return False
+    if not infos:
+        return False
+    return all(not _ip_is_blocked(info[4][0]) for info in infos)
+
+
 _SESSION_KEY_CACHE = ""
 _RECOVERY_LOCK = threading.Lock()
 _RECOVERY_REQUESTS = {}
+_RECOVERY_CONFIRMS = {}     # невдалі /confirm-спроби (окремо від /request)
 
 
 def _csrf_key():
@@ -4505,6 +4942,28 @@ def _csrf_key():
             pass
     _SESSION_KEY_CACHE = key
     return key.encode("utf-8")
+
+
+def _revoke_sessions(extra=None):
+    """Інвалідує ВСІ gt_device/gt_member сесії: +1 device_version + новий session_key.
+
+    Використовується при зміні пароля, виході та відновленні пароля. Повертає
+    новий session_key. Викликати з-під _WRITE_LOCK (він RLock — вкладеність ок).
+    """
+    global _SESSION_KEY_CACHE
+    with _WRITE_LOCK:
+        sec = _read_json(SECRETS_FILE, {}) or {}
+        try:
+            ver = int(sec.get("device_version") or 0) + 1
+        except (TypeError, ValueError):
+            ver = 1
+        key = os.urandom(32).hex()
+        upd = {"device_version": ver, "session_key": key}
+        if extra:
+            upd.update(extra)
+        _save_secrets(upd)
+        _SESSION_KEY_CACHE = key
+        return key
 
 
 def _csrf_token():
@@ -4774,6 +5233,29 @@ _SECURITY_HEADERS = {
 
 def _log_error(where, exc):
     print(f"  ⚠ {where}: {type(exc).__name__}: {exc}", flush=True)
+
+
+# ── рольова модель (fail-closed) ───────────────────────────────────
+# owner   — повний доступ;
+# manager — читання/запис бізнес-даних (P&L, ELDORADO, склад, cashflow, черга
+#           пошти) і незворотні дії під забороною;
+# viewer  — лише GET бізнес-даних.
+# Owner-only навмисно перелічує auth/секрети/запис налаштувань/експорти/
+# бекапи/команду/ліцензію/імпорт — нові шляхи без явного дозволу сюди не потрапляють,
+# але кожен новий бізнес-ендпоінт має бути доданий у матрицю тестів.
+_ROLE_OWNER_ONLY = (
+    "/api/auth", "/api/password", "/api/2fa", "/api/secrets", "/api/gmail",
+    "/api/tg", "/api/tokens", "/api/team", "/api/license", "/api/backup",
+    "/api/https", "/api/online", "/api/tunnel", "/api/diag", "/api/audit",
+    "/api/import", "/api/export", "/api/lots/export", "/api/report/export",
+    "/api/demo", "/api/suppliers", "/api/taobao", "/api/inventory/secret",
+    "/admin", "/hosting",
+)
+# Масові/незворотні дії — owner навіть для «бізнесових» префіксів.
+_ROLE_DESTRUCTIVE = (
+    "/api/mail/clear", "/api/import",
+    "/api/inventory/delete", "/api/cashflow/delete",
+)
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -5072,36 +5554,34 @@ class Handler(http.server.BaseHTTPRequestHandler):
         role = self._role()
         if role == "owner":
             return True
-        _owner_only = ("/api/auth", "/api/demo", "/api/secrets", "/api/gmail", "/api/tg",
-                       "/api/suppliers", "/api/taobao", "/api/password",
-                       "/api/2fa", "/api/team", "/api/license", "/api/backup",
-                       "/api/diag", "/api/audit", "/api/tunnel", "/api/inventory",
-                       "/api/export", "/api/lots/export", "/api/report/export",
-                       "/api/pl", "/api/eldorado", "/api/cashflow", "/api/mail/queue",
-                       "/api/settings", "/api/tokens", "/api/https", "/api/online",
-                       "/api/import")
-        if any(p.startswith(x) for x in _owner_only):
+        if role not in ("manager", "viewer"):
+            self._json({"ok": False, "error": "auth required"}, code=401)
+            return False
+        # auth/секрети/запис налаштувань/експорти/бекапи/команда/ліцензія/імпорт
+        if any(p.startswith(x) for x in _ROLE_OWNER_ONLY):
+            self._json({"ok": False, "error": "owner only"}, code=403)
+            return False
+        # масове очищення/видалення — лише owner
+        if any(p.startswith(x) for x in _ROLE_DESTRUCTIVE):
+            self._json({"ok": False, "error": "owner only (destructive action)"},
+                       code=403)
+            return False
+        # reader бачить налаштування, але змінювати їх може лише owner
+        if p.startswith("/api/settings") and self.command not in ("GET", "HEAD"):
             self._json({"ok": False, "error": "owner only"}, code=403)
             return False
         if role == "viewer":
-            if self.command != "GET":
+            if self.command not in ("GET", "HEAD"):
                 self._json({"ok": False, "error": "read-only access"}, code=403)
                 return False
-            if p.startswith("/api/backup/export"):
+            # налаштування — не бізнес-дані: viewer їх не читає
+            if p.startswith("/api/settings"):
                 self._json({"ok": False, "error": "read-only access"}, code=403)
                 return False
             return True
-        if role == "manager":
-            blocked = ("/api/settings", "/api/backup", "/api/secrets", "/api/2fa",
-                       "/api/team", "/api/license", "/api/password", "/api/logout/all",
-                       "/api/https", "/api/online", "/api/demo", "/api/suppliers",
-                       "/api/import", "/api/taobao", "/api/auth")
-            if any(p.startswith(b) for b in blocked) or p.startswith("/admin"):
-                self._json({"ok": False, "error": "manager cannot change this"}, code=403)
-                return False
-            return True
-        self._json({"ok": False, "error": "auth required"}, code=401)
-        return False
+        # manager: читання/запис бізнес-даних; руйнівні дії відсічені вище
+        # і в хендлерах (force-clear, mail remove, очищення складу).
+        return True
 
     def _step_up_ok(self, body, otp_key="otp"):
         """Require the current password and (if enabled) a current TOTP code."""
@@ -5296,7 +5776,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.40", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": APP_VERSION,
+                        "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release",
                  "/api/auth/recovery/request", "/api/auth/recovery/confirm"):
@@ -5515,10 +5996,14 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     except Exception:
                         sell = buy = 0
                         pr = 0
-                    rows.append([r.get("date", ""), r.get("title", ""),
-                                 r.get("srcName") or r.get("platform") or "",
-                                 r.get("buy", 0), r.get("sell", 0), r.get("qty", 1),
-                                 r.get("afterFee", 0), round(pr, 2)])
+                    # CSV formula injection: title/platform/date приходять від
+                    # користувача (або з імпорту) — кожну комірку екрануємо.
+                    rows.append([_csv_cell(r.get("date", "")),
+                                 _csv_cell(r.get("title", "")),
+                                 _csv_cell(r.get("srcName") or r.get("platform") or ""),
+                                 _csv_cell(r.get("buy", 0)), _csv_cell(r.get("sell", 0)),
+                                 _csv_cell(r.get("qty", 1)),
+                                 _csv_cell(r.get("afterFee", 0)), _csv_cell(round(pr, 2))])
             else:
                 data = _read_json(ED_FILE, []) or []
                 head = ["date", "title", "price", "buy", "fee", "profit", "orderId"]
@@ -5669,7 +6154,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                              "Accept": "application/vnd.github+json"})
                 with urllib.request.urlopen(req, timeout=8) as r:
                     rel = json.loads(r.read().decode("utf-8", "replace"))
-                self._json({"ok": True, "current": "1.4.0",
+                self._json({"ok": True, "current": APP_VERSION,
                             "latest": rel.get("tag_name") or "",
                             "name": rel.get("name") or "",
                             "url": rel.get("html_url") or "",
@@ -5915,7 +6400,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.40",
+            self._json({"ok": True, "version": APP_VERSION,
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6077,12 +6562,13 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": False, "error": "recovery email is not configured"}, code=400); return
         ip = self._client_ip()
         now = time.time()
-        with _RECOVERY_LOCK:
-            rows = [t for t in _RECOVERY_REQUESTS.get(ip, []) if now - t < 900]
-            if len(rows) >= 3:
-                self._json({"ok": False, "error": "too many recovery requests"}, code=429); return
-            rows.append(now); _RECOVERY_REQUESTS[ip] = rows
         if self.path.split("?")[0].endswith("/request"):
+            # ліміт 3/15 хв — ТІЛЬКИ для /request; /confirm має власний лічильник
+            with _RECOVERY_LOCK:
+                rows = [t for t in _RECOVERY_REQUESTS.get(ip, []) if now - t < 900]
+                if len(rows) >= 3:
+                    self._json({"ok": False, "error": "too many recovery requests"}, code=429); return
+                rows.append(now); _RECOVERY_REQUESTS[ip] = rows
             code = "%06d" % _secrets.randbelow(1000000)
             exp = int(now + 600)
             sig = hmac.new(_csrf_key(), ("recovery|" + email + "|" + code + "|" + str(exp)).encode("utf-8"), "sha256").hexdigest()
@@ -6098,7 +6584,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             except Exception:
                 self._json({"ok": False, "error": "email send failed"}, code=502); return
             self._json({"ok": True, "sent": True}); return
-        # confirm
+        # confirm: окремий ліміт лише на НЕВДАЛІ спроби; валідний код ніколи
+        # не блокується лічильником (раніше спільний bucket /request + tries>=5
+        # «отруювали» правильний код після кількох невдалих спроб).
         code = str(body.get("code") or "").strip()[:12]
         new = str(body.get("new_password") or "")
         try:
@@ -6107,17 +6595,27 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         except Exception:
             exp, tries = 0, 99
         want = hmac.new(_csrf_key(), ("recovery|" + email + "|" + code + "|" + str(exp)).encode("utf-8"), "sha256").hexdigest()
-        if exp < now or tries >= 5 or not hmac.compare_digest(want, str(sec.get("recovery_code_hash") or "")):
+        code_ok = (exp >= now and
+                   hmac.compare_digest(want, str(sec.get("recovery_code_hash") or "")))
+        if not code_ok:
+            with _RECOVERY_LOCK:
+                fails = [t for t in _RECOVERY_CONFIRMS.get(ip, []) if now - t < 900]
+                if len(fails) >= 10:
+                    self._json({"ok": False, "error": "too many recovery attempts"}, code=429); return
+                fails.append(now); _RECOVERY_CONFIRMS[ip] = fails
             _save_secrets({"recovery_tries": tries + 1})
             self._json({"ok": False, "error": "invalid or expired code"}, code=401); return
         if len(new) < 8:
             self._json({"ok": False, "error": "password must be at least 8 characters"}, code=400); return
-        _save_secrets({"auth_hash": _hash_password(new), "auth_pass": "",
-                       "totp_secret": "", "totp_enabled": False, "totp_pending": "",
-                       "totp_recovery": [], "recovery_code_hash": "", "recovery_exp": 0,
-                       "recovery_tries": 0, "device_version": int(sec.get("device_version") or 0) + 1,
-                       "session_key": _secrets.token_urlsafe(32)})
-        globals()["AUTH_HASH"] = _hash_password(new)
+        with _RECOVERY_LOCK:
+            _RECOVERY_CONFIRMS.pop(ip, None)
+        _new_hash = _hash_password(new)
+        # інвалідуємо всі старі сесії (+1 device_version + новий session_key)
+        _revoke_sessions({"auth_hash": _new_hash, "auth_pass": "",
+                          "totp_secret": "", "totp_enabled": False, "totp_pending": "",
+                          "totp_recovery": [], "recovery_code_hash": "", "recovery_exp": 0,
+                          "recovery_tries": 0})
+        globals()["AUTH_HASH"] = _new_hash
         globals()["AUTH_PASS"] = ""
         globals()["AUTH_MODE"] = "basic"
         self._json({"ok": True, "reset": True})
@@ -6138,6 +6636,13 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             except Exception:
                 body = {}
             if self.path == "/api/logout":
+                # Server-side revoke: старі gt_device/gt_member cookies стають
+                # недійсними (+1 device_version, новий session_key), не лише очищення.
+                try:
+                    _revoke_sessions()
+                    _audit("auth.logout", revoke_all=True)
+                except Exception as _le:
+                    print(f"  ⚠ logout revoke: {_le}", flush=True)
                 self._json({"ok": True}, extra={"Set-Cookie":
                            "gt_device=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"})
                 return
@@ -6259,9 +6764,16 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             if _verify_password(new):
                 self._json({"ok": False, "error": "Новий пароль збігається з поточним"}); return
             try:
-                _save_secrets({"auth_hash": _hash_password(new), "auth_pass": ""})
-                AUTH_HASH = _hash_password(new)
+                _new_hash = _hash_password(new)
+                # ротація ключа сесії + +1 device_version: інші пристрої/вкрадені
+                # cookies розлогінюються, а поточний пристрій отримує свіжий gt_device.
+                _revoke_sessions({"auth_hash": _new_hash, "auth_pass": ""})
+                AUTH_HASH = _new_hash
                 AUTH_PASS = ""
+                # поточний пристрій лишається залогіненим: _send() додасть
+                # свіжий gt_device (новий device_version + session_key).
+                self._device_cookie = True
+                _audit("auth.password_change", revoke_other_devices=True)
                 self._json({"ok": True})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)})
@@ -6472,19 +6984,22 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             return
         if self.path == "/api/license/activate":
             try:
-                _key = str(body.get("code") or "").strip()
-                _iid = _instance_id()
-                if _license_server_mode() or _license_server_url() == "local":
-                    _res = _license_register_local(_key, _iid)
-                else:
-                    _res = _license_register_remote(_key, _iid)
-                if not _res.get("ok"):
-                    raise ValueError(_res.get("error") or "activation failed")
-                _bound = _res["license"]["code"]
-                _inf = lic.verify(_bound, _iid) if lic else None
-                if not _inf:
-                    raise ValueError("license server returned an invalid token")
-                _license_store(_bound, _key)
+                # read-check-write під локом: інакше два одночасні activate
+                # одного ключа могли обидва пройти перевірку "not bound" (TOCTOU).
+                with _LICENSE_LOCK:
+                    _key = str(body.get("code") or "").strip()
+                    _iid = _instance_id()
+                    if _license_server_mode() or _license_server_url() == "local":
+                        _res = _license_register_local(_key, _iid)
+                    else:
+                        _res = _license_register_remote(_key, _iid)
+                    if not _res.get("ok"):
+                        raise ValueError(_res.get("error") or "activation failed")
+                    _bound = _res["license"]["code"]
+                    _inf = lic.verify(_bound, _iid) if lic else None
+                    if not _inf:
+                        raise ValueError("license server returned an invalid token")
+                    _license_store(_bound, _key)
                 try:
                     Handler.html_bytes = _render_html().encode("utf-8")
                 except Exception:
@@ -6946,9 +7461,11 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         if self.path == "/api/suppliers/add":
             try:
                 nm = str(body.get("name") or "").strip()[:40]
-                base = str(body.get("base") or "").strip()
-                if not base.startswith("http"):
-                    self._json({"ok": False, "error": "URL має починатися з http(s)://"}, code=400)
+                base = str(body.get("base") or "").strip()[:200]
+                if not _url_public_ok(base):
+                    self._json({"ok": False, "error":
+                                "URL має бути публічним http(s):// без логіна/пароля "
+                                "(localhost, приватні IP і file:// заборонені)"}, code=400)
                     return
                 if not nm:
                     self._json({"ok": False, "error": "вкажіть назву"}, code=400)
@@ -7134,6 +7651,13 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         if self.path == "/api/inventory/save":
             try:
                 data = _inv_clean(body.get("items"))
+                # порожній POST не має стирати склад у manager'а (як у P&L).
+                if not data and self._role() != "owner":
+                    old_items = _read_json(INVENTORY_FILE, []) or []
+                    if isinstance(old_items, list) and old_items:
+                        self._json({"ok": False, "error":
+                                    "очищення складу — лише owner"}, code=403)
+                        return
                 global _inventory
                 with _inv_lock:
                     _inventory = data
@@ -7286,6 +7810,11 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             try:
                 qid = str(body.get("id") or "")
                 action = str(body.get("action") or "")
+                # /api/mail/* тепер доступний manager'у, але видалення з черги —
+                # руйнівна дія: не даємо обійти owner-only через цей side door.
+                if action == "remove" and self._role() != "owner":
+                    self._json({"ok": False, "error": "owner only (remove)"}, code=403)
+                    return
                 item = _mailq_get(qid)
                 if not item:
                     self._json({"ok": False, "error": "запис не знайдено"}, code=404); return
@@ -7405,6 +7934,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         if self.path == "/api/pl/save":
             try:
                 data = _clean_pl(body.get("purchases"))
+                if not data and body.get("force") and self._role() != "owner":
+                    self._json({"ok": False, "error":
+                                "очищення P&L — лише owner"}, code=403)
+                    return
                 if not data and not body.get("force"):
                     old = _read_json(PL_FILE, []) or []
                     if isinstance(old, list) and old:
@@ -7425,6 +7958,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         if self.path == "/api/eldorado/save":
             try:
                 data = _clean_ed(body.get("sales"))
+                if not data and body.get("force") and self._role() != "owner":
+                    self._json({"ok": False, "error":
+                                "очищення ELDORADO — лише owner"}, code=403)
+                    return
                 if not data and not body.get("force"):
                     old = _read_json(ED_FILE, []) or []
                     if isinstance(old, list) and old:
@@ -7666,6 +8203,11 @@ def _lic_registry():
 
 def _lic_registry_save(d):
     _atomic_dump(_lic_registry_path(), d)
+
+
+# Серіалізує read-check-write реєстру ліцензій: без нього два паралельні
+# activate одного ключа могли обидва пройти перевірку "not bound" (TOCTOU).
+_LICENSE_LOCK = threading.RLock()
 
 
 def _key_id(code):
@@ -8327,44 +8869,46 @@ def _license_release_remote(key, instance_id):
 
 def _license_register_local(key, instance_id):
     """Bind a claim key to one instance and return a bound signed license."""
-    info = lic.verify(str(key).strip()) if lic else None
-    if not info or info.get("bound"):
-        raise ValueError("invalid or already bound key")
-    kid = _key_id(key)
-    d = _lic_registry()
-    rec = d["keys"].get(kid)
-    if rec and rec.get("revoked"):
-        raise ValueError("key revoked")
-    if rec and rec.get("instance") and rec["instance"] != instance_id:
-        raise ValueError("key is already activated on another device")
-    d["keys"][kid] = {
-        "plan": info["plan"],
-        "exp": info["exp"],
-        "features": info["features"],
-        "instance": instance_id,
-        "activated_at": rec.get("activated_at") if rec else int(time.time()),
-        "last_seen": int(time.time()),
-        "revoked": bool(rec.get("revoked")) if rec else False,
-    }
-    _lic_registry_save(d)
-    days = max(1, int(info.get("days_left") or 1))
-    payload = lic.pack_payload_bound(info["plan"], days, info["features"], instance_id)
-    code = lic.make_code(payload, _license_sign(payload), "LDG")
-    return {"ok": True, "license": {"code": code, "info": lic.verify(code, instance_id)}}
+    with _LICENSE_LOCK:
+        info = lic.verify(str(key).strip()) if lic else None
+        if not info or info.get("bound"):
+            raise ValueError("invalid or already bound key")
+        kid = _key_id(key)
+        d = _lic_registry()
+        rec = d["keys"].get(kid)
+        if rec and rec.get("revoked"):
+            raise ValueError("key revoked")
+        if rec and rec.get("instance") and rec["instance"] != instance_id:
+            raise ValueError("key is already activated on another device")
+        d["keys"][kid] = {
+            "plan": info["plan"],
+            "exp": info["exp"],
+            "features": info["features"],
+            "instance": instance_id,
+            "activated_at": rec.get("activated_at") if rec else int(time.time()),
+            "last_seen": int(time.time()),
+            "revoked": bool(rec.get("revoked")) if rec else False,
+        }
+        _lic_registry_save(d)
+        days = max(1, int(info.get("days_left") or 1))
+        payload = lic.pack_payload_bound(info["plan"], days, info["features"], instance_id)
+        code = lic.make_code(payload, _license_sign(payload), "LDG")
+        return {"ok": True, "license": {"code": code, "info": lic.verify(code, instance_id)}}
 
 
 def _license_release_local(key, instance_id):
-    kid = _key_id(key)
-    d = _lic_registry()
-    rec = d["keys"].get(kid)
-    if not rec:
-        raise ValueError("key not found")
-    if rec.get("instance") and rec["instance"] != instance_id:
-        raise ValueError("key belongs to another device")
-    rec["instance"] = ""
-    rec["released_at"] = int(time.time())
-    _lic_registry_save(d)
-    return {"ok": True, "released": True}
+    with _LICENSE_LOCK:
+        kid = _key_id(key)
+        d = _lic_registry()
+        rec = d["keys"].get(kid)
+        if not rec:
+            raise ValueError("key not found")
+        if rec.get("instance") and rec["instance"] != instance_id:
+            raise ValueError("key belongs to another device")
+        rec["instance"] = ""
+        rec["released_at"] = int(time.time())
+        _lic_registry_save(d)
+        return {"ok": True, "released": True}
 
 
 def _license_info():
@@ -8824,7 +9368,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.40")
+    print("  ▲  Ledger v" + APP_VERSION)
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

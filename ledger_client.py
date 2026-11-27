@@ -10,6 +10,7 @@ import os
 import sys
 import json
 import time
+import html
 import pathlib
 import threading
 import traceback
@@ -28,6 +29,20 @@ def log(msg):
             fh.write(time.strftime("%Y-%m-%d %H:%M:%S ") + str(msg) + "\n")
     except Exception:
         pass
+
+
+def _show_error(webview, headline, detail):
+    """Show a local error page instead of silently exiting (GUI subsystem)."""
+    try:
+        page = ("<!doctype html><meta charset=utf-8><title>Ledger+</title>"
+                "<body style='font:16px Manrope,system-ui;background:#0d1017;"
+                "color:#e9ebf2;padding:40px'><h2>%s</h2>"
+                "<p style='color:#8b95a9'>%s</p></body>"
+                % (html.escape(str(headline)), html.escape(str(detail))))
+        webview.create_window("Ledger+", html=page, width=560, height=300)
+        webview.start()
+    except Exception:
+        log("could not show error window:\n" + traceback.format_exc())
 
 
 _MUTEX_HANDLE = None
@@ -176,21 +191,43 @@ class Api:
 
 
 def main():
-    import webview
     import remote_proxy as rp
+
+    if "--set-password" in sys.argv:
+        try:
+            log(rp.cli_set_password(CONFIG))
+        except Exception as e:
+            log("set-password failed: %s" % e)
+        return
+
+    import webview
 
     cfg = load_cfg()
     if not single_instance("Global\\LedgerPlusDesktop", "Ledger+ — Game Account Tracker"):
         return
-    server = str(cfg.get("server") or DEFAULT_URL).strip()
-    if not server.startswith("http"):
-        server = "https://" + server
-    user = str(cfg.get("user") or "")
-    password = rp.unseal(cfg.get("pass") or "")
 
-    if user or password:
+    # P-3: validate the configured URL before any Basic credential can be
+    # decrypted or injected (https only outside loopback, no userinfo, no
+    # file:/other schemes).
+    raw_server = str(cfg.get("server") or "").strip() or DEFAULT_URL
+    try:
+        server = rp.normalize_server_url(raw_server)
+    except rp.ConfigError as e:
+        log("invalid client.json server: %s" % e)
+        _show_error(webview, "Ledger+ configuration error",
+                    "client.json server is not allowed: %s" % e)
+        return
+
+    user = str(cfg.get("user") or "")
+    password = rp.unseal(cfg.get("pass") or "", bind=server,
+                         warn=lambda m: log("client.json: " + m))
+    if password:
+        if not user:
+            user = "admin"
         port, url = rp.start_proxy(server, user, password, "Ledger+")
     else:
+        if cfg.get("pass"):
+            log("client.json: stored password was refused; starting without Basic auth")
         url = server.rstrip("/") + "/"
 
     storage = pathlib.Path(os.environ.get("LOCALAPPDATA") or str(APP_DIR)) / "LedgerPlus" / "WebView"

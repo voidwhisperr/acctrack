@@ -870,13 +870,13 @@ body.compact-ui .tabs{gap:4px}
 <div id="tab-platforms" data-nested="1">
   <div class="panel">
     <div class="ph"><span data-i18n="ph.channels">Канали</span>
-      <button class="btn" onclick="loadPlatforms(true)">↺ Оновити з кабінетів</button>
+      <button class="btn" onclick="loadPlatforms(true)"><span data-i18n="ch.refreshCab">↺ Оновити з кабінетів</span></button>
     </div>
     <div style="font-size:13px;color:var(--mu);margin-bottom:14px">
       <span data-i18n="ch.src">Дані читаються з ваших кабінетів за збереженими cookie (ZeusX — API, FunPay — сторінка замовлень). Оновлюється не частіше ніж раз на 2 хвилини.</span>
     </div>
     <div style="background:var(--card2);border:1px solid var(--brd);border-radius:10px;padding:12px;margin-bottom:14px">
-      <div style="font-size:13px;font-weight:800;margin-bottom:8px"><svg class="ic" style="margin-right:2px"><use href="#ic-key"/></svg> Cookie кабінетів
+      <div style="font-size:13px;font-weight:800;margin-bottom:8px"><svg class="ic" style="margin-right:2px"><use href="#ic-key"/></svg> <span data-i18n="ch.cookieTitle">Cookie кабінетів</span>
         <span id="ckStatus" style="font-weight:400;color:var(--mu);font-size:12px"></span></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
         <label style="font-size:12px;color:var(--mu)">FunPay (golden_key)<br>
@@ -887,45 +887,38 @@ body.compact-ui .tabs{gap:4px}
           <input id="ckEldoradoId" type="password" placeholder="Client ID" style="width:230px;margin-top:4px"></label>
         <label style="font-size:12px;color:var(--mu)">Eldorado Client Secret<br>
           <input id="ckEldoradoSecret" type="password" placeholder="Client Secret" style="width:230px;margin-top:4px"></label>
-        <button class="btn gr" style="font-size:12px;padding:6px 12px" onclick="saveCookies()">Зберегти cookie</button>
-        <button class="btn" style="font-size:12px;padding:6px 12px" onclick="cookieFromBrowser()" title="Прочитати cookie з відкритого вікна браузера (FunPay/ZeusX)">Взяти з браузера</button>
+        <button class="btn gr" style="font-size:12px;padding:6px 12px" onclick="saveCookies()"><span data-i18n="ch.saveCookie">Зберегти cookie</span></button>
+        <button class="btn" style="font-size:12px;padding:6px 12px" onclick="cookieFromBrowser()" title="Прочитати cookie з відкритого вікна браузера (FunPay/ZeusX)"><span data-i18n="ch.fromBrowser">Взяти з браузера</span></button>
         <button class="btn rd" style="font-size:12px;padding:6px 12px" onclick="clearCookies()" data-i18n="set.cookieDisconnect">Disconnect cookies</button>
       </div>
       <details style="margin-top:10px;font-size:12px;color:var(--mu)">
-        <summary style="cursor:pointer;color:var(--tx);font-weight:700">Як отримати cookie / токени</summary>
-        <div id="cookieHelpBody" style="margin-top:8px;line-height:1.65">
-          <b>FunPay:</b> funpay.com → F12 → Application → Cookies → https://funpay.com → <code>golden_key</code> → скопіюйте <b>Value</b> (без назви).<br>
-          <b>ZeusX:</b> zeusx.com → F12 → Application → Cookies → <code>access_token</code> → <b>Value</b>.<br>
-          <b>Eldorado:</b> Dashboard → Seller API → Generate credentials → <b>Client ID</b> + <b>Client Secret</b>.<br>
-          <b>EN:</b> F12 → Application → Cookies → copy <b>Value</b>; never share it.<br>
-          <b>RU:</b> F12 → Application → Cookies → скопируйте <b>Value</b>; никому не передавайте.<br>
-          <span style="color:var(--rd)">Не передавайте ці значення нікому.</span> Вони зберігаються лише на сервері; cookie періодично прострочуються — оновіть.
-        </div>
+        <summary style="cursor:pointer;color:var(--tx);font-weight:700" data-i18n="ch.howTo">Як отримати cookie / токени</summary>
+        <div id="cookieHelpBody" data-no-i18n style="margin-top:8px;line-height:1.65"></div>
       </details>
       <div style="font-size:11px;color:var(--mu);margin-top:8px" data-i18n="ch.cookieHelp">Chrome/Edge: F12 → Application → Cookies → funpay.com → скопіюйте значення golden_key. Зберігається лише на сервері. Без FunPay-cookie замовлення з FunPay не надходять.</div>
     </div>
-    <div id="platList"><div class="none">⏳ Завантаження...</div></div>
+    <div id="platList"><div class="none" data-i18n="ch.loading">⏳ Завантаження...</div></div>
 
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
-      <div style="font-size:15px;font-weight:800;margin-bottom:10px">🏦 Де вигідніше продавати</div>
+      <div style="font-size:15px;font-weight:800;margin-bottom:10px"><span data-i18n="ch.marketsTitle">🏦 Де вигідніше продавати</span></div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
-        <label style="font-size:13px;color:var(--mu)">Ціна продажу, USD<br>
+        <label style="font-size:13px;color:var(--mu)"><span data-i18n="ch.sellPrice">Ціна продажу, USD</span><br>
           <input id="mpPrice" type="number" min="0" step="1" value="10" oninput="calcMarkets()" style="width:120px;margin-top:4px">
         </label>
-        <label style="font-size:13px;color:var(--mu)">Собівартість, USD<br>
+        <label style="font-size:13px;color:var(--mu)"><span data-i18n="ch.costUsd">Собівартість, USD</span><br>
           <input id="mpCost" type="number" min="0" step="1" value="5" oninput="calcMarkets()" style="width:120px;margin-top:4px">
         </label>
-        <span style="font-size:12px;color:var(--mu)">Комісії орієнтовні — уточнюйте тарифи майданчика</span>
+        <span style="font-size:12px;color:var(--mu)" data-i18n="ch.feesNote">Комісії орієнтовні — уточнюйте тарифи майданчика</span>
       </div>
       <div id="mpTable"></div>
     </div>
 
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--brd)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:15px;font-weight:800">🏷 Мої лоти на ZeusX</div>
-        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="loadOffers(true)">↻ Оновити</button>
+        <div style="font-size:15px;font-weight:800"><span data-i18n="ch.myOffers">🏷 Мої лоти на ZeusX</span></div>
+        <button class="btn" style="font-size:12px;padding:5px 11px" onclick="loadOffers(true)"><span data-i18n="ch.refreshOffers">↻ Оновити</span></button>
       </div>
-      <div id="offersList"><div class="none">⏳ Завантаження...</div></div>
+      <div id="offersList"><div class="none" data-i18n="ch.loading">⏳ Завантаження...</div></div>
     </div>
   </div>
 </div>
@@ -1942,6 +1935,13 @@ function applyFs(){
 function setFs(d){ _fs += d; applyFs(); }
 function resetFs(){ _fs = 1; applyFs(); }
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+// Безпечне посилання для href: тільки http(s), protocol-relative -> https.
+// "javascript:" / "data:" та інші схеми не рендеряться як клікабельні.
+function safeLinkUrl(u){
+  let s = String(u==null?'':u).trim();
+  if(/^\/\//.test(s)) s = 'https:' + s;
+  return /^https?:\/\//i.test(s) ? s : '';
+}
 
 // ═══════════════════════════════════════════════
 //  МОВА (UA / EN)
@@ -2430,6 +2430,43 @@ I18N.en['ch.cookieHelp'] = 'Chrome/Edge: F12 → Application → Cookies → fun
 I18N.ru['ch.cookieHelp'] = 'Chrome/Edge: F12 → Application → Cookie → funpay.com → скопируйте значение golden_key. Хранится только на сервере. Без FunPay-cookie заказы с FunPay не поступают.';
 I18N.uk['set.appPass'] = 'ПАРОЛЬ ДОДАТКА';
 I18N.ru['set.appPass'] = 'ПАРОЛЬ ПРИЛОЖЕНИЯ';
+// ═══ task-14 i18n: Channels / Analytics / Settings backup / Ledger+ team ═══
+Object.assign(I18N.uk, {
+  'ed.category':'КАТЕГОРІЯ','ed.noCat':'Без категорії','ed.combined':'Разом з P&L',
+  'bk.last':'Останній бекап','bk.check':'перевірка','bk.restore':'відновлення',
+  'ch.refreshCab':'↺ Оновити з кабінетів','ch.cookieTitle':'Cookie кабінетів',
+  'ch.saveCookie':'Зберегти cookie','ch.fromBrowser':'Взяти з браузера',
+  'ch.howTo':'Як отримати cookie / токени','ch.loading':'⏳ Завантаження...',
+  'ch.marketsTitle':'🏦 Де вигідніше продавати','ch.sellPrice':'Ціна продажу, USD',
+  'ch.costUsd':'Собівартість, USD','ch.feesNote':'Комісії орієнтовні — уточнюйте тарифи майданчика',
+  'ch.myOffers':'🏷 Мої лоти на ZeusX','ch.refreshOffers':'↻ Оновити',
+  'tb.markCard':'Позначити/зняти оплату карткою','tb.markOpts':'Скільки варіантів у лоті',
+  'tb.inCart':'У кошик покупок','tb.cardPaid':'Оплата карткою','tb.variantBadge':'Варіантів у лоті'
+});
+Object.assign(I18N.en, {
+  'ed.category':'CATEGORY','ed.noCat':'No category','ed.combined':'Combined with P&L',
+  'bk.last':'Last backup','bk.check':'check','bk.restore':'restore',
+  'ch.refreshCab':'↺ Refresh from cabinets','ch.cookieTitle':'Cabinet cookies',
+  'ch.saveCookie':'Save cookies','ch.fromBrowser':'Take from browser',
+  'ch.howTo':'How to get cookies / tokens','ch.loading':'⏳ Loading...',
+  'ch.marketsTitle':'🏦 Where selling pays more','ch.sellPrice':'Sale price, USD',
+  'ch.costUsd':'Cost, USD','ch.feesNote':'Fees are approximate — check the marketplace rates',
+  'ch.myOffers':'🏷 My lots on ZeusX','ch.refreshOffers':'↻ Refresh',
+  'tb.markCard':'Mark/unmark card payment','tb.markOpts':'How many variants in the lot',
+  'tb.inCart':'Add to shopping cart','tb.cardPaid':'Card payment','tb.variantBadge':'Variants in the lot'
+});
+Object.assign(I18N.ru, {
+  'ed.category':'КАТЕГОРИЯ','ed.noCat':'Без категории','ed.combined':'Вместе с P&L',
+  'bk.last':'Последний бэкап','bk.check':'проверка','bk.restore':'восстановление',
+  'ch.refreshCab':'↺ Обновить из кабинетов','ch.cookieTitle':'Cookie кабинетов',
+  'ch.saveCookie':'Сохранить cookie','ch.fromBrowser':'Взять из браузера',
+  'ch.howTo':'Как получить cookie / токены','ch.loading':'⏳ Загрузка...',
+  'ch.marketsTitle':'🏦 Где продавать выгоднее','ch.sellPrice':'Цена продажи, USD',
+  'ch.costUsd':'Себестоимость, USD','ch.feesNote':'Комиссии ориентировочны — уточняйте тарифы площадки',
+  'ch.myOffers':'🏷 Мои лоты на ZeusX','ch.refreshOffers':'↻ Обновить',
+  'tb.markCard':'Отметить/снять оплату картой','tb.markOpts':'Сколько вариантов в лоте',
+  'tb.inCart':'В корзину покупок','tb.cardPaid':'Оплата картой','tb.variantBadge':'Вариантов в лоте'
+});
 const PLURAL = {
   uk: {products:["товар","товари","товарів"],records:["запис","записи","записів"],
        sales:["продаж","продажі","продажів"],lots:["лот","лоти","лотів"],
@@ -2830,6 +2867,25 @@ function applyAppName(){
 function syncDemoLink(){
   const a = g('demoBtn'); if(a) a.href = '/demo?lang=' + LANG;
 }
+// Cookie-довідка: один HTML-шаблон на мову, щоб у EN/RU не лишалося UA тексту.
+const COOKIE_HELP = {
+  uk: '<b>FunPay:</b> funpay.com → F12 → Application → Cookies → https://funpay.com → <code>golden_key</code> → скопіюйте <b>Value</b> (без назви).<br>'
+    + '<b>ZeusX:</b> zeusx.com → F12 → Application → Cookies → <code>access_token</code> → <b>Value</b>.<br>'
+    + '<b>Eldorado:</b> Dashboard → Seller API → Generate credentials → <b>Client ID</b> + <b>Client Secret</b>.<br>'
+    + '<span style="color:var(--rd)">Не передавайте ці значення нікому.</span> Вони зберігаються лише на сервері; cookie періодично прострочуються — оновіть.',
+  en: '<b>FunPay:</b> funpay.com → F12 → Application → Cookies → https://funpay.com → <code>golden_key</code> → copy <b>Value</b> (without the name).<br>'
+    + '<b>ZeusX:</b> zeusx.com → F12 → Application → Cookies → <code>access_token</code> → <b>Value</b>.<br>'
+    + '<b>Eldorado:</b> Dashboard → Seller API → Generate credentials → <b>Client ID</b> + <b>Client Secret</b>.<br>'
+    + '<span style="color:var(--rd)">Never share these values with anyone.</span> They are stored on the server only; cookies expire periodically — refresh them.',
+  ru: '<b>FunPay:</b> funpay.com → F12 → Application → Cookies → https://funpay.com → <code>golden_key</code> → скопируйте <b>Value</b> (без названия).<br>'
+    + '<b>ZeusX:</b> zeusx.com → F12 → Application → Cookies → <code>access_token</code> → <b>Value</b>.<br>'
+    + '<b>Eldorado:</b> Dashboard → Seller API → Generate credentials → <b>Client ID</b> + <b>Client Secret</b>.<br>'
+    + '<span style="color:var(--rd)">Никому не передавайте эти значения.</span> Они хранятся только на сервере; cookie периодически истекают — обновите.'
+};
+function applyCookieHelp(){
+  const el = g('cookieHelpBody');
+  if(el) el.innerHTML = COOKIE_HELP[LANG] || COOKIE_HELP.uk;
+}
 function applyLang(){
   document.documentElement.lang = LANG;
   const _mg = document.getElementById('plMonthGroup');
@@ -2841,6 +2897,7 @@ function applyLang(){
   if(g('langRu')) g('langRu').classList.toggle('on', LANG==='ru');
   document.title = _brandTitle();
   try{ syncDemoLink(); }catch(e){}
+  try{ applyCookieHelp(); }catch(e){}
 }
 async function refreshActiveTab(){
   const act = document.querySelector('.tc.on');
@@ -3717,12 +3774,20 @@ async function loadPlus(){
     loadTeam();
   }catch(e){ box.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
 }
+// Переклад відомих англомовних помилок API (сервер віддає їх без локалізації).
+function apiErrText(msg){
+  const s = String(msg==null?'':msg).trim();
+  if(/^team plan required\.?$/i.test(s)){
+    return LANG==='ru' ? 'Требуется командный тариф' : LANG==='en' ? 'A team plan is required' : 'Потрібен командний тариф';
+  }
+  return s;
+}
 async function loadTeam(){
   const box=g('teamBox'); if(!box) return;
   const L=(uk,en,ru)=>LANG==='en'?en:(LANG==='ru'?ru:uk);
   try{
     const d=await fetch('/api/team').then(r=>r.json());
-    if(!d.ok){ box.innerHTML='<div class="al info">'+esc(d.error||'')+'</div>'; return; }
+    if(!d.ok){ box.innerHTML='<div class="al info">'+esc(apiErrText(d.error||''))+'</div>'; return; }
     const rows=(d.members||[]).filter(m=>m.active).map(m=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--brd)"><span>'+esc(m.name)+' · <b>'+esc(m.role)+'</b></span><button class="btn" style="font-size:11px;padding:4px 8px" onclick="teamRemoveMember(\''+m.id+'\')">✕</button></div>').join('');
     const inv=(d.invites||[]).map(i=>'<div style="font-size:11px;color:var(--mu);padding:4px 0">'+esc(i.name)+' · '+esc(i.role)+' · <a style="color:var(--gr)" target="_blank" href="'+location.origin+'/join?token='+encodeURIComponent(i.token)+'">'+L('посилання','link','ссылка')+'</a></div>').join('');
     box.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><input id="teamName" placeholder="'+L('Ім’я','Name','Имя')+'" style="flex:1;min-width:160px;font-size:12px"><select id="teamRole" style="font-size:12px;width:auto"><option value="manager">manager</option><option value="viewer">viewer</option></select><button class="btn gr" onclick="teamInvite()">'+L('Створити інвайт','Create invite','Создать инвайт')+'</button></div><div id="teamLink" style="font-size:12px;color:var(--gr);word-break:break-all;margin-bottom:6px"></div>'+(rows||'<div class="none">'+L('Немає учасників','No members','Нет участников')+'</div>')+(inv?'<div style="margin-top:8px">'+inv+'</div>':'');
@@ -3734,7 +3799,7 @@ async function teamInvite(){
     const name=(g('teamName')&&g('teamName').value||'').trim();
     const role=(g('teamRole')&&g('teamRole').value)||'viewer';
     const d=await fetch('/api/team/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,role,days:30})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
     if(g('teamLink')) g('teamLink').textContent=d.link;
     toast(L('Інвайт створено','Invite created','Инвайт создан'));
     loadTeam();
@@ -3853,7 +3918,7 @@ async function loadSettings(){
     if(g('backupKeep')) g('backupKeep').value = d.backup_keep || 30;
     if(g('backupEncrypt')) g('backupEncrypt').checked = !!d.backup_encrypt;
     if(g('backupInfo')) g('backupInfo').textContent = d.backup_last_ts
-      ? ('Останній бекап: '+new Date(d.backup_last_ts*1000).toLocaleString(dateLocale())+' · '+(d.backup_last_status||'')+(d.backup_last_verify?(' · перевірка: '+d.backup_last_verify):'')+(d.backup_last_restore_test?(' · restore: '+d.backup_last_restore_test):'')+(d.backup_password_protected?' · 🔐 DPAPI':''))
+      ? (t('bk.last')+': '+new Date(d.backup_last_ts*1000).toLocaleString(dateLocale())+' · '+(d.backup_last_status||'')+(d.backup_last_verify?(' · '+t('bk.check')+': '+d.backup_last_verify):'')+(d.backup_last_restore_test?(' · '+t('bk.restore')+': '+d.backup_last_restore_test):'')+(d.backup_password_protected?' · 🔐 DPAPI':''))
       : (LANG==='ru'?'Автобэкап ещё не запускался':LANG==='en'?'Auto-backup has not run yet':'Автобекап ще не запускався');
     if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');
     ['g2g','gameflip','pa','zeusx','funpay','eldorado','other'].forEach(k=>{
@@ -5612,9 +5677,9 @@ function renderEldorado(){
           </div>
         </div>
         <div class="bub-stats">
-          <span class="bs">Продав <b>$${Number(s.price||0).toFixed(2)}</b></span>
-          <span class="bs">Купив <b>$${Number(s.buy||0).toFixed(2)}</b></span>
-          <span class="bs">Комісія <b class="neg">-$${Number(s.fee||0).toFixed(2)}</b></span>
+          <span class="bs">${t('th.sell')} <b>$${Number(s.price||0).toFixed(2)}</b></span>
+          <span class="bs">${t('th.buy')} <b>$${Number(s.buy||0).toFixed(2)}</b></span>
+          <span class="bs">${t('th.fee')} <b class="neg">-$${Number(s.fee||0).toFixed(2)}</b></span>
           <span class="bs ${pr>=0?'pos':'negp'}">${t('k.profit')} <b>${pr>=0?'+':''}$${pr.toFixed(2)}</b></span>
         </div>
         ${s.orderId?`<div class="bub-id">🆔 ${esc(s.orderId)}</div>`:''}
@@ -5632,11 +5697,11 @@ function renderEldorado(){
   if(sum){
     const uah = _rate ? ' <span style="color:var(--mu)">(₴'+(totalProfit*_rate).toFixed(2)+')</span>' : '';
     sum.innerHTML = `<span style="color:var(--mu)">${LANG==='uk'?'Продажів':(LANG==='ru'?'Продаж:':'Sales')}: <b style="color:var(--tx)">${edFilt.length}</b>${edFilt.length!==edSales.length?' із '+edSales.length:''}</span>`+
-      `<span style="color:var(--mu)">Виторг: <b style="color:var(--tx)">$${total.toFixed(2)}</b></span>`+
-      `<span style="color:var(--mu)">Купив: <b style="color:var(--mu)">$${totalBuy.toFixed(2)}</b></span>`+
+      `<span style="color:var(--mu)">${CT.revenue}: <b style="color:var(--tx)">$${total.toFixed(2)}</b></span>`+
+      `<span style="color:var(--mu)">${t('th.buy')}: <b style="color:var(--mu)">$${totalBuy.toFixed(2)}</b></span>`+
       `<span style="color:var(--mu)">${LANG==='uk'?'Комісія':(LANG==='ru'?'Комиссия':'Fee')}: <b style="color:var(--rd)">-$${totalFee.toFixed(2)}</b></span>`+
-      `<span style="color:var(--mu)">Прибуток: <b style="color:var(--gr)">${totalProfit>=0?'+':''}$${totalProfit.toFixed(2)}</b>${uah}</span>`+
-      `<span style="border-left:1px solid var(--brd);padding-left:14px;color:var(--mu)">Разом з P&L: <b style="color:${combined>=0?'var(--gr)':'var(--rd)'}">${combined>=0?'+':''}$${combined.toFixed(2)}</b>${_rate?' <span style="color:var(--mu)">(₴'+(combined*_rate).toFixed(2)+')</span>':''}</span>`;
+      `<span style="color:var(--mu)">${CT.profit}: <b style="color:var(--gr)">${totalProfit>=0?'+':''}$${totalProfit.toFixed(2)}</b>${uah}</span>`+
+      `<span style="border-left:1px solid var(--brd);padding-left:14px;color:var(--mu)">${t('ed.combined')}: <b style="color:${combined>=0?'var(--gr)':'var(--rd)'}">${combined>=0?'+':''}$${combined.toFixed(2)}</b>${_rate?' <span style="color:var(--mu)">(₴'+(combined*_rate).toFixed(2)+')</span>':''}</span>`;
   }
 
   // Розбивка по категоріях
@@ -5659,10 +5724,10 @@ function renderEdBreakdown(){
   const cats = [...new Set(edSales.map(s=>(s.category||'').trim()).filter(Boolean))].sort();
   const dl = g('edCatList');
   if(dl) dl.innerHTML = cats.map(c=>`<option value="${esc(c)}">`).join('');
-  if(!edFilt.length){ el.innerHTML='<div class="none">Немає даних</div>'; return; }
+  if(!edFilt.length){ el.innerHTML='<div class="none">'+t('an.noData')+'</div>'; return; }
   const map = {};
   edFilt.forEach(s=>{
-    const k = (s.category||'').trim() || 'Без категорії';
+    const k = (s.category||'').trim() || t('ed.noCat');
     if(!map[k]) map[k]={count:0, rev:0, buy:0, profit:0};
     map[k].count++;
     map[k].rev    += s.price||0;
@@ -5671,7 +5736,7 @@ function renderEdBreakdown(){
   });
   const rows = Object.entries(map).sort((a,b)=>b[1].profit-a[1].profit);
   const max = Math.max(...rows.map(r=>Math.abs(r[1].profit)), 1);
-  el.innerHTML = '<table class="sup-table"><thead><tr><th>КАТЕГОРІЯ</th><th style="text-align:right">УГОД</th><th style="text-align:right">ВИТОРГ</th><th style="text-align:right">ПРИБУТОК</th><th style="text-align:right">МАРЖА</th><th style="width:140px"></th></tr></thead><tbody>'+
+  el.innerHTML = '<table class="sup-table"><thead><tr><th>'+t('ed.category')+'</th><th style="text-align:right">'+t('an.dealsCol')+'</th><th style="text-align:right">'+t('an.revenueCol')+'</th><th style="text-align:right">'+t('an.profitCol')+'</th><th style="text-align:right">'+t('an.marginCol')+'</th><th style="width:140px"></th></tr></thead><tbody>'+
     rows.map(([k,s])=>{
       const margin = s.buy>0 ? (s.profit/s.buy*100) : 0;
       const pct = Math.round(Math.abs(s.profit)/max*100);
@@ -6184,17 +6249,17 @@ function closeHist(){ const m=g('histModal'); if(m) m.style.display='none'; }
 // ═══════════════════════════════════════════════
 async function loadOffers(force){
   const el = g('offersList'); if(!el) return;
-  el.innerHTML = '<div class="none">⏳ Читаю лоти...</div>';
+  el.innerHTML = '<div class="none">'+CT.loading+'</div>';
   try{
     const d = await fetch('/api/offers' + (force ? '?refresh=1' : '')).then(r => r.json());
-    if(!d.ok){ el.innerHTML = '<div class="al err">⚠ ' + esc(d.error || 'немає даних') + '</div>'; return; }
+    if(!d.ok){ el.innerHTML = '<div class="al err">⚠ ' + esc(d.error || CT.nodata) + '</div>'; return; }
     const items = d.items || [];
-    if(!items.length){ el.innerHTML = '<div class="none">Активних лотів не знайдено</div>'; return; }
-    el.innerHTML = '<table class="sup-table"><thead><tr><th>ЛОТ</th><th>ГРА</th><th>ЦІНА</th><th>У ПОСТАЧАЛЬНИКА</th><th>РІЗНИЦЯ</th><th>К-СТЬ</th><th></th></tr></thead><tbody>'
+    if(!items.length){ el.innerHTML = '<div class="none">'+CT.empty+'</div>'; return; }
+    el.innerHTML = '<table class="sup-table"><thead><tr><th>'+CT.lot+'</th><th>'+CT.game+'</th><th>'+CT.price+'</th><th>'+CT.supplier+'</th><th>'+CT.diff+'</th><th>'+CT.qty+'</th><th></th></tr></thead><tbody>'
       + items.map(o => {
           const sup = o.supplier;
           const supTxt = sup
-            ? '<b>$' + Number(sup.min).toFixed(2) + '</b><div style="font-size:11px;color:var(--mu)">медіана $' + Number(sup.median).toFixed(2) + '</div>'
+            ? '<b>$' + Number(sup.min).toFixed(2) + '</b><div style="font-size:11px;color:var(--mu)">'+CT.median+' $' + Number(sup.median).toFixed(2) + '</div>'
             : '<span style="color:var(--mu)">—</span>';
           let diff = '<span style="color:var(--mu)">—</span>';
           if(sup && o.diff_usd != null){
@@ -6321,7 +6386,7 @@ async function loadPlatforms(force){
         row(TR.orders,`${z.orders_all||0} · ✅ ${z.orders_good||0} · ⏳ ${z.orders_pending||0} · ↩ ${z.orders_refunded||0}`)+
         row(TR.msgs,(d.mail_msgs||{}).ZeusX||0)
       : `${errBox(CT.zconn)}
-         <div style="font-size:12px;color:var(--mu);margin-top:8px">Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.</div>`;
+         <div style="font-size:12px;color:var(--mu);margin-top:8px">${CT.zcookie}</div>`;
     const fl = (f.list || []).slice(0, 4);
     const frows = f.ok
       ? row(TR.ordsl,f.orders_count||0)+
@@ -6330,9 +6395,9 @@ async function loadPlatforms(force){
             <b>${esc((o.title||'').slice(0,62))}</b>
             <div style="color:var(--mu);font-size:12px">${esc(o.status||'')} · ${locMoney(o.price)} · ${esc(o.date||'')}</div>
           </div>`).join('')
-        : '<div style="font-size:12px;color:var(--mu);padding-top:6px">Замовлень у списку немає</div>')
+        : '<div style="font-size:12px;color:var(--mu);padding-top:6px">'+CT.noorders+'</div>')
       : `${errBox(CT.fconn)}
-         <div style="font-size:12px;color:var(--mu);margin-top:8px">Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.</div>`;
+         <div style="font-size:12px;color:var(--mu);margin-top:8px">${CT.fcookie}</div>`;
     const e = d.eldorado||{};
     const erows = e.ok
       ? row(CT.sales,e.count||0)+
@@ -6340,13 +6405,13 @@ async function loadPlatforms(force){
         row(CT.profit,locMoney(e.profit))+
         row(CT.month,(e.month_count||0)+' · '+locMoney(e.month_profit))+
         row(CT.source,esc(e.source||'—'))
-      : errBox(e.error||'немає даних');
+      : errBox(e.error||CT.nodata);
     el.innerHTML='<div style="display:flex;gap:14px;flex-wrap:wrap">'
       + card('⚡ ZeusX','var(--a1)',zrows+'<div class="online-w" data-plat="zeusx"></div>',z.ok?'<span style="color:var(--gr);font-size:12px">'+CT.online+'</span>':'')
       + card('🔵 FunPay','var(--a3)',frows+'<div class="online-w" data-plat="funpay"></div>',f.ok?'<span style="color:var(--gr);font-size:12px">'+CT.online+'</span>':'')
       + card('🟡 Eldorado','var(--yw)',erows+'<div class="online-w" data-plat="eldorado"></div>',e.ok?'<span style="color:var(--gr);font-size:12px">'+CT.accounting+'</span>':'')
       + '</div>'
-      + ((d.zeusx_imported||d.funpay_imported)?`<div class="al ok" style="margin-top:14px">📥 У чергу додано нових продажів: ZeusX ${d.zeusx_imported||0} · FunPay ${d.funpay_imported||0} — відкрийте вкладку «ЗАМОВЛЕННЯ».</div>`:'')
+      + ((d.zeusx_imported||d.funpay_imported)?'<div class="al ok" style="margin-top:14px">'+CT.imported.replace('{z}',String(d.zeusx_imported||0)).replace('{f}',String(d.funpay_imported||0))+'</div>':'')
       + '<div style="font-size:12px;color:var(--mu);margin-top:10px">'+CT.connNote+'</div>'
       + '<div style="font-size:12px;color:var(--mu);margin-top:6px">'+CT.eldnote+'</div>';
   calcMarkets();
@@ -6720,8 +6785,28 @@ function tbSegBadge(s){
   return '<span style="font-size:11px;font-weight:700;color:' + v[1] + '">' + v[0] + '</span>';
 }
 
+// Дії Taobao-лота: події вішаються через addEventListener на контейнер,
+// а href/значення передаються через data-*, щоб дані з лотів ніколи не ставали
+// inline-JS (esc() у onclick розкодовується парсером HTML і давав stored XSS).
+function tbWire(el){
+  if(!el || el._tbWired) return;
+  el._tbWired = true;
+  el.addEventListener('click', function(ev){
+    const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-tb-act]') : null;
+    if(!btn || !el.contains(btn)) return;
+    ev.preventDefault();
+    const href = btn.getAttribute('data-href') || '';
+    const val  = btn.getAttribute('data-val') || '';
+    const act  = btn.getAttribute('data-tb-act');
+    if(!href) return;
+    if(act === 'mark') tbMark(href, val === '1');
+    else if(act === 'opts') tbMarkOpts(href, parseInt(val, 10) || 0);
+    else if(act === 'cart') tbCart(href, val === '1');
+  });
+}
 function renderTaobao(){
   const el = g('tbList'); if(!el) return;
+  tbWire(el);
   let list = tbItems.slice();
   if(tbGame) list = list.filter(x => x.game === tbGame);
   if(tbSeg) list = list.filter(x => x.segment === tbSeg);
@@ -6748,15 +6833,20 @@ function renderTaobao(){
           diff = '<b style="color:' + (good ? 'var(--gr)' : 'var(--rd)') + '">' + (good ? '×' + (x.diff_x || 0).toFixed(1) : (LANG==='ru'?'дороже':LANG==='en'?'more expensive':'дорожче')) + '</b>'
                + '<div style="font-size:11px;color:' + (good ? 'var(--gr)' : 'var(--rd)') + '">' + (good ? '+' : '') + '$' + Number(x.diff_usd).toFixed(2) + '</div>';
         }
+        const _rawHref = String(x.href == null ? '' : x.href);
+        const _href = safeLinkUrl(_rawHref);   // лише http(s) для <a href>
+        const _pay  = !!x.card_pay;
+        const _cart = !!x.cart;
+        const _opts = Math.max(0, Number(x.options) || 0);
         return '<tr>'
         + '<td style="max-width:380px"><b>' + esc(x.title_en || x.title_cn || '') + '</b>'
         + '<div style="font-size:11px;color:var(--mu)">' + esc(x.title_cn || '') + '</div>'
         + '<div style="font-size:11px;color:var(--mu)">' + esc(x.game || '') + (x.sold ? ' · '+(LANG==='ru'?'продано':LANG==='en'?'sold':'продано')+' ' + esc(x.sold) : '')
-        + (x.card_pay ? ' <span title="Оплата карткою" style="color:var(--gr)">💳</span>' : '')
-        + ' <button class="btn" style="padding:1px 6px;font-size:10px" title="Позначити/зняти оплату карткою" onclick="tbMark(\'' + esc(x.href) + '\',' + (x.card_pay ? 'false' : 'true') + ')">💳</button>'
-        + ' <button class="btn" style="padding:1px 6px;font-size:10px" title="Скільки варіантів у лоті" onclick="tbMarkOpts(\'' + esc(x.href) + '\',' + (x.options || 0) + ')">🎛</button>'
-        + ' <button class="btn" style="padding:1px 6px;font-size:10px;' + (x.cart ? 'background:var(--a1);color:#000' : '') + '" title="У кошик покупок" onclick="tbCart(\'' + esc(x.href) + '\',' + (x.cart ? 'false' : 'true') + ')">🛒</button>'
-        + ((x.options || 0) > 1 ? ' <span title="Варіантів у лоті" style="color:var(--a3)">🎛 ' + x.options + '</span>' : '')
+        + (_pay ? ' <span title="' + esc(t('tb.cardPaid')) + '" style="color:var(--gr)">💳</span>' : '')
+        + (_rawHref ? ' <button class="btn" style="padding:1px 6px;font-size:10px" data-tb-act="mark" data-val="' + (_pay ? '0' : '1') + '" data-href="' + esc(_rawHref) + '" title="' + esc(t('tb.markCard')) + '">💳</button>' : '')
+        + (_rawHref ? ' <button class="btn" style="padding:1px 6px;font-size:10px" data-tb-act="opts" data-val="' + String(_opts) + '" data-href="' + esc(_rawHref) + '" title="' + esc(t('tb.markOpts')) + '">🎛</button>' : '')
+        + (_rawHref ? ' <button class="btn" style="padding:1px 6px;font-size:10px;' + (_cart ? 'background:var(--a1);color:#000' : '') + '" data-tb-act="cart" data-val="' + (_cart ? '0' : '1') + '" data-href="' + esc(_rawHref) + '" title="' + esc(t('tb.inCart')) + '">🛒</button>' : '')
+        + (_opts > 1 ? ' <span title="' + esc(t('tb.variantBadge')) + '" style="color:var(--a3)">🎛 ' + _opts + '</span>' : '')
         + '</div></td>'
         + '<td style="color:var(--gr);font-weight:700">¥' + Number(x.price_cny || 0).toFixed(2) + '</td>'
         + '<td>$' + Number(x.price_usd || 0).toFixed(2) + '</td>'
@@ -6764,7 +6854,7 @@ function renderTaobao(){
         + '<td>' + sup + '</td>'
         + '<td>' + diff + '</td>'
         + '<td>' + tbSegBadge(x.segment) + '</td>'
-        + '<td><a class="ilnk" href="' + esc(x.href) + '" target="_blank" rel="noopener">↗</a></td></tr>';
+        + '<td>' + (_href ? '<a class="ilnk" href="' + esc(_href) + '" target="_blank" rel="noopener">↗</a>' : '<span style="color:var(--mu)">—</span>') + '</td></tr>';
       }).join('')
     + '</tbody></table>';
 }

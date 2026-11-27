@@ -11,6 +11,7 @@ import os
 import sys
 import json
 import time
+import html
 import pathlib
 import threading
 import traceback
@@ -109,12 +110,16 @@ class DesktopApi:
         return {"ok": True, "close_to_tray": d["close_to_tray"]}
 
 
-def start_local(is_plus):
+def start_local():
     import remote_proxy as rp
     os.environ["GT_DATA_DIR"] = str(APP_DIR)
     os.environ["GT_AUTH"] = "off"
     os.environ["GT_BIND"] = "127.0.0.1"
-    os.environ["GT_PAID"] = "1" if is_plus else "0"
+    # Paid features are granted only by the signed licence that
+    # game_tracker._license_info() verifies. The desktop build must never
+    # derive them from the exe name, LEDGER_PLUS or an inherited GT_PAID
+    # variable (D-2: renaming Ledger.exe used to unlock Ledger+ features).
+    os.environ.pop("GT_PAID", None)
     os.environ["GT_NO_BROWSER"] = "1"
     os.environ["GT_DESKTOP"] = "1"
     port = rp.free_port(8766)
@@ -142,6 +147,15 @@ def start_local(is_plus):
 
 def main():
     import remote_proxy as rp
+    if "--set-password" in sys.argv:
+        try:
+            log(rp.cli_set_password(CONFIG))
+        except Exception as e:
+            log("set-password failed: %s" % e)
+        return
+    # Branding only (title + icons). It must never influence entitlements:
+    # the free exe renamed to *plus* still runs free unless a signed licence
+    # is activated (D-2).
     is_plus = ("plus" in pathlib.Path(sys.executable).stem.lower()) or (os.environ.get("LEDGER_PLUS") == "1")
     title = "Ledger+ — Game Account Tracker" if is_plus else "Ledger — Game Account Tracker"
     if not single_instance("Global\\LedgerDesktopFree", title):
@@ -149,20 +163,36 @@ def main():
     cfg = rp.load_config(CONFIG)
     server = str(cfg.get("server") or "").strip()
     url = ""
+    config_error = ""
 
     local_only = (os.environ.get("GT_DESKTOP_MODE") or "").strip().lower() == "local"
     if local_only:
         # Portable/offline mode: always start the bundled server, ignore 8766
         # and client.json. Useful for testing and for running from a USB stick.
-        url = start_local(is_plus)
+        url = start_local()
     elif server:
-        if not server.startswith("http"):
-            server = "https://" + server
-        port, url = rp.start_proxy(server, str(cfg.get("user") or ""), rp.unseal(cfg.get("pass") or ""), title)
+        try:
+            server = rp.normalize_server_url(server)
+        except rp.ConfigError as e:
+            # P-3: never inject Basic credentials into an unvalidated host.
+            config_error = str(e)
+            log("invalid ledger.client.json: %s" % e)
+        else:
+            user = str(cfg.get("user") or "")
+            password = rp.unseal(cfg.get("pass") or "", bind=server,
+                                 warn=lambda m: log("ledger.client.json: " + m))
+            if password and not user:
+                user = "admin"
+            if password:
+                port, url = rp.start_proxy(server, user, password, title)
+            else:
+                # No usable DPAPI password: still proxy for a stable origin, but
+                # without Basic auth (the server shows its own login form).
+                port, url = rp.start_proxy(server, title=title)
     elif rp.health("http://127.0.0.1:8766/"):
         port, url = rp.start_proxy("http://127.0.0.1:8766", title=title)
     else:
-        url = start_local(is_plus)
+        url = start_local()
 
     try:
         import webview
@@ -171,7 +201,10 @@ def main():
         return
 
     if not url:
-        webview.create_window("Ledger", html="<h2>Ledger could not start</h2><p>See desktop.log next to the exe.</p>", width=520, height=260)
+        detail = config_error or "See desktop.log next to the exe."
+        page = ("<h2>Ledger could not start</h2><p>%s</p>"
+                % html.escape(detail))
+        webview.create_window("Ledger", html=page, width=520, height=260)
         webview.start()
         return
 

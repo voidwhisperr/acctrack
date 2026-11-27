@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.66.41 — post-audit security and reliability fixes
+- Fixed cold-start auth silently disabling on fresh installs.
+- Fixed team roles (manager/viewer business access), backup export/restore completeness and atomicity, recovery lockout, update-version check, cache paths.
+- Closed SSRF via supplier URLs, Taobao stored XSS, P&L CSV formula injection, NaN/Infinity persistence, license activation race.
+- Hardened Ledger+ proxy CSRF/cookie handling and config URL validation; paid mode no longer granted by exe filename/env.
+- Ops: stale signing-key/secret copies purged, local PC backup task fixed, R2 offsite run and monitor checks added.
+
 ## v1.66.29 — translations and mobile money columns
 - Channels cards, supplier comparison and Eldorado notes are localized in UA/EN/RU.
 - Mobile tables keep date/amount/profit columns and scroll horizontally instead of hiding money.
