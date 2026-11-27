@@ -82,7 +82,7 @@ BIND = (os.environ.get("GT_BIND") or "127.0.0.1").strip() or "127.0.0.1"
 AUTH_MODE = (os.environ.get("GT_AUTH") or "").strip().lower()  # "" = вирішуємо після налаштувань
 REQUIRE_ACCESS = (os.environ.get("GT_REQUIRE_ACCESS") or "").strip() == "1"
 # Єдине джерело версії: /api/health, /api/diag, /api/update/check, банер старту.
-APP_VERSION = "1.66.49"
+APP_VERSION = "1.66.50"
 _SESSION_SECRET = base64.urlsafe_b64encode(os.urandom(32)).decode("ascii")
 _BASE_DIR   = pathlib.Path(os.environ.get("GT_DATA_DIR") or pathlib.Path(__file__).parent)
 try:
@@ -913,9 +913,11 @@ def _tg_send(text, force=False):
     token = (cfg.get("token") or "").strip()
     chat  = str(cfg.get("chat_id") or "").strip()
     if not cfg.get("enabled") and not force:
-        return {"ok": False, "error": "Сповіщення вимкнені"}
+        return {"ok": False, "error_code": "tg_disabled",
+                "error": "Telegram notifications are disabled"}
     if not token or not chat:
-        return {"ok": False, "error": "Не вказано токен або chat_id"}
+        return {"ok": False, "error_code": "tg_not_configured",
+                "error": "Telegram token or chat_id is not set"}
     try:
         payload = urllib.parse.urlencode({
             "chat_id": chat,
@@ -1172,7 +1174,8 @@ def _gmail_login_test(user=None, pwd=None):
     if user is None or pwd is None:
         user, pwd = _gmail_cfg()
     if not user or not pwd:
-        return {"ok": False, "error": "Не вказано Gmail або App Password"}
+        return {"ok": False, "error_code": "gmail_credentials_required",
+                "error": "Gmail address or App Password is not set"}
     try:
         import imaplib
         mail = imaplib.IMAP4_SSL("imap.gmail.com", 993, timeout=25)
@@ -1185,7 +1188,8 @@ def _gmail_login_test(user=None, pwd=None):
                 mail.logout()
             except Exception:
                 pass
-        return {"ok": True, "msg": f"✅ Gmail підключено ({user}), листів у INBOX: {total}"}
+        return {"ok": True, "msg_code": "gmail_connected",
+                "msg": f"Gmail connected ({user}); messages in INBOX: {total}"}
     except Exception as e:
         return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
@@ -1335,17 +1339,21 @@ button:disabled{opacity:.55;cursor:default}
 </form>
 <script>
 var L = {
-  uk:{t1:'Вхід',t2:'Введіть пароль. Цей пристрій запам’ятається на рік.',ph:'Пароль',btn:'Увійти',err:'Введіть пароль',wrong:'Невірний пароль',net:'Помилка мережі: ',ok:'Входимо…',forgot:'Забули пароль?',otp:'Код 2FA або код відновлення'},
-  en:{t1:'Sign in',t2:'Enter the password. This device stays signed in for a year.',ph:'Password',btn:'Continue',err:'Enter the password',wrong:'Wrong password',net:'Network error: ',ok:'Signing in…',forgot:'Forgot password?',otp:'2FA code or recovery code'},
-  ru:{t1:'Вход',t2:'Введите пароль. Это устройство запомнится на год.',ph:'Пароль',btn:'Войти',err:'Введите пароль',wrong:'Неверный пароль',net:'Ошибка сети: ',ok:'Входим…',forgot:'Забыли пароль?',otp:'Код 2FA или код восстановления'}
+  uk:{title:'Вхід · Ledger',t1:'Вхід',t2:'Введіть пароль. Цей пристрій запам’ятається на рік.',ph:'Пароль',btn:'Увійти',err:'Введіть пароль',wrong:'Невірний пароль',otpWrong:'Невірний код 2FA',otpReq:'Введіть код 2FA',tooMany:'Забагато спроб — спробуйте пізніше',net:'Помилка мережі: ',ok:'Входимо…',forgot:'Забули пароль?',otp:'Код 2FA або код відновлення',recEmail:'Пошта для відновлення',recCode:'Код із листа',recNew:'Новий пароль (мін. 8 символів)',recDone:'Пароль змінено. Увійдіть із новим паролем.',recBadCode:'Невірний або прострочений код',recNoCfg:'Відновлення пароля не налаштоване',recSendFail:'Не вдалося надіслати лист',recShort:'Пароль має бути мінімум 8 символів'},
+  en:{title:'Sign in · Ledger',t1:'Sign in',t2:'Enter the password. This device stays signed in for a year.',ph:'Password',btn:'Continue',err:'Enter the password',wrong:'Wrong password',otpWrong:'Wrong 2FA code',otpReq:'Enter the 2FA code',tooMany:'Too many attempts — try again later',net:'Network error: ',ok:'Signing in…',forgot:'Forgot password?',otp:'2FA code or recovery code',recEmail:'Recovery email',recCode:'Code from email',recNew:'New password (min 8 characters)',recDone:'Password reset. Sign in with the new password.',recBadCode:'Invalid or expired code',recNoCfg:'Password recovery is not configured',recSendFail:'Failed to send the email',recShort:'Password must be at least 8 characters'},
+  ru:{title:'Вход · Ledger',t1:'Вход',t2:'Введите пароль. Это устройство запомнится на год.',ph:'Пароль',btn:'Войти',err:'Введите пароль',wrong:'Неверный пароль',otpWrong:'Неверный код 2FA',otpReq:'Введите код 2FA',tooMany:'Слишком много попыток — попробуйте позже',net:'Ошибка сети: ',ok:'Входим…',forgot:'Забыли пароль?',otp:'Код 2FA или код восстановления',recEmail:'Почта для восстановления',recCode:'Код из письма',recNew:'Новый пароль (мин. 8 символов)',recDone:'Пароль изменён. Войдите с новым паролем.',recBadCode:'Неверный или просроченный код',recNoCfg:'Восстановление пароля не настроено',recSendFail:'Не удалось отправить письмо',recShort:'Пароль должен быть минимум 8 символов'}
 };
 var cur = 'en';
 function setL(l){
   cur = l;
   var x = L[l];
+  document.title = x.title;
+  document.documentElement.lang = l;
   document.getElementById('t1').textContent = x.t1;
   document.getElementById('t2').textContent = x.t2;
   document.getElementById('pw').placeholder = x.ph;
+  document.getElementById('otp').placeholder = x.otp;
+  document.getElementById('forgot').textContent = x.forgot;
   document.getElementById('btn').textContent = x.btn;
   ['uk','en','ru'].forEach(function(k){
     var a = document.getElementById('l-'+k);
@@ -1354,6 +1362,15 @@ function setL(l){
   try{ localStorage.setItem('gt_lang', l); }catch(e){}
 }
 try{ var s = localStorage.getItem('gt_lang'); if(s && L[s]) setL(s); }catch(e){}
+function loginErr(x, d, status){
+  var c = (d && d.error_code) || '';
+  if(c === 'invalid_password') return x.wrong;
+  if(c === 'invalid_otp') return x.otpWrong;
+  if(c === 'otp_required') return x.otpReq;
+  if(c === 'too_many_attempts') return x.tooMany;
+  if(d && d.error) return String(d.error);
+  return status === 401 ? x.wrong : (x.wrong + ' (' + status + ')');
+}
 async function go(e){
   e.preventDefault();
   var pw = document.getElementById('pw').value;
@@ -1367,26 +1384,36 @@ async function go(e){
       body: JSON.stringify({password: pw, otp: otp})});
     var d = await r.json().catch(function(){ return {}; });
     if(r.ok && d.ok){ err.className = 'ok'; err.textContent = x.ok; location.href = '/'; }
-    else { err.className = 'err'; err.textContent = d.error || (r.status === 401 ? x.wrong : (x.wrong + ' (' + r.status + ')')); btn.disabled = false; }
+    else { err.className = 'err'; err.textContent = loginErr(x, d, r.status); btn.disabled = false; }
   }catch(ex){ err.className = 'err'; err.textContent = x.net + ex.message; btn.disabled = false; }
   return false;
 }
+function recErr(x, d, status){
+  var c = (d && d.error_code) || '';
+  if(c === 'recovery_not_configured') return x.recNoCfg;
+  if(c === 'too_many_requests' || c === 'too_many_attempts') return x.tooMany;
+  if(c === 'email_send_failed') return x.recSendFail;
+  if(c === 'invalid_code') return x.recBadCode;
+  if(c === 'password_too_short') return x.recShort;
+  return (d && d.error) ? String(d.error) : ('Error ' + status);
+}
 async function recoverPw(){
-  var email = prompt('Recovery email / Пошта для відновлення');
+  var x = L[cur];
+  var email = prompt(x.recEmail);
   if(!email) return;
   try{
     var r = await fetch('/api/auth/recovery/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
     var d = await r.json().catch(function(){return {};});
-    if(!d.ok){ alert(d.error || ('Error ' + r.status)); return; }
-    var code = prompt('Code from email / Код з листа');
+    if(!d.ok){ alert(recErr(x, d, r.status)); return; }
+    var code = prompt(x.recCode);
     if(!code) return;
-    var np = prompt('New password (min 8) / Новий пароль (мін. 8)');
+    var np = prompt(x.recNew);
     if(!np) return;
     var r2 = await fetch('/api/auth/recovery/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,code:code,new_password:np})});
     var d2 = await r2.json().catch(function(){return {};});
-    if(d2.ok){ alert('Password reset. Sign in with the new password. / Пароль змінено.'); }
-    else { alert(d2.error || ('Error ' + r2.status)); }
-  }catch(e){ alert('Network error: ' + e.message); }
+    if(d2.ok){ alert(x.recDone); }
+    else { alert(recErr(x, d2, r2.status)); }
+  }catch(e){ alert(x.net + e.message); }
 }
 </script></body></html>"""
 
@@ -2103,15 +2130,19 @@ def check_gmail(dry=False):
     user, pwd = _gmail_cfg()
     if not user or not pwd:
         return {"ok": False, "found": 0, "sent": 0,
-                "error": "Gmail не налаштовано (⚙️ → Gmail)"}
+                "error_code": "gmail_not_configured",
+                "error": "Gmail is not configured (Settings → Gmail)"}
     tg = _tg_cfg()
     can_notify = bool(tg.get("enabled") and tg.get("token") and tg.get("chat_id")
                       and tg.get("notify_mail", True))
     if not can_notify and not dry:
         return {"ok": False, "skipped": True, "found": 0, "sent": 0,
-                "error": "Поштові сповіщення вимкнено: увімкни Telegram і галочку «📧 Пошта»"}
+                "error_code": "gmail_notifications_disabled",
+                "error": "Mail notifications are disabled: enable Telegram "
+                         "and the Mail checkbox in Settings"}
     if not _gmail_lock.acquire(blocking=False):
-        return {"ok": False, "found": 0, "sent": 0, "error": "перевірка вже виконується"}
+        return {"ok": False, "found": 0, "sent": 0, "error_code": "check_in_progress",
+                "error": "A check is already running"}
     found = sent = skipped = 0
     try:
         import imaplib, email as _email
@@ -2291,7 +2322,9 @@ def _eldorado_keepalive():
     cid = str(_sec_get("eldorado_client_id") or "").strip()
     sec = str(_sec_get("eldorado_client_secret") or "").strip()
     if not cid or not sec:
-        return {"ok": False, "error": "немає Seller API ключів Eldorado"}
+        return {"ok": False, "error_code": "eldorado_not_connected",
+                "error": "Eldorado Seller API keys are not set. Add the client_id and "
+                         "client_secret on the Channels tab."}
     import urllib.request
     req = urllib.request.Request(
         "https://www.eldorado.gg/api/authentication/seller/token",
@@ -2301,9 +2334,13 @@ def _eldorado_keepalive():
     try:
         with urllib.request.urlopen(req, timeout=20) as r:
             data = json.loads(r.read().decode("utf-8", "replace"))
-        return {"ok": bool(data.get("accessToken")), "error": "" if data.get("accessToken") else "no token"}
+        _ok_el = bool(data.get("accessToken"))
+        return {"ok": _ok_el,
+                "error_code": None if _ok_el else "eldorado_auth_failed",
+                "error": "" if _ok_el else "Eldorado returned no access token"}
     except Exception as e:
-        return {"ok": False, "error": str(e)[:200]}
+        return {"ok": False, "error_code": "eldorado_api_error",
+                "error": str(e)[:200]}
 
 
 _ONLINE_CALLS = {"zeusx": lambda: _platform_zeusx(), "funpay": lambda: _platform_funpay(),
@@ -2357,22 +2394,25 @@ def _online_check_once(force=False):
         c = cfg[key]
         prev = state.get(key) or {}
         if not c["enabled"]:
-            state[key] = {**prev, "state": "off", "error": ""}
+            state[key] = {**prev, "state": "off", "error": "", "error_code": ""}
             changed = True
             continue
         if not force and not _online_window(c):
-            state[key] = {**prev, "state": "scheduled", "error": ""}
+            state[key] = {**prev, "state": "scheduled", "error": "", "error_code": ""}
             changed = True
             continue
         try:
             data = _ONLINE_CALLS[key]() or {}
             if data.get("ok"):
-                state[key] = {"state": "online", "ts": int(now), "ok_ts": int(now), "error": ""}
+                state[key] = {"state": "online", "ts": int(now), "ok_ts": int(now),
+                              "error": "", "error_code": ""}
             else:
                 state[key] = {**prev, "state": "error", "ts": int(now),
-                              "error": str(data.get("error") or "no data")[:200]}
+                              "error_code": str(data.get("error_code") or "online_check_failed")[:64],
+                              "error": str(data.get("error") or "No data")[:200]}
         except Exception as e:
-            state[key] = {**prev, "state": "error", "ts": int(now), "error": str(e)[:200]}
+            state[key] = {**prev, "state": "error", "ts": int(now),
+                          "error_code": "online_check_failed", "error": str(e)[:200]}
         changed = True
     if changed:
         try:
@@ -2411,6 +2451,7 @@ def _online_payload():
             stt = "waiting"
         out[key] = {**c, "state": stt, "last_ts": int(s.get("ts") or 0),
                     "last_ok": last_ok, "error": str(s.get("error") or "")[:200],
+                    "error_code": str(s.get("error_code") or "")[:64],
                     "in_window": _online_window(c)}
     return {"ok": True, "now": int(now), "platforms": out}
 
@@ -2589,7 +2630,9 @@ def _https_gen():
     key  = os.path.join(cert_dir, "server.key")
     exe = shutil.which("openssl")
     if not exe:
-        return {"ok": False, "error": "openssl не знайдено. Встанови OpenSSL або вкажи cert/key manual (на хостингу HTTPS зазвичай дає проксі)."}
+        return {"ok": False, "error_code": "https_openssl_missing",
+                "error": "OpenSSL was not found. Install OpenSSL or provide cert/key "
+                         "manually (on hosting, HTTPS is usually terminated by a proxy)."}
     try:
         os.makedirs(cert_dir, exist_ok=True)
         subprocess.run(
@@ -6096,7 +6139,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                             o["diff_x"] = round(o["price"] / base, 1) if base else None
                     res["supplier_games"] = len(idx)
                 _offers_cache.update({"ts": now, "data": res})
-            self._json(_offers_cache["data"] or {"ok": False, "error": "немає даних"})
+            self._json(_offers_cache["data"] or {"ok": False, "error_code": "no_data",
+                                                 "error": "No data"})
         elif p == "/api/inventory":
             self._json(inventory_data())
         elif p == "/api/inventory/secret":
@@ -6623,7 +6667,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         sec = _read_json(SECRETS_FILE, {}) or {}
         configured = str(sec.get("recovery_email") or (_read_json(SETTINGS_FILE, {}) or {}).get("recovery_email") or "").strip().lower()
         if not configured or email != configured:
-            self._json({"ok": False, "error": "recovery email is not configured"}, code=400); return
+            self._json({"ok": False, "error_code": "recovery_not_configured",
+                        "error": "Recovery email is not configured"}, code=400); return
         ip = self._client_ip()
         now = time.time()
         if self.path.split("?")[0].endswith("/request"):
@@ -6631,7 +6676,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             with _RECOVERY_LOCK:
                 rows = [t for t in _RECOVERY_REQUESTS.get(ip, []) if now - t < 900]
                 if len(rows) >= 3:
-                    self._json({"ok": False, "error": "too many recovery requests"}, code=429); return
+                    self._json({"ok": False, "error_code": "too_many_requests",
+                                "error": "Too many recovery requests"}, code=429); return
                 rows.append(now); _RECOVERY_REQUESTS[ip] = rows
             # 8-значний код (простір 10^8) замість 6-значного: TTL 10 хв і
             # ліміти спроб ті самі, але перебір дорожчий у 100 разів.
@@ -6648,7 +6694,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     sm.login(user, pw)
                     sm.sendmail(user, [email], msg)
             except Exception:
-                self._json({"ok": False, "error": "email send failed"}, code=502); return
+                self._json({"ok": False, "error_code": "email_send_failed",
+                            "error": "Failed to send the recovery email"}, code=502); return
             self._json({"ok": True, "sent": True}); return
         # confirm: окремий ліміт лише на НЕВДАЛІ спроби; валідний код ніколи
         # не блокується лічильником (раніше спільний bucket /request + tries>=5
@@ -6667,12 +6714,15 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             with _RECOVERY_LOCK:
                 fails = [t for t in _RECOVERY_CONFIRMS.get(ip, []) if now - t < 900]
                 if len(fails) >= 10:
-                    self._json({"ok": False, "error": "too many recovery attempts"}, code=429); return
+                    self._json({"ok": False, "error_code": "too_many_attempts",
+                                "error": "Too many recovery attempts"}, code=429); return
                 fails.append(now); _RECOVERY_CONFIRMS[ip] = fails
             _save_secrets({"recovery_tries": tries + 1})
-            self._json({"ok": False, "error": "invalid or expired code"}, code=401); return
+            self._json({"ok": False, "error_code": "invalid_code",
+                        "error": "Invalid or expired code"}, code=401); return
         if len(new) < 8:
-            self._json({"ok": False, "error": "password must be at least 8 characters"}, code=400); return
+            self._json({"ok": False, "error_code": "password_too_short",
+                        "error": "Password must be at least 8 characters"}, code=400); return
         with _RECOVERY_LOCK:
             _RECOVERY_CONFIRMS.pop(ip, None)
         _new_hash = _hash_password(new)
@@ -6721,19 +6771,22 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                            "gt_device=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"})
                 return
             if self._rate_limited():
-                self._json({"ok": False, "error": "Забагато спроб — спробуй пізніше"}, code=429)
+                self._json({"ok": False, "error_code": "too_many_attempts",
+                            "error": "Too many attempts - try again later"}, code=429)
                 return
             pw = str((body or {}).get("password") or "")
             if not ((AUTH_PASS or AUTH_HASH) and _verify_password(pw)):
                 self._note_auth_fail()
                 print(f"  🔐 failed login (form) · IP {self._client_ip()}", flush=True)
-                self._json({"ok": False, "error": "Невірний пароль"}, code=401)
+                self._json({"ok": False, "error_code": "invalid_password",
+                            "error": "Invalid password"}, code=401)
                 return
             otp = str((body or {}).get("otp") or "").strip()
             if _totp_enabled() and not _totp_verify(otp) and not _recovery_consume(otp):
                 self._note_auth_fail()
                 self._json({"ok": False,
-                            "error": "Невірний код 2FA" if otp else "Введи код 2FA"},
+                            "error_code": "invalid_otp" if otp else "otp_required",
+                            "error": "Invalid 2FA code" if otp else "Enter the 2FA code"},
                            code=401)
                 return
             ip = self.client_address[0] if self.client_address else "?"
@@ -6757,8 +6810,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         if not self._role_gate():
             return
         if not self._origin_ok():
-            self._json({"ok": False,
-                        "error": "CSRF: онови сторінку (Ctrl+F5) — браузер не надіслав токен"},
+            self._json({"ok": False, "error_code": "csrf_token_missing",
+                        "error": "CSRF: reload the page (Ctrl+F5) - the browser did not send the token"},
                        code=403); return
         _auth_change_paths = ("/api/auth/toggle", "/api/auth/password",
                               "/api/2fa/setup", "/api/2fa/enable",
@@ -6801,13 +6854,15 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             try:
                 enabled = bool(body.get("enabled"))
                 if not (enabled and AUTH_MODE == "off") and not self._step_up_ok(body):
-                    self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403)
+                    self._json({"ok": False, "error_code": "step_up_required",
+                            "error": "Current password and 2FA code required"}, code=403)
                     return
                 st = _read_json(SETTINGS_FILE, {}) or {}
                 if enabled:
                     new = str(body.get("new") or "")
                     if len(new) < 8:
-                        self._json({"ok": False, "error": "Пароль має бути мінімум 8 символів"}, code=400)
+                        self._json({"ok": False, "error_code": "password_too_short",
+                            "error": "Password must be at least 8 characters"}, code=400)
                         return
                     _save_secrets({"auth_hash": _hash_password(new), "auth_pass": ""})
                     globals()["AUTH_HASH"] = _hash_password(new)
@@ -6823,20 +6878,24 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             return
         if self.path == "/api/auth/password":
             if AUTH_MODE == "off":
-                self._json({"ok": False, "reason": "auth_off",
-                            "error": "Пароль вимкнено (GT_AUTH=off) — доступ через Cloudflare Access"},
+                self._json({"ok": False, "reason": "auth_off", "error_code": "password_disabled",
+                            "error": "Password sign-in is disabled (GT_AUTH=off). Use Cloudflare Access."},
                            code=400)
                 return
             old = str(body.get("old") or "")
             new = str(body.get("new") or "")
             if not _verify_password(old):
-                self._json({"ok": False, "error": "Невірний поточний пароль"}); return
+                self._json({"ok": False, "error_code": "invalid_password",
+                        "error": "Invalid current password"}); return
             if _totp_enabled() and not _totp_verify(str(body.get("otp") or "")):
-                self._json({"ok": False, "error": "Невірний код 2FA"}, code=401); return
+                self._json({"ok": False, "error_code": "invalid_otp",
+                            "error": "Invalid 2FA code"}, code=401); return
             if len(new) < 8:
-                self._json({"ok": False, "error": "Новий пароль має бути мінімум 8 символів"}); return
+                self._json({"ok": False, "error_code": "password_too_short",
+                        "error": "New password must be at least 8 characters"}); return
             if _verify_password(new):
-                self._json({"ok": False, "error": "Новий пароль збігається з поточним"}); return
+                self._json({"ok": False, "error_code": "password_same",
+                        "error": "New password is the same as the current one"}); return
             try:
                 _new_hash = _hash_password(new)
                 # ротація ключа сесії + +1 device_version: інші пристрої/вкрадені
@@ -7010,9 +7069,11 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             return
         if self.path == "/api/2fa/setup":
             if not self._step_up_ok(body):
-                self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403); return
+                self._json({"ok": False, "error_code": "step_up_required",
+                            "error": "Current password and 2FA code required"}, code=403); return
             if AUTH_MODE == "off":
-                self._json({"ok": False, "error": "Спочатку увімкни пароль входу"}, code=400)
+                self._json({"ok": False, "error_code": "enable_password_first",
+                            "error": "Enable a login password first"}, code=400)
                 return
             secret = _totp_new_secret()
             _save_secrets({"totp_pending": secret})
@@ -7021,13 +7082,16 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             return
         if self.path == "/api/2fa/enable":
             if not self._step_up_ok(body):
-                self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403); return
+                self._json({"ok": False, "error_code": "step_up_required",
+                            "error": "Current password and 2FA code required"}, code=403); return
             secret = str((_read_json(SECRETS_FILE, {}) or {}).get("totp_pending") or "")
             if not secret:
-                self._json({"ok": False, "error": "Спочатку згенеруй секрет"}, code=400)
+                self._json({"ok": False, "error_code": "setup_secret_first",
+                            "error": "Generate the 2FA secret first"}, code=400)
                 return
             if not _totp_verify_secret(secret, body.get("code")):
-                self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
+                self._json({"ok": False, "error_code": "invalid_otp",
+                            "error": "Invalid 2FA code"}, code=401)
                 return
             _save_secrets({"totp_secret": secret, "totp_enabled": True, "totp_pending": ""})
             _revoke_sessions()
@@ -7038,9 +7102,11 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             return
         if self.path == "/api/2fa/recovery":
             if not self._step_up_ok(body, otp_key="code"):
-                self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403); return
+                self._json({"ok": False, "error_code": "step_up_required",
+                            "error": "Current password and 2FA code required"}, code=403); return
             if not _totp_enabled() or not _totp_verify(body.get("code")):
-                self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
+                self._json({"ok": False, "error_code": "invalid_otp",
+                            "error": "Invalid 2FA code"}, code=401)
                 return
             codes = _recovery_generate()
             _audit("2fa.recovery")
@@ -7048,9 +7114,11 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             return
         if self.path == "/api/2fa/disable":
             if not self._step_up_ok(body, otp_key="code"):
-                self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403); return
+                self._json({"ok": False, "error_code": "step_up_required",
+                            "error": "Current password and 2FA code required"}, code=403); return
             if _totp_enabled() and not _totp_verify(body.get("code")):
-                self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
+                self._json({"ok": False, "error_code": "invalid_otp",
+                            "error": "Invalid 2FA code"}, code=401)
                 return
             _save_secrets({"totp_secret": "", "totp_enabled": False, "totp_pending": "", "totp_recovery": []})
             _audit("2fa.disabled")
@@ -7199,7 +7267,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             try:
                 _key = str(body.get("platform") or "").lower()
                 if _key not in ("zeusx", "funpay", "eldorado"):
-                    self._json({"ok": False, "error": "unknown platform"}, code=400)
+                    self._json({"ok": False, "error_code": "unknown_platform",
+                                "error": "Unknown platform"}, code=400)
                     return
                 _st = _read_json(SETTINGS_FILE, {}) or {}
                 _ko = _st.get("keep_online") or {}
@@ -7216,7 +7285,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                                  kwargs={"force": True}, daemon=True).start()
                 self._json({"ok": True, "online": _online_payload()})
             except Exception as e:
-                self._json({"ok": False, "error": str(e)[:200]}, code=400)
+                self._json({"ok": False, "error_code": "bad_request",
+                            "error": str(e)[:200]}, code=400)
             return
         if self.path == "/api/settings/save":
             try:
@@ -7389,22 +7459,24 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 user = str(body.get("user") or "").strip()
                 pwd  = "".join(str(body.get("password") or "").split())
                 if user and ("@" not in user or " " in user):
-                    self._json({"ok": False, "error": "Невірна Gmail-адреса"}, code=400); return
+                    self._json({"ok": False, "error_code": "gmail_invalid_address",
+                                "error": "Invalid Gmail address"}, code=400); return
                 if not user and not pwd:
-                    self._json({"ok": False, "error": "Нема що зберігати"}, code=400); return
+                    self._json({"ok": False, "error_code": "gmail_nothing_to_save",
+                                "error": "Nothing to save"}, code=400); return
                 old_user, old_pwd = _gmail_cfg()
                 cand_user = user or old_user
                 cand_pwd  = pwd or old_pwd
                 if not cand_user or not cand_pwd:
-                    self._json({"ok": False,
-                                "error": "Введи і адресу, і App Password (16 символів)"},
+                    self._json({"ok": False, "error_code": "gmail_credentials_required",
+                                "error": "Enter both the address and the 16-character App Password"},
                                code=400)
                     return
                 # перевіряємо кандидата ДО запису, щоб не зберігати «мертвий» пароль
                 test = _gmail_login_test(cand_user, cand_pwd)
                 if not test.get("ok"):
-                    self._json({"ok": False, "test": test,
-                                "error": test.get("error") or "Gmail не підключився"},
+                    self._json({"ok": False, "test": test, "error_code": "gmail_login_failed",
+                                "error": test.get("error") or "Gmail did not connect"},
                                code=400)
                     return
                 updates = {}
@@ -7637,19 +7709,23 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 if _k in body:
                     _v = str(body.get(_k) or "").strip()
                     if len(_v) > 8000:
-                        self._json({"ok": False, "error": "cookie задовгий"}, code=400)
+                        self._json({"ok": False, "error_code": "cookie_too_long",
+                                    "error": "The cookie is too long (max 8000 characters)"},
+                                   code=400)
                         return
                     upd[_k] = _v
             if not upd:
-                self._json({"ok": False, "error": "немає що зберігати"}, code=400)
+                self._json({"ok": False, "error_code": "nothing_to_save",
+                            "error": "Nothing to save"}, code=400)
                 return
             # не даємо затерти робочий cookie токеном без access_token
             _old = _read_json(SECRETS_FILE, {}) or {}
             if ("zeusx_cookie" in upd and "access_token=" not in upd["zeusx_cookie"]
                     and "access_token=" in str(_old.get("zeusx_cookie") or "")):
-                self._json({"ok": False, "error":
-                            "новий zeusx cookie без access_token — старий робочий не замінено. "
-                            "Увійдіть на zeusx.com у вікні агента і натисніть «Взяти з браузера»."},
+                self._json({"ok": False, "error_code": "zeusx_cookie_missing_token",
+                            "error": "The new ZeusX cookie has no access_token, so the working "
+                                     "cookie was not replaced. Sign in at zeusx.com in the "
+                                     "agent window and click 'Take from browser'."},
                            code=409)
                 return
             _save_secrets(upd)
@@ -9135,10 +9211,13 @@ def _tokens_check():
             if d.get("ok"):
                 return "valid", ""
             err = str(d.get("error") or "")
+            code = str(d.get("error_code") or "")
         except Exception as e:
-            err = str(e)
+            err, code = str(e), ""
         low = err.lower()
-        return ("expired" if ("cookie" in low or "простроч" in low or "login" in low) else "error"), err[:160]
+        expired = (code == "funpay_cookie_expired" or "cookie" in low
+                   or "expired" in low or "login" in low)
+        return ("expired" if expired else "error"), err[:160]
 
     def zeusx():
         if not sec.get("zeusx_cookie"):
@@ -9148,10 +9227,13 @@ def _tokens_check():
             if d.get("ok"):
                 return "valid", ""
             err = str(d.get("error") or "")
+            code = str(d.get("error_code") or "")
         except Exception as e:
-            err = str(e)
+            err, code = str(e), ""
         low = err.lower()
-        return ("expired" if ("token" in low or "cookie" in low or "401" in low or "unauth" in low) else "error"), err[:160]
+        expired = (code in ("zeusx_auth_failed", "zeusx_not_connected")
+                   or "token" in low or "cookie" in low or "401" in low or "unauth" in low)
+        return ("expired" if expired else "error"), err[:160]
 
     def gmail():
         user, pwd = _gmail_cfg()

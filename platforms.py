@@ -94,7 +94,7 @@ def _zx_call(path, cookie, timeout=20, method="GET", body=None):
     """Запит до api.zeusx.com з Bearer-токеном із cookie."""
     token = _cookie_parse(cookie).get("access_token", "")
     if not token:
-        raise RuntimeError("немає access_token у zeusx_cookie")
+        raise RuntimeError("missing access_token in zeusx_cookie")
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request("https://api.zeusx.com" + path, data=data, headers={
         "Authorization": "Bearer " + token, "Cookie": cookie, "User-Agent": UA,
@@ -108,7 +108,9 @@ def _zx_call(path, cookie, timeout=20, method="GET", body=None):
 def _platform_zeusx():
     cookie = _sec_get("zeusx_cookie")
     if not cookie:
-        return {"ok": False, "error": "ZeusX не підключено — вставте access_token у ⚙ → Підключення"}
+        return {"ok": False, "error_code": "zeusx_not_connected",
+                "error": "ZeusX is not connected: the access_token cookie is missing. "
+                         "Paste it on the Channels tab."}
     try:
         prof = (_zx_call("/v1/user/me", cookie) or {}).get("data") or {}
         bal = (_zx_call("/v1/user/get-user-balance", cookie) or {}).get("data") or {}
@@ -121,9 +123,15 @@ def _platform_zeusx():
                 "on_hold": bal.get("user_onHold"), "withdraw": bal.get("user_withdraw"),
                 "orders_all": st.get("all"), "orders_good": st.get("good_delivery_count"),
                 "orders_pending": st.get("pending_delivery_count"),
-                "orders_refunded": st.get("refunded_count"), "error": None}
+                "orders_refunded": st.get("refunded_count"),
+                "error_code": None, "error": None}
+    except urllib.error.HTTPError as e:
+        return {"ok": False,
+                "error_code": "zeusx_auth_failed" if e.code in (401, 403) else "zeusx_api_error",
+                "error": "HTTP %s: ZeusX request failed" % e.code}
     except Exception as e:
-        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        return {"ok": False, "error_code": "zeusx_api_error",
+                "error": f"{type(e).__name__}: {e}"}
 
 
 def _platform_zeusx_orders(cookie, limit=20):
@@ -169,7 +177,7 @@ def _funpay_fetch_orders(cookie):
     with urllib.request.urlopen(req, timeout=25) as r:
         html = r.read().decode("utf-8", "replace")
     if "Мої продажі" not in html and "My sales" not in html:
-        raise RuntimeError("cookie прострочений — FunPay показує не кабінет")
+        raise RuntimeError("FunPay cookie is expired - the seller cabinet is not shown")
     out = []
     for m in re.finditer(r'<a href="https://funpay\.com/[^"]*/orders/([A-Z0-9]{4,})/"[^>]*>(.*?)</a>',
                          html, re.S):
@@ -208,16 +216,24 @@ def _funpay_fetch_orders(cookie):
 def _platform_funpay():
     cookie = _sec_get("funpay_cookie")
     if not cookie:
-        return {"ok": False, "error": "FunPay не підключено — вставте golden_key у ⚙ → Підключення"}
+        return {"ok": False, "error_code": "funpay_not_connected",
+                "error": "FunPay is not connected: the golden_key cookie is missing. "
+                         "Paste it on the Channels tab."}
     try:
         orders = _funpay_fetch_orders(cookie)
         return {"ok": True, "orders": [o["code"] for o in orders][:20],
                 "orders_count": len(orders), "counter": 0, "chats": 0,
-                "list": orders[:15], "error": None}
+                "list": orders[:15], "error_code": None, "error": None}
     except urllib.error.HTTPError as e:
-        return {"ok": False, "error": f"HTTP {e.code}"}
+        return {"ok": False,
+                "error_code": "funpay_cookie_expired" if e.code in (401, 403) else "funpay_api_error",
+                "error": "HTTP %s: FunPay request failed" % e.code}
     except Exception as e:
-        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        msg = f"{type(e).__name__}: {e}"
+        low = msg.lower()
+        code = ("funpay_cookie_expired" if ("expired" in low or "cookie" in low)
+                else "funpay_api_error")
+        return {"ok": False, "error_code": code, "error": msg}
 
 
 def _platform_funpay_orders(cookie, limit=20, orders=None):
@@ -270,9 +286,10 @@ def _platform_eldorado():
                 "profit": round(sum(float(x.get("profit") or 0) for x in data), 2),
                 "month_count": len(month),
                 "month_profit": round(sum(float(x.get("profit") or 0) for x in month), 2),
-                "source": "пошта + ручний облік", "error": None}
+                "source": "email + manual", "error_code": None, "error": None}
     except Exception as e:
-        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        return {"ok": False, "error_code": "eldorado_api_error",
+                "error": f"{type(e).__name__}: {e}"}
 
 
 _offers_cache = {"ts": 0, "data": None}
@@ -316,12 +333,15 @@ def my_offers(cookie=None, limit=60):
     """Мої активні лоти на ZeusX (публічний список продавця)."""
     cookie = cookie or _sec_get("zeusx_cookie")
     if not cookie:
-        return {"ok": False, "error": "ZeusX не підключено — вставте access_token у ⚙ → Підключення"}
+        return {"ok": False, "error_code": "zeusx_not_connected",
+                "error": "ZeusX is not connected: the access_token cookie is missing. "
+                         "Paste it on the Channels tab."}
     try:
         prof = (_zx_call("/v1/user/me", cookie) or {}).get("data") or {}
         seller_id = prof.get("id")
         if not seller_id:
-            return {"ok": False, "error": "не вдалось визначити seller_id"}
+            return {"ok": False, "error_code": "zeusx_seller_missing",
+                    "error": "Could not determine the ZeusX seller_id"}
         path = ("/v1/offer/get-selling-offers-by-seller?seller_id=%s"
                 "&pageIndex=0&sort=newest&product_state=Available" % seller_id)
         d = _zx_call(path, cookie) or {}
@@ -345,9 +365,15 @@ def my_offers(cookie=None, limit=60):
                 "likes": x.get("liking_count") or 0,
                 "rating": x.get("seller_rating"),
             })
-        return {"ok": True, "items": out, "count": len(out), "seller_id": seller_id}
+        return {"ok": True, "items": out, "count": len(out), "seller_id": seller_id,
+                "error_code": None, "error": None}
+    except urllib.error.HTTPError as e:
+        return {"ok": False,
+                "error_code": "zeusx_auth_failed" if e.code in (401, 403) else "zeusx_api_error",
+                "error": "HTTP %s: ZeusX request failed" % e.code}
     except Exception as e:
-        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        return {"ok": False, "error_code": "zeusx_api_error",
+                "error": f"{type(e).__name__}: {e}"}
 
 
 _platform_refreshing = {"on": False}

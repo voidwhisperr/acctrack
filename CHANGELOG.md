@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.66.50 — UX polish and localization
+- First deal form simplified: advanced fields behind "More options", inline validation, no silent negative-profit save.
+- Language no longer changes currency; stale Settings pointers fixed; Always online gets a short explanation.
+- Channel/login errors return stable error codes and are localized in UA/EN/RU.
+- Mobile bottom-nav "Orders" label no longer clipped.
+
 ## v1.66.49 — demo screenshots and back navigation
 - Public demo/screenshot gallery rebuilt from the new Settings islands, three languages.
 - Added a visible localized Back button (works on mobile).

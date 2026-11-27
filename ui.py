@@ -164,7 +164,21 @@ body::before{
 .online-pill.err{color:var(--rd);border-color:rgba(248,113,113,.45);background:rgba(248,113,113,.08)}
 .online-pill.wait{color:var(--yw);border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.08)}
 .online-last{font-size:11.5px;color:var(--mu)}
+.online-hint{font-size:10.5px;color:var(--mu);margin-top:6px;line-height:1.4}
 .online-err{font-size:10.5px;color:var(--rd);opacity:.9;margin-top:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ═══ task-29 UX polish: перший продаж, підказки ═══ */
+.pl-form .pl-more-btn{background:transparent;border:1px solid var(--brd);color:var(--mu);font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;min-height:34px;letter-spacing:.01em}
+.pl-form .pl-more-btn:hover{border-color:var(--a1);color:var(--tx)}
+.pl-form .pl-more-btn .pl-more-chev{display:inline-block;transition:transform .18s}
+.pl-form.pl-more .pl-more-btn .pl-more-chev{transform:rotate(180deg)}
+.pl-form:not(.pl-more) .pl-adv-note{display:none}
+.pl-form:not(.pl-more) .pl-adv-btn{display:none}
+#plAdvanced{display:contents}
+.pl-form:not(.pl-more) #plAdvanced{display:none}
+#plHelper{font-size:11.5px;color:var(--mu);margin:-4px 0 10px;line-height:1.45}
+#plHelper.err{color:var(--rd)}
+.pl-form input.inp-err,.pl-form input.inp-err:focus{border-color:var(--rd)!important;box-shadow:0 0 0 3px rgba(248,113,113,.22)!important}
+.online-note{font-size:10.5px;color:var(--mu);line-height:1.4;margin-top:2px;opacity:.95}
 .set-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 20px}
 .set-links-title{font-size:14px;font-weight:900;letter-spacing:.02em;color:var(--tx);margin-right:4px}
 .set-link{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:999px;text-decoration:none;font-weight:800;font-size:13px;line-height:1;border:1px solid transparent;transition:transform .15s,filter .15s;white-space:nowrap}
@@ -513,6 +527,15 @@ canvas{max-width:100%!important}
   .stats{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
   .sv{font-size:1.3rem}
 }
+/* ── F-08 V4: «Замовлення» у нижньому меню не обрізається на вузьких екранах ── */
+@media(max-width:430px){
+  #mnav{padding-left:2px;padding-right:2px}
+  #mnav .mn{font-size:9px;padding:5px 1px;gap:2px}
+  #mnav .mn .ic{width:17px;height:17px}
+}
+@media(max-width:360px){
+  #mnav .mn{font-size:8.5px;letter-spacing:-.01em}
+}
 
 /* ═══════════════════════════════════════════════════════════════
    ЗБІЛЬШЕННЯ ДРІБНИХ ІНЛАЙН-НАПИСІВ
@@ -678,9 +701,12 @@ body.compact-ui .tabs{gap:4px}
 
 <div id="tab-tracker" class="tc" role="tabpanel" aria-labelledby="tab-btn-tracker">
   <!-- Додати запис -->
-  <div class="panel">
-    <div class="ph"><span data-i18n="ph.newDeal">+ НОВИЙ ПРОДАЖ</span></div>
-    <div style="font-size:10.5px;color:var(--mu);margin:-6px 0 10px" data-i18n="f.currencyHint">Суми вводяться у валюті угоди. Курс — скільки одиниць валюти за 1 USD; він зберігається для історії.</div>
+  <div class="panel pl-form" id="plFormPanel">
+    <div class="ph"><span data-i18n="ph.newDeal">+ НОВИЙ ПРОДАЖ</span>
+      <button type="button" class="btn pl-more-btn" id="plMoreBtn" aria-expanded="false" aria-controls="plAdvanced" onclick="plToggleMore()">⚙ <span data-i18n="f.moreOptions">Більше опцій</span> <span class="pl-more-chev" aria-hidden="true">▾</span></button>
+    </div>
+    <div id="plHelper" data-i18n="f.helper">Заповніть гру, ціну купівлі й продажу — цього достатньо. Комісія застосується автоматично.</div>
+<div class="pl-adv-note" style="font-size:10.5px;color:var(--mu);margin:-6px 0 10px" data-i18n="f.currencyHint">Суми вводяться у валюті угоди. Курс — скільки одиниць валюти за 1 USD; він зберігається для історії.</div>
     <div id="invSellBanner" style="display:none;margin:0 0 10px;padding:8px 11px;border:1px solid var(--gr);border-radius:8px;background:color-mix(in srgb,var(--gr) 8%,transparent);font-size:12px;display:none;align-items:center;gap:8px">
       <span>📦 <b data-i18n="inv.sellFromStock">Продаж зі складу:</b> <span id="invSellText"></span></span>
       <button class="btn" style="margin-left:auto;padding:3px 8px;font-size:11px" onclick="clearInvSell()">✕</button>
@@ -710,6 +736,11 @@ body.compact-ui .tabs{gap:4px}
           </div>
         </div>
       </div>
+      <div>
+        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.feePct">КОМІСІЯ %</div>
+        <input type="number" id="plFeePct" data-i18n-aria="f.feePct" value="9.5" step="0.1" min="0" max="100" style="width:82px" oninput="updateFeePreview()">
+      </div>
+      <div id="plAdvanced">
       <div id="plZeusRankWrap" style="display:none">
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.zeusRank">РАНГ ZEUSX</div>
         <select id="plZeusRank" data-i18n-aria="f.zeusRank" onchange="plZeusRankPick()" style="width:120px"></select>
@@ -723,20 +754,17 @@ body.compact-ui .tabs{gap:4px}
         <input type="number" id="plFx" data-i18n-aria="f.rate" value="1" step="0.0001" min="0.000001" style="width:95px" oninput="updateFeePreview()">
       </div>
       <div>
-        <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.feePct">КОМІСІЯ %</div>
-        <input type="number" id="plFeePct" data-i18n-aria="f.feePct" value="9.5" step="0.1" min="0" max="100" style="width:82px" oninput="updateFeePreview()">
-      </div>
-      <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.expenses">ІНШІ ВИТРАТИ</div>
         <input type="number" id="plExpenses" data-i18n-aria="f.expenses" value="0" step="0.01" min="0" style="width:95px" oninput="updateFeePreview()">
       </div>
+      </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.buy">КУПИВ</div>
-        <input type="number" id="plBuy" data-i18n-aria="f.buy" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
+        <input type="number" id="plBuy" data-i18n-aria="f.buy" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="plClearErr(this);updateFeePreview()" aria-describedby="plHelper">
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.sell">ПРОДАВ</div>
-        <input type="number" id="plSell" data-i18n-aria="f.sell" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="updateFeePreview()">
+        <input type="number" id="plSell" data-i18n-aria="f.sell" placeholder="0.00" step="0.01" min="0" style="width:90px" oninput="plClearErr(this);updateFeePreview()" aria-describedby="plHelper">
       </div>
       <div>
         <div style="font-size:9px;color:var(--mu);letter-spacing:1px;margin-bottom:3px" data-i18n="f.after">ПІСЛЯ КОМІСІЇ</div>
@@ -751,9 +779,9 @@ body.compact-ui .tabs{gap:4px}
         <input type="date" id="plDate" data-i18n-aria="f.date" style="width:130px">
       </div>
       <button class="btn gr" onclick="addPLRecord()" data-i18n="b.add">+ ДОДАТИ</button>
-      <button class="btn" style="font-size:13px" onclick="syncPLToServer()" data-i18n="b.sync">СИНХРОНІЗУВАТИ</button>
-      <button class="btn pu" style="font-size:13px" onclick="openBulkRename()" data-i18n="b.bulk">МАСОВО</button>
-      <button class="btn" style="font-size:13px" onclick="openBulkFee()">% <span data-i18n="b.bulkFee">КОМІСІЯ</span></button>
+      <button class="btn pl-adv-btn" style="font-size:13px" onclick="syncPLToServer()" data-i18n="b.sync">СИНХРОНІЗУВАТИ</button>
+      <button class="btn pu pl-adv-btn" style="font-size:13px" onclick="openBulkRename()" data-i18n="b.bulk">МАСОВО</button>
+      <button class="btn pl-adv-btn" style="font-size:13px" onclick="openBulkFee()">% <span data-i18n="b.bulkFee">КОМІСІЯ</span></button>
     </div>
   </div>
 
@@ -2111,7 +2139,7 @@ const EXTRA_I18N = {
     "rep.stock":"На складі зараз",
     "rep.formula":"Прибуток = виторг − комісії − собівартість проданого. Касовий потік = виторг − комісії − закупівлі цього місяця.",
     "rep.calculating":"Рахую…",
-    "sup.noSuppliers":"Ще немає постачальників — додайте у ⚙ → Постачальники",
+    "sup.noSuppliers":"Ще немає постачальників — додайте: ⚙ Налаштування → Дані й бекапи → Дані й діагностика → Мій постачальник",
     "sup.none":"Нічого не знайдено","sup.empty":"База порожня — натисни ↺ або зачекай оновлення",
     "sup.sale":"ЗНИЖКА","sup.availYes":"є","sup.availNo":"нема","sup.gone":"зник",
     "sup.compareTitle":"Порівняння цін","sup.compareBase":"Базовий",
@@ -2223,7 +2251,7 @@ const EXTRA_I18N = {
     "rep.cash":"Cash flow","rep.stock":"In stock now",
     "rep.formula":"Profit = revenue − fees − cost of goods sold. Cash flow = revenue − fees − purchases this month.",
     "rep.calculating":"Calculating…",
-    "sup.noSuppliers":"No suppliers yet — add one in ⚙ → Suppliers",
+    "sup.noSuppliers":"No suppliers yet — add one: ⚙ Settings → Data & backups → Data & diagnostics → My supplier",
     "sup.none":"Nothing found","sup.empty":"Database is empty — press ↺ or wait for refresh",
     "sup.sale":"SALE","sup.availYes":"in stock","sup.availNo":"out of stock","sup.gone":"gone",
     "sup.compareTitle":"Price comparison","sup.compareBase":"Base",
@@ -2337,7 +2365,7 @@ const EXTRA_I18N = {
     "rep.stock":"На складе сейчас",
     "rep.formula":"Прибыль = выручка − комиссии − себестоимость проданного. Денежный поток = выручка − комиссии − закупки за месяц.",
     "rep.calculating":"Считаю…",
-    "sup.noSuppliers":"Пока нет поставщиков — добавьте в ⚙ → Поставщики",
+    "sup.noSuppliers":"Пока нет поставщиков — добавьте: ⚙ Настройки → Данные и бэкапы → Данные и диагностика → Мой поставщик",
     "sup.none":"Ничего не найдено","sup.empty":"База пуста — нажми ↺ или подожди обновления",
     "sup.sale":"СКИДКА","sup.availYes":"в наличии","sup.availNo":"нет в наличии","sup.gone":"исчез",
     "sup.compareTitle":"Сравнение цен","sup.compareBase":"Базовый",
@@ -2891,6 +2919,32 @@ Object.assign(I18N.ru, {
   'set.hintGeneric':'Настройки раздела'
 });
 
+// ═══ task-29: перший продаж, підказки, незалежність валюти ═══
+Object.assign(I18N.uk, {
+  'f.moreOptions':'Більше опцій','f.lessOptions':'Менше опцій',
+  'f.helper':'Заповніть гру, ціну купівлі й продажу — цього достатньо. Комісія застосується автоматично.',
+  'f.needBuy':'Вкажіть ціну купівлі — поле «Купив».',
+  'f.needSell':'Вкажіть ціну продажу — поле «Продав», інакше угода покаже збиток.',
+  'f.needNum':'Введіть число у виділеному полі.',
+  'deal.negConfirm':'Увага: ця угода виходить зі збитком (чистий мінус). Додати все одно?'
+});
+Object.assign(I18N.en, {
+  'f.moreOptions':'More options','f.lessOptions':'Fewer options',
+  'f.helper':'Fill in the game, purchase price and sale price — that’s enough. The fee is applied automatically.',
+  'f.needBuy':'Enter the purchase price in “Bought”.',
+  'f.needSell':'Enter the sale price in “Sold” — otherwise the deal will show a loss.',
+  'f.needNum':'Enter a number in the highlighted field.',
+  'deal.negConfirm':'Warning: this deal is at a loss (negative net). Add it anyway?'
+});
+Object.assign(I18N.ru, {
+  'f.moreOptions':'Больше опций','f.lessOptions':'Меньше опций',
+  'f.helper':'Заполните игру, цену покупки и цену продажи — этого достаточно. Комиссия применится автоматически.',
+  'f.needBuy':'Укажите цену покупки — поле «Купил».',
+  'f.needSell':'Укажите цену продажи — поле «Продал», иначе сделка покажет убыток.',
+  'f.needNum':'Введите число в выделенном поле.',
+  'deal.negConfirm':'Внимание: эта сделка убыточная (минус). Всё равно добавить?'
+});
+
 function plural(n, key){
   const forms = (PLURAL[LANG] || PLURAL.uk)[key] || ["","",""];
   n = Math.abs(Number(n) || 0);
@@ -2903,9 +2957,9 @@ function plural(n, key){
 let LANG = localStorage.getItem('gt_lang') || window.__GT_LANG__ || 'en';
 function t(k){ return (I18N[LANG] && I18N[LANG][k]) || (I18N.uk[k] || k); }
 const CT_BY_LANG = {
-  uk:{online:'✓ підключено',accounting:'✓ облік',zconn:'ZeusX не підключено — вставте access_token у ⚙ → Підключення',zcookie:'Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.',fconn:'FunPay не підключено — вставте golden_key у ⚙ → Підключення',fcookie:'Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.',noorders:'Замовлень у списку немає',eldnote:'Eldorado — через офіційний Seller API.',sales:'Продажів усього',revenue:'Виторг',profit:'Прибуток',month:'Цей місяць',source:'Джерело',lot:'ЛОТ',game:'ГРА',price:'ЦІНА',supplier:'У ПОСТАЧАЛЬНИКА',diff:'РІЗНИЦЯ',qty:'К-СТЬ',median:'медіана',over:'дорожче за постачальника',under:'дешевше за постачальника',loading:'⏳ Читаю лоти...',empty:'Активних лотів не знайдено',nodata:'немає даних',connNote:'✓ Підключено = Ledger має доступ до кабінету. Це не публічний статус «онлайн» на сайті.',imported:'📥 Нові продажі в черзі: ZeusX {z} · FunPay {f} — відкрийте «ЗАМОВЛЕННЯ».'},
-  en:{online:'✓ connected',accounting:'✓ books',zconn:'ZeusX is not connected — paste access_token in ⚙ → Connections',zcookie:'Fresh cookie required: sign in at zeusx.com and update the token.',fconn:'FunPay is not connected — paste golden_key in ⚙ → Connections',fcookie:'FunPay cookie expires quickly — sign in at funpay.com and update it.',noorders:'No orders in the list',eldnote:'Eldorado — via the official Seller API.',sales:'Total sales',revenue:'Revenue',profit:'Profit',month:'This month',source:'Source',lot:'LOT',game:'GAME',price:'PRICE',supplier:'SUPPLIER',diff:'DIFF',qty:'QTY',median:'median',over:'above supplier',under:'below supplier',loading:'⏳ Loading offers...',empty:'No active offers found',nodata:'no data',connNote:'✓ Connected = Ledger can access the cabinet. This is not your public “online” status on the marketplace.',imported:'📥 New sales queued: ZeusX {z} · FunPay {f} — open Orders.'},
-  ru:{online:'✓ подключено',accounting:'✓ учёт',zconn:'ZeusX не подключён — вставьте access_token в ⚙ → Подключения',zcookie:'Нужен свежий cookie: войдите на zeusx.com и обновите токен.',fconn:'FunPay не подключён — вставьте golden_key в ⚙ → Подключения',fcookie:'Cookie FunPay живёт недолго — войдите на funpay.com и обновите.',noorders:'Заказов в списке нет',eldnote:'Eldorado — через официальный Seller API.',sales:'Продаж всего',revenue:'Выручка',profit:'Прибыль',month:'Этот месяц',source:'Источник',lot:'ЛОТ',game:'ИГРА',price:'ЦЕНА',supplier:'У ПОСТАВЩИКА',diff:'РАЗНИЦА',qty:'КОЛ-ВО',median:'медиана',over:'дороже поставщика',under:'дешевле поставщика',loading:'⏳ Читаю лоты...',empty:'Активных лотов не найдено',nodata:'нет данных',connNote:'✓ Подключено = Ledger имеет доступ к кабинету. Это не публичный статус «онлайн» на сайте.',imported:'📥 В очередь добавлены продажи: ZeusX {z} · FunPay {f} — откройте «ЗАКАЗЫ».'}
+  uk:{online:'✓ підключено',accounting:'✓ облік',zconn:'ZeusX не підключено — вставте access_token у Канали → поле ZeusX',zcookie:'Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.',fconn:'FunPay не підключено — вставте golden_key у Канали → поле FunPay',fcookie:'Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.',noorders:'Замовлень у списку немає',eldnote:'Eldorado — через офіційний Seller API.',sales:'Продажів усього',revenue:'Виторг',profit:'Прибуток',month:'Цей місяць',source:'Джерело',lot:'ЛОТ',game:'ГРА',price:'ЦІНА',supplier:'У ПОСТАЧАЛЬНИКА',diff:'РІЗНИЦЯ',qty:'К-СТЬ',median:'медіана',over:'дорожче за постачальника',under:'дешевше за постачальника',loading:'⏳ Читаю лоти...',empty:'Активних лотів не знайдено',nodata:'немає даних',connNote:'✓ Підключено = Ledger має доступ до кабінету. Це не публічний статус «онлайн» на сайті.',imported:'📥 Нові продажі в черзі: ZeusX {z} · FunPay {f} — відкрийте «ЗАМОВЛЕННЯ».'},
+  en:{online:'✓ connected',accounting:'✓ books',zconn:'ZeusX is not connected — paste access_token in Channels → ZeusX field',zcookie:'Fresh cookie required: sign in at zeusx.com and update the token.',fconn:'FunPay is not connected — paste golden_key in Channels → FunPay field',fcookie:'FunPay cookie expires quickly — sign in at funpay.com and update it.',noorders:'No orders in the list',eldnote:'Eldorado — via the official Seller API.',sales:'Total sales',revenue:'Revenue',profit:'Profit',month:'This month',source:'Source',lot:'LOT',game:'GAME',price:'PRICE',supplier:'SUPPLIER',diff:'DIFF',qty:'QTY',median:'median',over:'above supplier',under:'below supplier',loading:'⏳ Loading offers...',empty:'No active offers found',nodata:'no data',connNote:'✓ Connected = Ledger can access the cabinet. This is not your public “online” status on the marketplace.',imported:'📥 New sales queued: ZeusX {z} · FunPay {f} — open Orders.'},
+  ru:{online:'✓ подключено',accounting:'✓ учёт',zconn:'ZeusX не подключён — вставьте access_token в Каналы → поле ZeusX',zcookie:'Нужен свежий cookie: войдите на zeusx.com и обновите токен.',fconn:'FunPay не подключён — вставьте golden_key в Каналы → поле FunPay',fcookie:'Cookie FunPay живёт недолго — войдите на funpay.com и обновите.',noorders:'Заказов в списке нет',eldnote:'Eldorado — через официальный Seller API.',sales:'Продаж всего',revenue:'Выручка',profit:'Прибыль',month:'Этот месяц',source:'Источник',lot:'ЛОТ',game:'ИГРА',price:'ЦЕНА',supplier:'У ПОСТАВЩИКА',diff:'РАЗНИЦА',qty:'КОЛ-ВО',median:'медиана',over:'дороже поставщика',under:'дешевле поставщика',loading:'⏳ Читаю лоты...',empty:'Активных лотов не найдено',nodata:'нет данных',connNote:'✓ Подключено = Ledger имеет доступ к кабинету. Это не публичный статус «онлайн» на сайте.',imported:'📥 В очередь добавлены продажи: ZeusX {z} · FunPay {f} — откройте «ЗАКАЗЫ».'}
 };
 const CT = new Proxy({}, {get:(_,k)=> (CT_BY_LANG[LANG] || CT_BY_LANG.uk)[k] || ''});
 
@@ -3413,6 +3467,40 @@ function updateFeePreview(){
     ne.style.color = net>0?'var(--gr)':net<0?'var(--rd)':'var(--mu)';
   }
 }
+// ── task-29: перший продаж — «Більше опцій», підказка й валідація без native alert ──
+function plToggleMore(){
+  const form=g('plFormPanel'), btn=g('plMoreBtn');
+  if(!form) return;
+  const open=!form.classList.contains('pl-more');
+  form.classList.toggle('pl-more', open);
+  if(btn){
+    btn.setAttribute('aria-expanded', open?'true':'false');
+    const sp=btn.querySelector('[data-i18n]');
+    if(sp) sp.textContent=t(open?'f.lessOptions':'f.moreOptions');
+  }
+}
+function plClearErr(el){
+  if(el && el.classList) el.classList.remove('inp-err');
+  const h=g('plHelper');
+  if(h){ h.classList.remove('err'); h.textContent=t('f.helper'); }
+}
+function plMarkErr(el,msg){
+  if(el && el.classList) el.classList.add('inp-err');
+  const h=g('plHelper');
+  if(h){ h.classList.add('err'); h.textContent=msg; }
+  try{ if(el && el.focus) el.focus(); }catch(e){}
+}
+function plValidateDeal(){
+  const buyRaw=String(g('plBuy')?.value||'').trim();
+  const sellRaw=String(g('plSell')?.value||'').trim();
+  if(!buyRaw){ plMarkErr(g('plBuy'), t('f.needBuy')); return false; }
+  if(!sellRaw){ plMarkErr(g('plSell'), t('f.needSell')); return false; }
+  const buyNum=parseFloat(buyRaw), sellNum=parseFloat(sellRaw);
+  if(!isFinite(buyNum) || buyNum<0){ plMarkErr(g('plBuy'), t('f.needNum')); return false; }
+  if(!isFinite(sellNum) || sellNum<0){ plMarkErr(g('plSell'), t('f.needNum')); return false; }
+  plClearErr(g('plBuy')); plClearErr(g('plSell'));
+  return true;
+}
 
 const PKEY = 'gt4_pl_v2';
 let _plSaving = 0;
@@ -3560,7 +3648,7 @@ async function pwEnable(){
   try{
     const d = await fetch('/api/auth/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({enabled:true,new:pw,current:cur,otp:otp})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d), false); return; }
     if(el) el.value='';
     toast(t('pw.enabledToast'));
     setTimeout(()=>location.reload(), 1000);
@@ -3573,7 +3661,7 @@ async function pwDisable(){
   try{
     const d = await fetch('/api/auth/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({enabled:false,current:cur,otp:otp})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d), false); return; }
     toast(t('pw.disabledToast'));
     loadSettings();
   }catch(e){ toast('⚠ '+e, false); }
@@ -3874,7 +3962,7 @@ async function setup2FA(){
   const cur=_askCurrent(); if(!cur) return; const otp=_askOtp();
   try{
     const d=await fetch('/api/2fa/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current:cur,otp:otp})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d), false); return; }
     g('twofaSecret').textContent=d.secret||'';
     g('twofaUri').textContent=d.uri||'';
     g('twofaSetup').style.display='block';
@@ -3900,7 +3988,7 @@ async function enable2FA(){
   try{
     const d=await fetch('/api/2fa/enable',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code,current:cur,otp:otp})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d), false); return; }
     toast(t('twofa.enabledToast')); await load2FA(); showRecovery(d.recovery);
   }catch(e){ toast('⚠ '+e, false); }
 }
@@ -3910,7 +3998,7 @@ async function regenRecovery(){
   try{
     const d=await fetch('/api/2fa/recovery',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d), false); return; }
     showRecovery(d.recovery);
     toast(t('twofa.regenDone'));
   }catch(e){ toast('⚠ '+e, false); }
@@ -3919,7 +4007,7 @@ async function logoutAll(){
   if(!confirm(t('twofa.logoutConfirm'))) return;
   try{
     const d=await fetch('/api/logout/all',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d), false); return; }
     location.href='/login';
   }catch(e){ toast('⚠ '+e, false); }
 }
@@ -3930,7 +4018,7 @@ async function disable2FA(){
   try{
     const d=await fetch('/api/2fa/disable',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code,current:cur})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d), false); return; }
     toast(t('twofa.disabledToast')); await load2FA();
   }catch(e){ toast('⚠ '+e, false); }
 }
@@ -3967,8 +4055,47 @@ async function loadPlus(){
     loadTeam();
   }catch(e){ box.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
 }
-// Переклад відомих помилок API (частину рядків сервер віддає лише українською).
+// Переклад відомих помилок API: спершу machine-readable error_code (backend),
+// далі — старі текстові помилки (сумісність). Невідоме повертаємо як є.
 const API_ERR_MAP = [
+  // task-30: коди каналів і помилок входу/2FA — локалізуємо в UI
+  [/zeusx_not_connected/i, {uk:'ZeusX не підключено — вставте access_token у Канали → поле ZeusX', en:'ZeusX is not connected — paste access_token in Channels → ZeusX field', ru:'ZeusX не подключён — вставьте access_token в Каналы → поле ZeusX'}],
+  [/funpay_not_connected/i, {uk:'FunPay не підключено — вставте golden_key у Канали → поле FunPay', en:'FunPay is not connected — paste golden_key in Channels → FunPay field', ru:'FunPay не подключён — вставьте golden_key в Каналы → поле FunPay'}],
+  [/eldorado_not_connected/i, {uk:'Eldorado не підключено — додайте Client ID і Secret у Канали', en:'Eldorado is not connected — add the Client ID and Secret in Channels', ru:'Eldorado не подключён — добавьте Client ID и Secret в Каналы'}],
+  [/funpay_cookie_expired/i, {uk:'Cookie FunPay прострочено — увійдіть на funpay.com і оновіть golden_key у Каналах', en:'FunPay cookie expired — sign in at funpay.com and refresh golden_key in Channels', ru:'Cookie FunPay истёк — войдите на funpay.com и обновите golden_key в Каналах'}],
+  [/zeusx_auth_failed/i, {uk:'ZeusX відхилив access_token — увійдіть на zeusx.com і оновіть токен у Каналах', en:'ZeusX rejected the access_token — sign in at zeusx.com and refresh it in Channels', ru:'ZeusX отклонил access_token — войдите на zeusx.com и обновите токен в Каналах'}],
+  [/invalid_otp/i, {uk:'Невірний код 2FA', en:'Wrong 2FA code', ru:'Неверный код 2FA'}],
+  [/otp_required/i, {uk:'Введіть 6-значний код 2FA', en:'Enter the 6-digit 2FA code', ru:'Введите 6-значный код 2FA'}],
+  [/too_many_attempts/i, {uk:'Забагато спроб — зачекайте кілька хвилин', en:'Too many attempts — wait a few minutes', ru:'Слишком много попыток — подождите несколько минут'}],
+  [/invalid_password/i, {uk:'Невірний пароль', en:'Wrong password', ru:'Неверный пароль'}],
+  [/password_too_short/i, {uk:'Пароль має бути мінімум 8 символів', en:'Password must be at least 8 characters', ru:'Пароль должен быть минимум 8 символов'}],
+  [/password_same/i, {uk:'Новий пароль має відрізнятися від поточного', en:'The new password must differ from the current one', ru:'Новый пароль должен отличаться от текущего'}],
+  [/password_disabled/i, {uk:'Пароль вимкнено', en:'Password is disabled', ru:'Пароль отключён'}],
+  [/step_up_required/i, {uk:'Потрібен поточний пароль і 2FA-код', en:'Current password and 2FA code required', ru:'Нужен текущий пароль и 2FA-код'}],
+  [/enable_password_first/i, {uk:'Спочатку увімкни пароль входу', en:'Enable a login password first', ru:'Сначала включи пароль входа'}],
+  [/setup_secret_first/i, {uk:'Спочатку згенеруй секрет', en:'Generate the 2FA secret first', ru:'Сначала сгенерируй секрет'}],
+  [/csrf_token_missing/i, {uk:'CSRF: онови сторінку (Ctrl+F5)', en:'CSRF: reload the page (Ctrl+F5)', ru:'CSRF: обнови страницу (Ctrl+F5)'}],
+  [/zeusx_cookie_missing_token/i, {uk:'У cookie ZeusX немає access_token — скопіюйте повний cookie', en:'The ZeusX cookie has no access_token — copy the full cookie', ru:'В cookie ZeusX нет access_token — скопируйте полный cookie'}],
+  [/cookie_too_long/i, {uk:'Cookie задовгий (макс. 8000 символів)', en:'Cookie is too long (max 8000 characters)', ru:'Cookie слишком длинный (макс. 8000 символов)'}],
+  [/gmail_nothing_to_save/i, {uk:'Немає що зберігати', en:'Nothing to save', ru:'Нечего сохранять'}],
+  [/nothing_to_save/i, {uk:'Немає що зберігати', en:'Nothing to save', ru:'Нечего сохранять'}],
+  [/gmail_invalid_address/i, {uk:'Невірна Gmail-адреса', en:'Invalid Gmail address', ru:'Неверный Gmail-адрес'}],
+  [/gmail_credentials_required/i, {uk:'Вкажи адресу і App Password', en:'Enter the address and App Password', ru:'Укажите адрес и App Password'}],
+  [/gmail_notifications_disabled/i, {uk:'Поштові сповіщення вимкнено', en:'Mail notifications are disabled', ru:'Почтовые уведомления отключены'}],
+  [/gmail_login_failed/i, {uk:'Не вдалося увійти в Gmail — перевір App Password', en:'Gmail sign-in failed — check the App Password', ru:'Не удалось войти в Gmail — проверьте App Password'}],
+  [/gmail_not_configured/i, {uk:'Gmail не налаштовано', en:'Gmail is not configured', ru:'Gmail не настроен'}],
+  [/tg_not_configured/i, {uk:'Вкажи токен і chat_id', en:'Token and chat_id are required', ru:'Укажите токен и chat_id'}],
+  [/tg_disabled/i, {uk:'Telegram-сповіщення вимкнено', en:'Telegram notifications are disabled', ru:'Telegram-уведомления отключены'}],
+  [/check_in_progress/i, {uk:'Перевірка вже виконується', en:'A check is already running', ru:'Проверка уже выполняется'}],
+  [/https_openssl_missing/i, {uk:'OpenSSL не знайдено — встанови або вкажи cert/key вручну', en:'OpenSSL not found — install it or set cert/key manually', ru:'OpenSSL не найден — установите или укажите cert/key вручную'}],
+  [/zeusx_seller_missing/i, {uk:'На ZeusX не знайдено продавця — увійдіть у кабінет продавця', en:'No ZeusX seller found — sign in to the seller cabinet', ru:'На ZeusX не найден продавец — войдите в кабинет продавца'}],
+  [/eldorado_api_error/i, {uk:'Eldorado API повернув помилку — спробуй пізніше', en:'Eldorado API returned an error — try again later', ru:'Eldorado API вернул ошибку — попробуйте позже'}],
+  [/funpay_api_error/i, {uk:'FunPay повернув помилку — оновіть cookie', en:'FunPay returned an error — refresh the cookie', ru:'FunPay вернул ошибку — обновите cookie'}],
+  [/zeusx_api_error/i, {uk:'ZeusX API повернув помилку — спробуй оновити пізніше', en:'ZeusX API returned an error — try refreshing later', ru:'ZeusX API вернул ошибку — попробуйте обновить позже'}],
+  [/unknown_platform/i, {uk:'Невідома платформа', en:'Unknown platform', ru:'Неизвестная платформа'}],
+  [/bad_request/i, {uk:'Некоректний запит', en:'Bad request', ru:'Некорректный запрос'}],
+  [/no_data/i, {uk:'Немає даних', en:'No data', ru:'Нет данных'}],
+  // сумісність зі старими текстовими помилками сервера
   [/^team plan required\.?$/i, {uk:'Потрібен командний тариф', en:'A team plan is required', ru:'Требуется командный тариф'}],
   [/потрібен поточний пароль і 2FA-код/i, {uk:'Потрібен поточний пароль і 2FA-код', en:'Current password and 2FA code required', ru:'Нужен текущий пароль и 2FA-код'}],
   [/Спочатку увімкни пароль входу/i, {uk:'Спочатку увімкни пароль входу', en:'Enable a login password first', ru:'Сначала включи пароль входа'}],
@@ -3978,17 +4105,29 @@ const API_ERR_MAP = [
   [/Невірний поточний пароль|Невірний пароль/i, {uk:'Невірний поточний пароль', en:'Wrong current password', ru:'Неверный текущий пароль'}],
   [/мінімум 8/i, {uk:'Пароль має бути мінімум 8 символів', en:'Password must be at least 8 characters', ru:'Пароль должен быть минимум 8 символов'}]
 ];
-function apiErrText(msg){
-  const s = String(msg==null?'':msg).trim();
+function _apiErrMapped(s){
   for(const pair of API_ERR_MAP){ if(pair[0].test(s)) return pair[1][LANG] || pair[1].uk; }
-  return s;
+  return '';
+}
+function apiErrText(msg){
+  let s = '';
+  if(msg && typeof msg === 'object'){
+    const code = String(msg.error_code || msg.code || '').trim();
+    const byCode = code ? _apiErrMapped(code) : '';
+    if(byCode) return byCode;
+    s = String(msg.error == null ? '' : msg.error);
+  } else {
+    s = String(msg == null ? '' : msg);
+  }
+  s = s.trim();
+  return _apiErrMapped(s) || s;
 }
 async function loadTeam(){
   const box=g('teamBox'); if(!box) return;
   const L=(uk,en,ru)=>LANG==='en'?en:(LANG==='ru'?ru:uk);
   try{
     const d=await fetch('/api/team').then(r=>r.json());
-    if(!d.ok){ box.innerHTML='<div class="al info">'+esc(apiErrText(d.error||''))+'</div>'; return; }
+    if(!d.ok){ box.innerHTML='<div class="al info">'+esc(apiErrText(d))+'</div>'; return; }
     const rows=(d.members||[]).filter(m=>m.active).map(m=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--brd)"><span>'+esc(m.name)+' · <b>'+esc(m.role)+'</b></span><button class="btn" style="font-size:11px;padding:4px 8px" onclick="teamRemoveMember(\''+m.id+'\')">✕</button></div>').join('');
     const inv=(d.invites||[]).map(i=>'<div style="font-size:11px;color:var(--mu);padding:4px 0">'+esc(i.name)+' · '+esc(i.role)+' · <a style="color:var(--gr)" target="_blank" href="'+location.origin+'/join?token='+encodeURIComponent(i.token)+'">'+L('посилання','link','ссылка')+'</a></div>').join('');
     box.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><input id="teamName" placeholder="'+L('Ім’я','Name','Имя')+'" style="flex:1;min-width:160px;font-size:12px"><select id="teamRole" style="font-size:12px;width:auto"><option value="manager">manager</option><option value="viewer">viewer</option></select><button class="btn gr" onclick="teamInvite()">'+L('Створити інвайт','Create invite','Создать инвайт')+'</button></div><div id="teamLink" style="font-size:12px;color:var(--gr);word-break:break-all;margin-bottom:6px"></div>'+(rows||'<div class="none">'+L('Немає учасників','No members','Нет участников')+'</div>')+(inv?'<div style="margin-top:8px">'+inv+'</div>':'');
@@ -4000,7 +4139,7 @@ async function teamInvite(){
     const name=(g('teamName')&&g('teamName').value||'').trim();
     const role=(g('teamRole')&&g('teamRole').value)||'viewer';
     const d=await fetch('/api/team/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,role,days:30})}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+apiErrText(d.error||''), false); return; }
+    if(!d.ok){ toast('⚠ '+apiErrText(d), false); return; }
     if(g('teamLink')) g('teamLink').textContent=d.link;
     toast(L('Інвайт створено','Invite created','Инвайт создан'));
     loadTeam();
@@ -4169,16 +4308,8 @@ async function loadSettings(){
   if(d.lang && d.lang !== LANG){ LANG = d.lang; try{ localStorage.setItem('gt_lang', LANG); }catch(e){} }
   applyLang();
   try{ if(g('tab-overview') && g('tab-overview').classList.contains('on')) renderOverview(); }catch(e){}
-  if(!_currencyManual){
-    const _autoCur = ({uk:'UAH', en:'USD', ru:'RUB'})[LANG] || _cur;
-    if(_autoCur !== _cur){
-      _cur = _autoCur;
-      try{ fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({currency:_cur})}); }catch(e){}
-      applyCurrency();
-      setTimeout(()=>{ try{ refreshRate(); }catch(e){} }, 150);
-    }
-  }
+  // task-29: прибрано авто-перемикання валюти за мовою (UX-03) — мова й валюта
+  // незалежні; валюта лишається тією, що обрана в онбордингу або в Налаштуваннях.
   try{ load2FA(); }catch(e){}
   try{ loadAudit(); }catch(e){}
   if(g('tgEnabled')) g('tgEnabled').checked = !!tg.enabled;
@@ -4430,7 +4561,7 @@ async function changePassword(){
       toast(t('pw.changed'));
       setTimeout(()=>location.reload(), 1100);
     } else {
-      let msg = apiErrText(d.error || '');
+      let msg = apiErrText(d);
       if(d.reason === 'auth_off') msg = LANG==='ru' ? 'Пароль отключён. Включите его в блоке «Пароль» выше.' : LANG==='en' ? 'Password is disabled. Enable it in the Password block above.' : 'Пароль вимкнено. Увімкніть його в блоці «Пароль» вище.';
       else if(/Невірний/i.test(msg)) msg = LANG==='ru' ? 'Неверный текущий пароль' : LANG==='en' ? 'Wrong current password' : 'Невірний поточний пароль';
       else if(/мінімум 8/i.test(msg)) msg = t('pw.short');
@@ -4637,13 +4768,16 @@ document.addEventListener('click', (e)=>{
 try{ plPlatPick(g('plPlatform')?.value || 'zeusx'); }catch(e){}
 
 async function addPLRecord(){
+  if(!plValidateDeal()) return;
   const sell = parseFloat(g('plSell').value)||0;
   const buy  = parseFloat(g('plBuy').value)||0;
-  if(!sell && !buy){ alert(t('deal.enterPrices')); return; }
   const plat = g('plPlatform').value;
   const feeRaw = parseFloat(g('plFeePct')?.value);
   const fee  = Number.isFinite(feeRaw) ? Math.max(0, Math.min(100, feeRaw))/100 : defaultFeePct(plat);
   const expenses = Math.max(0, parseFloat(g('plExpenses')?.value)||0);
+  // task-29: збиткову угоду не зберігаємо мовчки — питаємо підтвердження
+  const _netDeal = sell*(1-fee) - buy - expenses;
+  if(_netDeal < -0.005 && !confirm(t('deal.negConfirm'))) return;
   const dealCur = (g('plCur')?.value || 'USD').toUpperCase().slice(0,3);
   const dealFx = Math.max(0.000001, parseFloat(g('plFx')?.value) || 1);
   const buyUsd = buy / dealFx, sellUsd = sell / dealFx, expUsd = expenses / dealFx;
@@ -4663,6 +4797,7 @@ async function addPLRecord(){
     await finishMailDraft();
     g('plTitle').value=''; g('plBuy').value=''; g('plSell').value='';
     g('plExpenses').value='0';
+    try{ plClearErr(); }catch(e){}
     g('plFeePreview').textContent='$0.00';
     if(g('plNetPreview')) g('plNetPreview').textContent='$0.00';
     plPlatPick(plat);
@@ -4692,6 +4827,7 @@ async function addPLRecord(){
   await finishMailDraft();
   g('plTitle').value=''; g('plBuy').value=''; g('plSell').value='';
   g('plExpenses').value='0';
+  try{ plClearErr(); }catch(e){}
   g('plFeePreview').textContent='$0.00';
   if(g('plNetPreview')) g('plNetPreview').textContent='$0.00';
   plPlatPick(plat);
@@ -6359,7 +6495,7 @@ async function checkNews(){
   toast(t('sup.newsChecking'));
   try{
     const d = await fetch('/api/suppliers/news',{method:'POST'}).then(r=>r.json());
-    if(!d.ok){ toast('⚠ '+apiErrText(d.error||t('sup.error')), false); return; }
+    if(!d.ok){ toast('⚠ '+(apiErrText(d)||t('sup.error')), false); return; }
     toast(d.baseline ? t('sup.newsBaseline') : (t('sup.newsNew').replace('%s', d.new) + (d.notified ? t('sup.newsTg') : '')));
     loadSupStatus();
   }catch(e){ toast('⚠ '+e, false); }
@@ -6545,7 +6681,7 @@ async function clearCookies(){
   try{
     const d = await fetch('/api/secrets/save',{method:'POST',headers:{'Content-Type':'application/json'},
       body: JSON.stringify({clear:true})}).then(r => r.json());
-    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    if(!d.ok){ toast('⚠ ' + (apiErrText(d) || ''), false); return; }
     g('ckFunpay').value = ''; g('ckZeusx').value = '';
     if(g('ckEldoradoId')) g('ckEldoradoId').value = '';
     if(g('ckEldoradoSecret')) g('ckEldoradoSecret').value = '';
@@ -6565,7 +6701,7 @@ async function saveCookies(){
   try{
     const d = await fetch('/api/secrets/save',{method:'POST',headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body)}).then(r => r.json());
-    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    if(!d.ok){ toast('⚠ ' + (apiErrText(d) || ''), false); return; }
     g('ckFunpay').value = ''; g('ckZeusx').value = '';
     if(g('ckEldoradoId')) g('ckEldoradoId').value = '';
     if(g('ckEldoradoSecret')) g('ckEldoradoSecret').value = '';
@@ -6584,7 +6720,8 @@ async function loadPlatforms(force){
       force?{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}:{})
       .then(r=>r.json());
     const z=d.zeusx||{}, f=d.funpay||{};
-    const errBox=(msg)=>'<div class="al '+(String(msg||'').indexOf('не підключено')>=0?'info':'err')+'" style="margin:0">'+esc(msg||'')+'</div>';
+    const platErr=(p,fallback)=>{ const e=(d&&d[p])||{}; return apiErrText(e) || e.error || fallback; };
+    const errBox=(msg,info)=>'<div class="al '+(info?'info':'err')+'" style="margin:0">'+esc(msg||'')+'</div>';
     const card=(title,color,rows,badge)=>`<div style="flex:1;min-width:280px;background:var(--card2);border:1px solid var(--brd);border-radius:12px;padding:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:15px;font-weight:800;color:${color}">${title}</div>
@@ -6606,7 +6743,7 @@ async function loadPlatforms(force){
         row(TR.tier,esc((z.seller_tier||'—')+' / '+(z.buyer_tier||'—')))+
         row(TR.orders,`${z.orders_all||0} · ✅ ${z.orders_good||0} · ⏳ ${z.orders_pending||0} · ↩ ${z.orders_refunded||0}`)+
         row(TR.msgs,(d.mail_msgs||{}).ZeusX||0)
-      : `${errBox(CT.zconn)}
+      : `${errBox(platErr('zeusx',CT.zconn),true)}
          <div style="font-size:12px;color:var(--mu);margin-top:8px">${CT.zcookie}</div>`;
     const fl = (f.list || []).slice(0, 4);
     const frows = f.ok
@@ -6617,7 +6754,7 @@ async function loadPlatforms(force){
             <div style="color:var(--mu);font-size:12px">${esc(o.status||'')} · ${locMoney(o.price)} · ${esc(o.date||'')}</div>
           </div>`).join('')
         : '<div style="font-size:12px;color:var(--mu);padding-top:6px">'+CT.noorders+'</div>')
-      : `${errBox(CT.fconn)}
+      : `${errBox(platErr('funpay',CT.fconn),true)}
          <div style="font-size:12px;color:var(--mu);margin-top:8px">${CT.fcookie}</div>`;
     const e = d.eldorado||{};
     const erows = e.ok
@@ -6626,7 +6763,7 @@ async function loadPlatforms(force){
         row(CT.profit,locMoney(e.profit))+
         row(CT.month,(e.month_count||0)+' · '+locMoney(e.month_profit))+
         row(CT.source,esc(e.source||'—'))
-      : errBox(e.error||CT.nodata);
+      : errBox(apiErrText(e)||e.error||CT.nodata, !!e.error_code);
     el.innerHTML='<div style="display:flex;gap:14px;flex-wrap:wrap">'
       + card('⚡ ZeusX','var(--a1)',zrows+'<div class="online-w" data-plat="zeusx"></div>',z.ok?'<span style="color:var(--gr);font-size:12px">'+CT.online+'</span>':'')
       + card('🔵 FunPay','var(--a3)',frows+'<div class="online-w" data-plat="funpay"></div>',f.ok?'<span style="color:var(--gr);font-size:12px">'+CT.online+'</span>':'')
@@ -6646,9 +6783,9 @@ function fmtTz(m){ const sign=m>=0?'+':'-'; const a=Math.abs(m); return 'UTC'+si
 function tzOpts(cur){ const vals=TZ_OPTS.slice(); if(!vals.includes(cur)) vals.push(cur); vals.sort((a,b)=>a-b); return vals.map(v=>'<option value="'+v+'" '+(v===cur?'selected':'')+'>'+fmtTz(v)+'</option>').join(''); }
 let ONLINE = null;
 const ONL_TXT = {
- uk:{always:'Завжди онлайн',from:'з',to:'до',online:'сесія активна',scheduled:'за розкладом',off:'вимкнено',error:'помилка',waiting:'перевіряю…',checked:'перевірено',refresh:'Оновити',saved:'Збережено',tglOn:'УВІМК',tglOff:'ВИМК',minAgo:' хв тому',notChecked:'перевірок ще не було',eld:'Eldorado не має публічного API — онлайн неможливий'},
- en:{always:'Always online',from:'from',to:'to',online:'session active',scheduled:'scheduled',off:'off',error:'error',waiting:'checking…',checked:'checked',refresh:'Refresh',saved:'Saved',tglOn:'ON',tglOff:'OFF',minAgo:' min ago',notChecked:'no checks yet',eld:'Eldorado has no public API — online is not possible'},
- ru:{always:'Всегда онлайн',from:'с',to:'до',online:'сессия активна',scheduled:'по расписанию',off:'выключено',error:'ошибка',waiting:'проверяю…',checked:'проверено',refresh:'Обновить',saved:'Сохранено',tglOn:'ВКЛ',tglOff:'ВЫКЛ',minAgo:' мин назад',notChecked:'проверок ещё не было',eld:'Eldorado не имеет публичного API — онлайн невозможен'}
+ uk:{always:'Завжди онлайн',from:'з',to:'до',online:'сесія активна',scheduled:'за розкладом',off:'вимкнено',error:'помилка',waiting:'перевіряю…',checked:'перевірено',refresh:'Оновити',saved:'Збережено',hint:'Перевірки виконуються 24/7, поки увімкнено. Це не публічний онлайн-статус.',tglOn:'УВІМК',tglOff:'ВИМК',minAgo:' хв тому',notChecked:'перевірок ще не було',eld:'Eldorado не має публічного API — онлайн неможливий',note:'Перевірки йдуть 24/7, поки увімкнено; це не публічний статус «онлайн».'},
+ en:{always:'Always online',from:'from',to:'to',online:'session active',scheduled:'scheduled',off:'off',error:'error',waiting:'checking…',checked:'checked',refresh:'Refresh',saved:'Saved',hint:'Checks run 24/7 while ON. This is not a public online status.',tglOn:'ON',tglOff:'OFF',minAgo:' min ago',notChecked:'no checks yet',eld:'Eldorado has no public API — online is not possible',note:'Checks run 24/7 while ON — this is not a public online status.'},
+ ru:{always:'Всегда онлайн',from:'с',to:'до',online:'сессия активна',scheduled:'по расписанию',off:'выключено',error:'ошибка',waiting:'проверяю…',checked:'проверено',refresh:'Обновить',saved:'Сохранено',hint:'Проверки выполняются 24/7, пока включено. Это не публичный онлайн-статус.',tglOn:'ВКЛ',tglOff:'ВЫКЛ',minAgo:' мин назад',notChecked:'проверок ещё не было',eld:'Eldorado не имеет публичного API — онлайн невозможен',note:'Проверки идут 24/7, пока включено; это не публичный статус «онлайн».'}
 };
 function onlT(){ return ONL_TXT[LANG] || ONL_TXT.uk; }
 async function loadOnline(){
@@ -6674,7 +6811,8 @@ function renderOnline(){
       +'<span class="online-last">'+(ago!==null?(T.checked+' '+ago+T.minAgo):T.notChecked)+'</span>'
       +'<button class="online-refresh" onclick="saveOnline(\''+p+'\',true)">↻ '+T.refresh+'</button>'
       +'</div>'
-      +(d.error?'<div class="online-err">'+esc(String(d.error).slice(0,120))+'</div>':'')
+      +'<div class="online-note">'+esc(T.note)+'</div>'
+      +(d.error?'<div class="online-err">'+esc(apiErrText({error_code:d.error_code,error:d.error}).slice(0,160))+'</div>':'')
       +'</div>';
   });
 }
@@ -6686,9 +6824,11 @@ async function saveOnline(p, force){
   const en = force ? cur : !cur;             // перемикач перемикає стан, кнопка ↻ — лише перевіряє
   const tz = -new Date().getTimezoneOffset(); // локальний пояс; без розкладу — 24/7
   try{
-    await fetch('/api/online/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:p,enabled:en,start:'00:00',end:'23:59',tz:tz})});
+    const r=await fetch('/api/online/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:p,enabled:en,start:'00:00',end:'23:59',tz:tz})});
+    const j=await r.json().catch(()=>({}));
+    if(j && j.ok===false){ toast('⚠ '+(apiErrText(j)||onlT().error), false); return; }
     await loadOnline();
-  }catch(e){}
+  }catch(e){ toast('⚠ '+e, false); }
 }
 let mailItems=[];
 let _lastMailNew=null;
@@ -7176,7 +7316,7 @@ async function invAdd(){
       body: JSON.stringify({title, game: g('invGame').value, cost,
         source: g('invSource').value,
         account: (g('invAccount') && g('invAccount').value) || ''})}).then(r => r.json());
-    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    if(!d.ok){ toast('⚠ ' + (apiErrText(d) || ''), false); return; }
     toast(t('inv.added'));
     g('invTitle').value = ''; g('invCost').value = '0';
     if(g('invGame')) g('invGame').value = '';
@@ -7226,7 +7366,7 @@ async function invStatus(id, status){
   try{
     const d = await fetch('/api/inventory/status', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({id, status})}).then(r => r.json());
-    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    if(!d.ok){ toast('⚠ ' + (apiErrText(d) || ''), false); return; }
     toast(status === 'sold' ? t('inv.soldToast') : (status === 'written_off' ? t('inv.offToast') : t('inv.returnToast')));
     loadInventory();
   }catch(e){ toast('⚠ ' + e, false); }
@@ -7237,7 +7377,7 @@ let _invSecret = '';
 async function openInvSecret(id){
   try{
     const d = await fetch('/api/inventory/secret?id=' + encodeURIComponent(id)).then(r => r.json());
-    if(!d.ok){ toast('⚠ ' + (d.error || ''), false); return; }
+    if(!d.ok){ toast('⚠ ' + (apiErrText(d) || ''), false); return; }
     _invSecret = d.account || t('inv.noAccount');
     g('invModalTitle').textContent = (d.game || '') + ' · ' + (d.title || '');
     g('invModalText').textContent = _invSecret;
@@ -8146,8 +8286,8 @@ const TR_EN = {
   "База порожня — натисни ↺ або зачекай оновлення":
     "Database is empty — press ↺ or wait for a refresh",
   "Нічого не знайдено": "Nothing found", "ВСЬОГО": "TOTAL", "всього": "total",
-  "Ще немає постачальників — додайте у ⚙ → Постачальники":
-    "No suppliers yet — add one in ⚙ → Suppliers",
+  "Ще немає постачальників — додайте: ⚙ Налаштування → Дані й бекапи → Дані й діагностика → Мій постачальник":
+    "No suppliers yet — add one: ⚙ Settings → Data & backups → Data & diagnostics → My supplier",
   "Пошук...": "Search...", "Без сорт.": "No sorting", "Нові першими": "Newest first",
   "Оновлені першими": "Recently updated", "Ціна ↑": "Price ↑", "Ціна ↓": "Price ↓",
   "Sale першими": "On sale first", "є в наявності": "in stock", "зниклі": "gone",
@@ -8588,8 +8728,8 @@ const TR_RU = {
   "Нові першими": "Новые первыми", "Оновлені першими": "Обновлённые",
   "Ціна ↑": "Цена ↑", "Ціна ↓": "Цена ↓", "Sale першими": "Sale первыми",
   "є в наявності": "в наличии", "зниклі": "исчезли", "дешевше": "дешевле",
-  "Новинки": "Новинки", "Ще немає постачальників — додайте у ⚙ → Постачальники":
-    "Пока нет поставщиков — добавьте в ⚙ → Поставщики",
+  "Новинки": "Новинки", "Ще немає постачальників — додайте: ⚙ Налаштування → Дані й бекапи → Дані й діагностика → Мій постачальник":
+    "Пока нет поставщиков — добавьте: ⚙ Настройки → Данные и бэкапы → Данные и диагностика → Мой поставщик",
   "База порожня — натисни ↺ або зачекай оновлення":
     "База пуста — нажми ↺ или подожди обновления",
   "Нічого не знайдено": "Ничего не найдено", "ВСЬОГО": "ВСЕГО", "всього": "всего",
