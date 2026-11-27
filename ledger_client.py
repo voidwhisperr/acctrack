@@ -186,7 +186,27 @@ POLL_JS = r"""
 """
 
 
+WIDGET = None
+
+
 class Api:
+    url = ""
+    auth = None
+
+    def get_summary(self):
+        try:
+            return shell.summary(self.url, self.auth)
+        except Exception as e:
+            return {"ok": False, "error": str(e)[:120]}
+
+    def hide_widget(self):
+        try:
+            if WIDGET is not None:
+                WIDGET.hide()
+        except Exception:
+            pass
+        return True
+
     def notify_order(self, n, subject, lang="uk"):
         notify(n, subject, lang)
         return True
@@ -247,8 +267,42 @@ def main():
     start_hidden = ("--tray" in sys.argv) and not first_run
 
     api = Api()
+    api.url = server
+    api.auth = (user, password) if password else None
     _prefs = load_prefs()
     _prefs_kwargs = window_kwargs(_prefs)
+
+    def _menu_nav(tab):
+        try:
+            window.show(); window.restore()
+            window.evaluate_js(shell.nav_js(tab))
+        except Exception:
+            pass
+
+    def _toggle_widget():
+        try:
+            if WIDGET is None:
+                return
+            if WIDGET.is_visible():
+                WIDGET.hide()
+            else:
+                WIDGET.show()
+        except Exception:
+            pass
+
+    try:
+        from webview.menu import Menu, MenuAction
+        _menu = [
+            Menu("Файл", [MenuAction("➕ Додати угоду", lambda: _menu_nav("tracker")),
+                         MenuAction("Замовлення", lambda: _menu_nav("mail")),
+                         MenuAction("Канали", lambda: _menu_nav("channels"))]),
+            Menu("Вигляд", [MenuAction("Огляд", lambda: _menu_nav("overview")),
+                           MenuAction("Налаштування", lambda: _menu_nav("setup")),
+                           MenuAction("Міні-віджет", lambda: _toggle_widget())]),
+            Menu("Довідка", [MenuAction("Перевірити оновлення", lambda: shell.open_release())]),
+        ]
+    except Exception:
+        _menu = []
     window = webview.create_window(
         "Ledger+ — Game Account Tracker",
         url,
@@ -257,8 +311,17 @@ def main():
         text_select=True,
         js_api=api,
         hidden=start_hidden,
+        menu=_menu,
         **_prefs_kwargs,
     )
+    global WIDGET
+    try:
+        WIDGET = webview.create_window("Ledger+ — Today", html=shell.WIDGET_HTML,
+                                       width=330, height=205, frameless=True, on_top=True,
+                                       resizable=False, js_api=api, hidden=True)
+    except Exception:
+        log("widget failed:\n" + traceback.format_exc())
+        WIDGET = None
 
     def inject():
         try:
@@ -318,6 +381,7 @@ def main():
             pystray.MenuItem("Замовлення", lambda i=None, x=None: nav("mail")),
             pystray.MenuItem("Канали", lambda i=None, x=None: nav("channels")),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Міні-віджет", lambda i=None, x=None: _toggle_widget()),
             pystray.MenuItem("Запускати з Windows", toggle_autostart,
                              checked=lambda item: shell.autostart_enabled()),
             pystray.MenuItem("Перевірити оновлення", update_check),

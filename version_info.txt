@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1,66,53,0),
-    prodvers=(1,66,53,0),
+    filevers=(1,66,54,0),
+    prodvers=(1,66,54,0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -14,12 +14,12 @@ VSVersionInfo(
       StringTable('040904B0', [
         StringStruct('CompanyName', 'Ledger'),
         StringStruct('FileDescription', 'Ledger - deals, channels, stock and analytics'),
-        StringStruct('FileVersion', '1.66.53.0'),
+        StringStruct('FileVersion', '1.66.54.0'),
         StringStruct('InternalName', 'Ledger'),
         StringStruct('LegalCopyright', 'MIT License, Ledger contributors'),
         StringStruct('OriginalFilename', 'Ledger.exe'),
         StringStruct('ProductName', 'Ledger'),
-        StringStruct('ProductVersion', '1.66.53.0')
+        StringStruct('ProductVersion', '1.66.54.0')
       ])
     ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
