@@ -153,6 +153,7 @@ body::before{
 .online-times{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:7px}
 .online-time{font-size:11px;padding:4px 6px;border:1px solid var(--brd);border-radius:7px;
   background:var(--card);color:var(--tx);font-family:inherit;width:94px;min-height:0!important}
+.online-tz{font-size:10.5px;padding:3px 4px;border:1px solid var(--brd);border-radius:6px;background:var(--card);color:var(--tx);font-family:inherit;max-width:86px}
 .online-foot{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11px;color:var(--mu)}
 .online-state{font-weight:700}
 .online-refresh{padding:3px 8px;font-size:10.5px;border-radius:6px;border:1px solid var(--brd);
@@ -2695,9 +2696,9 @@ function plural(n, key){
 let LANG = localStorage.getItem('gt_lang') || window.__GT_LANG__ || 'en';
 function t(k){ return (I18N[LANG] && I18N[LANG][k]) || (I18N.uk[k] || k); }
 const CT = {
-  uk:{online:'✓ онлайн',accounting:'✓ облік',zconn:'ZeusX не підключено — вставте access_token у ⚙ → Підключення',zcookie:'Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.',fconn:'FunPay не підключено — вставте golden_key у ⚙ → Підключення',fcookie:'Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.',noorders:'Замовлень у списку немає',eldnote:'Eldorado — через офіційний Seller API.',sales:'Продажів усього',revenue:'Виторг',profit:'Прибуток',month:'Цей місяць',source:'Джерело',lot:'ЛОТ',game:'ГРА',price:'ЦІНА',supplier:'У ПОСТАЧАЛЬНИКА',diff:'РІЗНИЦЯ',qty:'К-СТЬ',median:'медіана',over:'дорожче за постачальника',under:'дешевше за постачальника',loading:'⏳ Читаю лоти...',empty:'Активних лотів не знайдено',nodata:'немає даних',imported:'📥 Нові продажі в черзі: ZeusX {z} · FunPay {f} — відкрийте «ЗАМОВЛЕННЯ».'},
-  en:{online:'✓ online',accounting:'✓ books',zconn:'ZeusX is not connected — paste access_token in ⚙ → Connections',zcookie:'Fresh cookie required: sign in at zeusx.com and update the token.',fconn:'FunPay is not connected — paste golden_key in ⚙ → Connections',fcookie:'FunPay cookie expires quickly — sign in at funpay.com and update it.',noorders:'No orders in the list',eldnote:'Eldorado — via the official Seller API.',sales:'Total sales',revenue:'Revenue',profit:'Profit',month:'This month',source:'Source',lot:'LOT',game:'GAME',price:'PRICE',supplier:'SUPPLIER',diff:'DIFF',qty:'QTY',median:'median',over:'above supplier',under:'below supplier',loading:'⏳ Loading offers...',empty:'No active offers found',nodata:'no data',imported:'📥 New sales queued: ZeusX {z} · FunPay {f} — open Orders.'},
-  ru:{online:'✓ онлайн',accounting:'✓ учёт',zconn:'ZeusX не подключён — вставьте access_token в ⚙ → Подключения',zcookie:'Нужен свежий cookie: войдите на zeusx.com и обновите токен.',fconn:'FunPay не подключён — вставьте golden_key в ⚙ → Подключения',fcookie:'Cookie FunPay живёт недолго — войдите на funpay.com и обновите.',noorders:'Заказов в списке нет',eldnote:'Eldorado — через официальный Seller API.',sales:'Продаж всего',revenue:'Выручка',profit:'Прибыль',month:'Этот месяц',source:'Источник',lot:'ЛОТ',game:'ИГРА',price:'ЦЕНА',supplier:'У ПОСТАВЩИКА',diff:'РАЗНИЦА',qty:'КОЛ-ВО',median:'медиана',over:'дороже поставщика',under:'дешевле поставщика',loading:'⏳ Читаю лоты...',empty:'Активных лотов не найдено',nodata:'нет данных',imported:'📥 В очередь добавлены продажи: ZeusX {z} · FunPay {f} — откройте «ЗАКАЗЫ».'}
+  uk:{online:'✓ підключено',accounting:'✓ облік',zconn:'ZeusX не підключено — вставте access_token у ⚙ → Підключення',zcookie:'Потрібен свіжий cookie: увійдіть на zeusx.com і оновіть токен.',fconn:'FunPay не підключено — вставте golden_key у ⚙ → Підключення',fcookie:'Cookie FunPay живе недовго — увійдіть на funpay.com і оновіть.',noorders:'Замовлень у списку немає',eldnote:'Eldorado — через офіційний Seller API.',sales:'Продажів усього',revenue:'Виторг',profit:'Прибуток',month:'Цей місяць',source:'Джерело',lot:'ЛОТ',game:'ГРА',price:'ЦІНА',supplier:'У ПОСТАЧАЛЬНИКА',diff:'РІЗНИЦЯ',qty:'К-СТЬ',median:'медіана',over:'дорожче за постачальника',under:'дешевше за постачальника',loading:'⏳ Читаю лоти...',empty:'Активних лотів не знайдено',nodata:'немає даних',connNote:'✓ Підключено = Ledger має доступ до кабінету. Це не публічний статус «онлайн» на сайті.',imported:'📥 Нові продажі в черзі: ZeusX {z} · FunPay {f} — відкрийте «ЗАМОВЛЕННЯ».'},
+  en:{online:'✓ connected',accounting:'✓ books',zconn:'ZeusX is not connected — paste access_token in ⚙ → Connections',zcookie:'Fresh cookie required: sign in at zeusx.com and update the token.',fconn:'FunPay is not connected — paste golden_key in ⚙ → Connections',fcookie:'FunPay cookie expires quickly — sign in at funpay.com and update it.',noorders:'No orders in the list',eldnote:'Eldorado — via the official Seller API.',sales:'Total sales',revenue:'Revenue',profit:'Profit',month:'This month',source:'Source',lot:'LOT',game:'GAME',price:'PRICE',supplier:'SUPPLIER',diff:'DIFF',qty:'QTY',median:'median',over:'above supplier',under:'below supplier',loading:'⏳ Loading offers...',empty:'No active offers found',nodata:'no data',connNote:'✓ Connected = Ledger can access the cabinet. This is not your public “online” status on the marketplace.',imported:'📥 New sales queued: ZeusX {z} · FunPay {f} — open Orders.'},
+  ru:{online:'✓ подключено',accounting:'✓ учёт',zconn:'ZeusX не подключён — вставьте access_token в ⚙ → Подключения',zcookie:'Нужен свежий cookie: войдите на zeusx.com и обновите токен.',fconn:'FunPay не подключён — вставьте golden_key в ⚙ → Подключения',fcookie:'Cookie FunPay живёт недолго — войдите на funpay.com и обновите.',noorders:'Заказов в списке нет',eldnote:'Eldorado — через официальный Seller API.',sales:'Продаж всего',revenue:'Выручка',profit:'Прибыль',month:'Этот месяц',source:'Источник',lot:'ЛОТ',game:'ИГРА',price:'ЦЕНА',supplier:'У ПОСТАВЩИКА',diff:'РАЗНИЦА',qty:'КОЛ-ВО',median:'медиана',over:'дороже поставщика',under:'дешевле поставщика',loading:'⏳ Читаю лоты...',empty:'Активных лотов не найдено',nodata:'нет данных',connNote:'✓ Подключено = Ledger имеет доступ к кабинету. Это не публичный статус «онлайн» на сайте.',imported:'📥 В очередь добавлены продажи: ZeusX {z} · FunPay {f} — откройте «ЗАКАЗЫ».'}
 }[LANG] || {};
 
 function dateLocale(){ return LANG==='ru' ? 'ru-RU' : LANG==='en' ? 'en-GB' : 'uk-UA'; }
@@ -6334,18 +6335,22 @@ async function loadPlatforms(force){
       + card('🟡 Eldorado','var(--yw)',erows+'<div class="online-w" data-plat="eldorado"></div>',e.ok?'<span style="color:var(--gr);font-size:12px">'+CT.accounting+'</span>':'')
       + '</div>'
       + ((d.zeusx_imported||d.funpay_imported)?`<div class="al ok" style="margin-top:14px">📥 У чергу додано нових продажів: ZeusX ${d.zeusx_imported||0} · FunPay ${d.funpay_imported||0} — відкрийте вкладку «ЗАМОВЛЕННЯ».</div>`:'')
-      + '<div style="font-size:12px;color:var(--mu);margin-top:10px">'+CT.eldnote+'</div>';
+      + '<div style="font-size:12px;color:var(--mu);margin-top:10px">'+CT.connNote+'</div>'
+      + '<div style="font-size:12px;color:var(--mu);margin-top:6px">'+CT.eldnote+'</div>';
   calcMarkets();
   loadOffers();
   loadOnline();
   }catch(e){ el.innerHTML='<div class="al err">⚠ '+esc(String(e))+'</div>'; }
 }
 
+const TZ_OPTS=[-720,-660,-600,-570,-540,-480,-420,-360,-300,-240,-210,-180,-120,-60,0,60,120,180,210,240,270,300,330,345,360,390,420,480,525,540,570,600,630,660,720,765,780,840];
+function fmtTz(m){ const sign=m>=0?'+':'-'; const a=Math.abs(m); return 'UTC'+sign+String(Math.floor(a/60)).padStart(2,'0')+':'+String(a%60).padStart(2,'0'); }
+function tzOpts(cur){ const vals=TZ_OPTS.slice(); if(!vals.includes(cur)) vals.push(cur); vals.sort((a,b)=>a-b); return vals.map(v=>'<option value="'+v+'" '+(v===cur?'selected':'')+'>'+fmtTz(v)+'</option>').join(''); }
 let ONLINE = null;
 const ONL_TXT = {
- uk:{always:'Завжди онлайн',from:'з',to:'до',online:'онлайн',scheduled:'за розкладом',off:'вимкнено',error:'помилка',waiting:'перевіряю…',checked:'перевірено',refresh:'Оновити',saved:'Збережено',eld:'Eldorado не має публічного API — онлайн неможливий'},
- en:{always:'Always online',from:'from',to:'to',online:'online',scheduled:'scheduled',off:'off',error:'error',waiting:'checking…',checked:'checked',refresh:'Refresh',saved:'Saved',eld:'Eldorado has no public API — online is not possible'},
- ru:{always:'Всегда онлайн',from:'с',to:'до',online:'онлайн',scheduled:'по расписанию',off:'выключено',error:'ошибка',waiting:'проверяю…',checked:'проверено',refresh:'Обновить',saved:'Сохранено',eld:'Eldorado не имеет публичного API — онлайн невозможен'}
+ uk:{always:'Завжди онлайн',from:'з',to:'до',online:'сесія активна',scheduled:'за розкладом',off:'вимкнено',error:'помилка',waiting:'перевіряю…',checked:'перевірено',refresh:'Оновити',saved:'Збережено',eld:'Eldorado не має публічного API — онлайн неможливий'},
+ en:{always:'Always online',from:'from',to:'to',online:'session active',scheduled:'scheduled',off:'off',error:'error',waiting:'checking…',checked:'checked',refresh:'Refresh',saved:'Saved',eld:'Eldorado has no public API — online is not possible'},
+ ru:{always:'Всегда онлайн',from:'с',to:'до',online:'сессия активна',scheduled:'по расписанию',off:'выключено',error:'ошибка',waiting:'проверяю…',checked:'проверено',refresh:'Обновить',saved:'Сохранено',eld:'Eldorado не имеет публичного API — онлайн невозможен'}
 };
 function onlT(){ return ONL_TXT[LANG] || ONL_TXT.uk; }
 async function loadOnline(){
@@ -6368,7 +6373,8 @@ function renderOnline(){
       +'<div class="online-times"><span style="color:var(--mu);font-size:11px">'+T.from+'</span>'
       +'<input type="time" class="online-time" data-onl-start="'+p+'" value="'+esc(d.start||'')+'" onchange="saveOnline(\''+p+'\')">'
       +'<span style="color:var(--mu);font-size:11px">'+T.to+'</span>'
-      +'<input type="time" class="online-time" data-onl-end="'+p+'" value="'+esc(d.end||'')+'" onchange="saveOnline(\''+p+'\')"></div>'
+      +'<input type="time" class="online-time" data-onl-end="'+p+'" value="'+esc(d.end||'')+'" onchange="saveOnline(\''+p+'\')">'
+      +'<select class="online-tz" data-onl-tz="'+p+'" onchange="saveOnline(\''+p+'\')" title="Timezone">'+tzOpts(Number(d.tz||-new Date().getTimezoneOffset()))+'</select></div>'
       +'<div class="online-foot"><span class="online-state" style="color:'+color+'">● '+label+'</span>'
       +(ago!==null?'<span>'+T.checked+' '+ago+' хв</span>':'')
       +(d.error?'<span style="font-size:10.5px;opacity:.8">'+esc(d.error.slice(0,70))+'</span>':'')
@@ -6381,8 +6387,9 @@ async function saveOnline(p, force){
   const en=el.querySelector('[data-onl-en]')?.checked||false;
   const start=el.querySelector('[data-onl-start]')?.value||'';
   const end=el.querySelector('[data-onl-end]')?.value||'';
+  const tz=Number(el.querySelector('[data-onl-tz]')?.value ?? (-new Date().getTimezoneOffset()));
   try{
-    await fetch('/api/online/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:p,enabled:en,start:start,end:end,tz:-new Date().getTimezoneOffset()})});
+    await fetch('/api/online/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:p,enabled:en,start:start,end:end,tz:tz})});
     await loadOnline();
   }catch(e){}
 }
