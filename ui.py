@@ -165,11 +165,16 @@ body::before{
 .online-pill.wait{color:var(--yw);border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.08)}
 .online-last{font-size:11.5px;color:var(--mu)}
 .online-err{font-size:10.5px;color:var(--rd);opacity:.9;margin-top:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.set-links{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin:0 0 18px}
-.set-links-title{font-weight:800;color:var(--tx)}
-.set-links a{color:var(--a1);text-decoration:none;font-weight:600}
-.set-links a:hover{text-decoration:underline}
-@media(max-width:640px){.set-links{gap:10px;font-size:11.5px}}
+.set-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 20px}
+.set-links-title{font-size:14px;font-weight:900;letter-spacing:.02em;color:var(--tx);margin-right:4px}
+.set-link{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:999px;text-decoration:none;font-weight:800;font-size:13px;line-height:1;border:1px solid transparent;transition:transform .15s,filter .15s;white-space:nowrap}
+.set-link:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.set-link .ic{width:16px;height:16px}
+.set-link.tg{background:#229ED9;color:#fff}
+.set-link.dc{background:#5865F2;color:#fff}
+.set-link.mail{background:var(--card2);color:var(--tx);border-color:var(--brd)}
+.set-link.demo{background:var(--a1);color:#07110c}
+@media(max-width:640px){.set-links{gap:8px}.set-link{padding:7px 12px;font-size:12px}}
 .set-sec{margin:0 0 18px}
 .set-sec-title{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;
   letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin:0 0 8px;padding-left:2px}
@@ -1353,10 +1358,10 @@ body.compact-ui .tabs{gap:4px}
   <!-- community-рядок і секції-острівці будуються з існуючих панелей у JS (усі ID/обробники збережено) -->
   <div class="set-links" aria-label="Ledger OS links">
     <span class="set-links-title">Ledger OS</span>
-    <a href="https://t.me/ledger_os" target="_blank" rel="noopener">Telegram</a>
-    <a href="https://discord.gg/eMBXnKA3Pa" target="_blank" rel="noopener">Discord</a>
-    <a href="mailto:ledgeros.gg@gmail.com">Email</a>
-    <a href="/demo" target="_blank" rel="noopener" data-i18n="cta.screens">Скріншоти функцій →</a>
+    <a class="set-link tg" href="https://t.me/ledger_os" target="_blank" rel="noopener">Telegram</a>
+    <a class="set-link dc" href="https://discord.gg/eMBXnKA3Pa" target="_blank" rel="noopener">Discord</a>
+    <a class="set-link mail" href="mailto:ledgeros.gg@gmail.com">Email</a>
+    <a class="set-link demo" href="/demo" target="_blank" rel="noopener" data-i18n="cta.screens">Скріншоти функцій →</a>
   </div>
   <div id="setSections"></div>
 
@@ -1689,6 +1694,15 @@ body.compact-ui .tabs{gap:4px}
         <input id="pwNew2" data-i18n-aria="pw.repeat" type="password" autocomplete="new-password" style="width:160px">
       </div>
       <button class="btn gr" onclick="changePassword()">✓ Змінити пароль</button>
+    </div>
+    <div style="border-top:1px solid var(--brd);margin:14px 0"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:4px">RECOVERY EMAIL</div>
+        <input id="recoveryEmail" type="email" placeholder="you@gmail.com" autocomplete="email" style="width:250px">
+      </div>
+      <button class="btn gr" onclick="saveRecoveryEmail()">✓ Зберегти</button>
+      <span id="recoveryEmailInfo" style="font-size:11px;color:var(--mu);padding-bottom:9px">Used for password reset codes.</span>
     </div>
     <div style="border-top:1px solid var(--brd);margin:14px 0"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
@@ -4182,6 +4196,7 @@ async function loadSettings(){
       : (LANG==='ru'?'⚠ не настроено':LANG==='en'?'⚠ not configured':'⚠ не налаштовано');
     const gm = d.gmail || {};
     if(g('gmailUser')) g('gmailUser').value = gm.user || '';
+    if(g('recoveryEmail')) g('recoveryEmail').value = d.recovery_email || (gm.user || '');
     renderGmailInfo(gm);
     const au = d.auth || {};
     window.AUTH_ENABLED = !!d.auth_enabled;
@@ -4387,6 +4402,17 @@ async function saveCloud(){
     toast('✅ Папку хмари збережено');
     await loadSettings();
   }catch(e){ toast('⚠ '+e, false); }
+}
+
+async function saveRecoveryEmail(){
+  const el=g('recoveryEmail'); if(!el) return;
+  const email=(el.value||'').trim();
+  try{
+    const d=await fetch('/api/settings/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({recovery_email:email})}).then(r=>r.json());
+    const info=g('recoveryEmailInfo');
+    if(d.ok){ if(info) info.textContent='✓ Saved'; toast('✓'); }
+    else { if(info) info.textContent=d.error||'Error'; }
+  }catch(e){ const info=g('recoveryEmailInfo'); if(info) info.textContent='Network error'; }
 }
 
 async function changePassword(){

@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.66.48 — final QA fixes
+- Recovery email field in Settings → Security; backup restore keeps Always-online/price targets.
+- SSRF redirect guard, 2FA/logout-all session revocation.
+- Desktop window geometry clamped; no off-screen launch.
+- Localized login page (forgot password, 2FA/recovery placeholder).
+- Updated public demo/docs, cookie-guide logo.
+
+## v1.66.47 — post-audit fixes
+- Recovery email can be configured in Settings → Security; recovery no longer requires hand-editing secrets.
+- Backup restore keeps Always-online configuration and price targets.
+- SSRF redirect guard uses the safe opener; enabling 2FA and logout-all revoke sessions correctly.
+- Desktop windows clamp off-screen/minimized geometry; no more invisible window at -32000.
+- Updated public docs/demo and fixed the cookie-guide logo.
+
+## v1.66.45 — expressive settings links
+- Replaced plain community links with larger colour-coded buttons: Telegram, Discord, Email and Screenshots.
+
 ## v1.66.44 — settings cleanup
 - Removed the unscannable QR/community island from Settings; replaced it with a compact always-visible link row (Telegram, Discord, email, screenshots).
 - Removed legacy duplicate contact panel; settings keep the collapsible islands.

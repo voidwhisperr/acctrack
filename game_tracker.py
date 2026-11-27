@@ -82,7 +82,7 @@ BIND = (os.environ.get("GT_BIND") or "127.0.0.1").strip() or "127.0.0.1"
 AUTH_MODE = (os.environ.get("GT_AUTH") or "").strip().lower()  # "" = вирішуємо після налаштувань
 REQUIRE_ACCESS = (os.environ.get("GT_REQUIRE_ACCESS") or "").strip() == "1"
 # Єдине джерело версії: /api/health, /api/diag, /api/update/check, банер старту.
-APP_VERSION = "1.66.44"
+APP_VERSION = "1.66.48"
 _SESSION_SECRET = base64.urlsafe_b64encode(os.urandom(32)).decode("ascii")
 _BASE_DIR   = pathlib.Path(os.environ.get("GT_DATA_DIR") or pathlib.Path(__file__).parent)
 try:
@@ -1321,7 +1321,7 @@ button:disabled{opacity:.55;cursor:default}
   <input id="otp" type="text" inputmode="text" maxlength="20" placeholder="2FA code or recovery code" autocomplete="one-time-code" style="letter-spacing:.12em">
   <button id="btn" type="submit">Continue</button>
   <div class="err" id="err"></div>
-  <div style="text-align:center;margin:10px 0 0"><a href="#" onclick="recoverPw();return false" style="color:#8b95a9;font-size:12px;text-decoration:none">Забули пароль? / Forgot password?</a></div>
+  <div style="text-align:center;margin:10px 0 0"><a href="#" onclick="recoverPw();return false" style="color:#8b95a9;font-size:12px;text-decoration:none"><span id="forgot">Forgot password?</span></a></div>
   <div class="lang">
     <a onclick="setL('uk')" id="l-uk">UA</a>
     <a onclick="setL('en')" id="l-en" class="on">EN</a>
@@ -1335,9 +1335,9 @@ button:disabled{opacity:.55;cursor:default}
 </form>
 <script>
 var L = {
-  uk:{t1:'Вхід',t2:'Введіть пароль. Цей пристрій запам’ятається на рік.',ph:'Пароль',btn:'Увійти',err:'Введіть пароль',wrong:'Невірний пароль',net:'Помилка мережі: ',ok:'Входимо…'},
-  en:{t1:'Sign in',t2:'Enter the password. This device stays signed in for a year.',ph:'Password',btn:'Continue',err:'Enter the password',wrong:'Wrong password',net:'Network error: ',ok:'Signing in…'},
-  ru:{t1:'Вход',t2:'Введите пароль. Это устройство запомнится на год.',ph:'Пароль',btn:'Войти',err:'Введите пароль',wrong:'Неверный пароль',net:'Ошибка сети: ',ok:'Входим…'}
+  uk:{t1:'Вхід',t2:'Введіть пароль. Цей пристрій запам’ятається на рік.',ph:'Пароль',btn:'Увійти',err:'Введіть пароль',wrong:'Невірний пароль',net:'Помилка мережі: ',ok:'Входимо…',forgot:'Забули пароль?',otp:'Код 2FA або код відновлення'},
+  en:{t1:'Sign in',t2:'Enter the password. This device stays signed in for a year.',ph:'Password',btn:'Continue',err:'Enter the password',wrong:'Wrong password',net:'Network error: ',ok:'Signing in…',forgot:'Forgot password?',otp:'2FA code or recovery code'},
+  ru:{t1:'Вход',t2:'Введите пароль. Это устройство запомнится на год.',ph:'Пароль',btn:'Войти',err:'Введите пароль',wrong:'Неверный пароль',net:'Ошибка сети: ',ok:'Входим…',forgot:'Забыли пароль?',otp:'Код 2FA или код восстановления'}
 };
 var cur = 'en';
 function setL(l){
@@ -3261,7 +3261,7 @@ def _smart_get(url, timeout=40, allow_scraper=True):
         raise ValueError("unsafe URL: дозволено лише публічний http(s)")
     try:
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with _safe_opener.open(req, timeout=timeout) as r:
             return r.read()
     except Exception:
         if not allow_scraper:
@@ -3443,7 +3443,7 @@ def fetch_supplier(key, is_first_run=False):
             try:
                 headers = {"User-Agent": UA, "Accept": "application/json"}
                 req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req, timeout=30) as resp:
+                with _safe_opener.open(req, timeout=30) as resp:
                     data = json.loads(resp.read().decode())
                     items = data.get("products", [])
                 if is_scraper:
@@ -4738,6 +4738,14 @@ def _clean_settings_import(data):
             if not isinstance(data[key], bool):
                 raise ValueError(f"налаштування {key}: очікується true/false")
             out[key] = data[key]
+    if "keep_online" in data:
+        if not isinstance(data["keep_online"], dict):
+            raise ValueError("налаштування keep_online: очікується об'єкт")
+        out["keep_online"] = _json_safe(data["keep_online"])
+    if "price_targets" in data:
+        if not isinstance(data["price_targets"], list):
+            raise ValueError("налаштування price_targets: очікується список")
+        out["price_targets"] = _json_safe(data["price_targets"])
     return out
 
 
@@ -6401,6 +6409,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     "notify_price": bool(tg.get("notify_price", True)),
                     "notify_new": bool(tg.get("notify_new", True)),
                 },
+                "recovery_email": (str((_read_json(SECRETS_FILE, {}) or {}).get("recovery_email") or st.get("recovery_email") or "") if _is_owner else ""),
                 "gmail": {
                     "configured": bool(g_user and g_pwd),
                     "user": g_user if _is_owner else ("***" if g_user else ""),
@@ -6612,7 +6621,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": False, "error": "invalid JSON"}, code=400); return
         email = str(body.get("email") or "").strip().lower()[:200]
         sec = _read_json(SECRETS_FILE, {}) or {}
-        configured = str(sec.get("recovery_email") or "").strip().lower()
+        configured = str(sec.get("recovery_email") or (_read_json(SETTINGS_FILE, {}) or {}).get("recovery_email") or "").strip().lower()
         if not configured or email != configured:
             self._json({"ok": False, "error": "recovery email is not configured"}, code=400); return
         ip = self._client_ip()
@@ -6994,12 +7003,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": True, "files": files[-10:], "cloud": res.get("cloud")})
             return
         if self.path == "/api/logout/all":
-            s = _read_json(SECRETS_FILE, {}) or {}
-            try:
-                n = int(s.get("device_version") or 0) + 1
-            except Exception:
-                n = 1
-            _save_secrets({"device_version": n})
+            _revoke_sessions()
             _audit("auth.logout_all")
             self._json({"ok": True}, extra={"Set-Cookie":
                        "gt_device=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"})
@@ -7026,6 +7030,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
                 return
             _save_secrets({"totp_secret": secret, "totp_enabled": True, "totp_pending": ""})
+            _revoke_sessions()
+            self._device_cookie = True
             codes = _recovery_generate()
             _audit("2fa.enabled")
             self._json({"ok": True, "enabled": True, "recovery": codes})
@@ -7228,6 +7234,12 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         st["onboarded"] = bool(body.get("onboarded"))
                     if "auto_add_orders" in body:
                         st["auto_add_orders"] = bool(body.get("auto_add_orders"))
+                    if "recovery_email" in body:
+                        _rem = str(body.get("recovery_email") or "").strip().lower()[:200]
+                        if _rem and ("@" not in _rem or "." not in _rem.split("@")[-1]):
+                            self._json({"ok": False, "error": "invalid recovery email"}, code=400); return
+                        st["recovery_email"] = _rem
+                        _save_secrets({"recovery_email": _rem})
                     for _pk in ("pay_usdt", "pay_binance", "pay_payoneer", "pay_tg", "pay_note"):
                         if _pk in body:
                             st[_pk] = str(body.get(_pk) or "").strip()[:300]

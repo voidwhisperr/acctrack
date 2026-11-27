@@ -83,8 +83,12 @@ def load_prefs():
 
 
 def window_kwargs(prefs):
-    return {"width": int(prefs.get("win_w") or 1500),
-            "height": int(prefs.get("win_h") or 950)}
+    try:
+        w = max(980, min(3840, int(prefs.get("win_w") or 1500)))
+        h = max(620, min(2160, int(prefs.get("win_h") or 950)))
+    except Exception:
+        w, h = 1500, 950
+    return {"width": w, "height": h}
 
 
 def remember_geometry(window):
@@ -98,6 +102,11 @@ def remember_geometry(window):
                     d[k] = int(v)
             except Exception:
                 pass
+        # never persist minimized/off-screen geometry
+        if int(d.get("win_x", 0)) < -10000 or int(d.get("win_y", 0)) < -10000:
+            d["win_x"], d["win_y"] = 60, 60
+        d["win_w"] = max(980, min(3840, int(d.get("win_w") or 1500)))
+        d["win_h"] = max(620, min(2160, int(d.get("win_h") or 950)))
         save_prefs(d)
     except Exception:
         log("geometry save failed:\n" + traceback.format_exc())

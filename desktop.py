@@ -71,9 +71,14 @@ def load_prefs():
 
 
 def window_kwargs(prefs):
-    # pywebview accepts width/height only; x/y are applied after the GUI starts.
-    return {"width": int(prefs.get("win_w") or 1500),
-            "height": int(prefs.get("win_h") or 950)}
+    # Clamp stored geometry: a minimized/off-screen 160x28 window must not
+    # become the next launch size.
+    try:
+        w = max(980, min(3840, int(prefs.get("win_w") or 1500)))
+        h = max(620, min(2160, int(prefs.get("win_h") or 950)))
+    except Exception:
+        w, h = 1500, 950
+    return {"width": w, "height": h}
 
 
 def remember_geometry(window):
@@ -87,6 +92,11 @@ def remember_geometry(window):
                     d[k] = int(v)
             except Exception:
                 pass
+        # never persist minimized/off-screen geometry
+        if int(d.get("win_x", 0)) < -10000 or int(d.get("win_y", 0)) < -10000:
+            d["win_x"], d["win_y"] = 60, 60
+        d["win_w"] = max(980, min(3840, int(d.get("win_w") or 1500)))
+        d["win_h"] = max(620, min(2160, int(d.get("win_h") or 950)))
         save_prefs(d)
     except Exception:
         log("geometry save failed:\n" + traceback.format_exc())
@@ -270,8 +280,11 @@ def main():
 
     def _after_start():
         try:
-            if prefs.get("win_x") is not None and prefs.get("win_y") is not None:
-                window.move(int(prefs["win_x"]), int(prefs["win_y"]))
+            # never restore an off-screen window (minimize/close-to-tray sets -32000)
+            x = prefs.get("win_x"); y = prefs.get("win_y")
+            if x is None or y is None or int(x) < -10000 or int(y) < -10000:
+                x, y = 60, 60
+            window.move(int(x), int(y))
         except Exception:
             log("window move failed:\n" + traceback.format_exc())
         if start_hidden:
