@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.66.53 — desktop shell polish
+- Drag-and-drop .zip/.enc backup or .csv onto the window.
+- Tray actions, native-title/tray order count, launch-with-Windows toggle, update check.
+- Ctrl+Alt+L opens window; Ctrl+Alt+N starts a new deal.
+
+## v1.66.51 — desktop shell
+- Tray menu actions: add deal, orders, channels, check updates, start with Windows.
+- New-order count in the native title and tray tooltip.
+- Ctrl+Alt+L opens the window; Ctrl+Alt+N starts a new deal.
+- Clean-start launcher for first-run testing.
+
 ## v1.66.50 — UX polish and localization
 - First deal form simplified: advanced fields behind "More options", inline validation, no silent negative-profit save.
 - Language no longer changes currency; stale Settings pointers fixed; Always online gets a short explanation.

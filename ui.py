@@ -559,6 +559,7 @@ body.compact-ui table td, body.compact-ui table th{padding:4px 7px}
 body.compact-ui .tab{padding:7px 10px}
 body.compact-ui .tabs{gap:4px}
 
+body.drop-active{outline:2px dashed var(--a1);outline-offset:-10px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
         integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
@@ -9581,6 +9582,24 @@ function translateAll(){
   _trTimer = setTimeout(()=>{ _trWalk(document.body); }, 60);
 }
 
+
+// Desktop drag-and-drop: .zip/.enc backup or .csv into the window.
+(function(){
+  let depth=0;
+  function hasFiles(e){ try{ return e.dataTransfer && Array.from(e.dataTransfer.types||[]).includes('Files'); }catch(_){ return false; } }
+  window.addEventListener('dragenter',function(e){ if(!hasFiles(e)) return; e.preventDefault(); depth++; document.body.classList.add('drop-active'); });
+  window.addEventListener('dragover',function(e){ if(!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect='copy'; });
+  window.addEventListener('dragleave',function(e){ if(!hasFiles(e)) return; depth=Math.max(0,depth-1); if(!depth) document.body.classList.remove('drop-active'); });
+  window.addEventListener('drop',async function(e){
+    if(!hasFiles(e)) return; e.preventDefault(); depth=0; document.body.classList.remove('drop-active');
+    const f=e.dataTransfer.files && e.dataTransfer.files[0]; if(!f) return;
+    try{
+      if(/\.(zip|enc)$/i.test(f.name)){ await importBackup({files:[f], value:''}); }
+      else if(/\.csv$/i.test(f.name)){ await csvImport({files:[f], value:''}); }
+      else { toast((LANG==='ru'?'Поддерживаются .zip, .enc и .csv':LANG==='en'?'Drop a .zip, .enc or .csv file':'Підтримуються .zip, .enc і .csv'), false); }
+    }catch(err){ toast('⚠ '+err, false); }
+  });
+})();
 </script>
 <div id="cmdk" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Пошук дії" data-i18n-aria="cmdk.title" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:12000;align-items:flex-start;justify-content:center;padding-top:14vh" onclick="if(event.target===this)closeCmdk()">
   <div style="width:min(560px,94vw);background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)">

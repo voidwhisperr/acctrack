@@ -82,7 +82,7 @@ BIND = (os.environ.get("GT_BIND") or "127.0.0.1").strip() or "127.0.0.1"
 AUTH_MODE = (os.environ.get("GT_AUTH") or "").strip().lower()  # "" = вирішуємо після налаштувань
 REQUIRE_ACCESS = (os.environ.get("GT_REQUIRE_ACCESS") or "").strip() == "1"
 # Єдине джерело версії: /api/health, /api/diag, /api/update/check, банер старту.
-APP_VERSION = "1.66.50"
+APP_VERSION = "1.66.53"
 _SESSION_SECRET = base64.urlsafe_b64encode(os.urandom(32)).decode("ascii")
 _BASE_DIR   = pathlib.Path(os.environ.get("GT_DATA_DIR") or pathlib.Path(__file__).parent)
 try:

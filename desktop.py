@@ -16,6 +16,8 @@ import pathlib
 import threading
 import traceback
 
+import desktop_shell as shell
+
 APP_DIR = pathlib.Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else pathlib.Path(__file__).resolve().parent
 LOG = APP_DIR / "desktop.log"
 # Ledger+ uses client.json; the free Ledger must not pick up the hosted
@@ -254,10 +256,38 @@ def main():
                 pass
             os._exit(0)
 
+        def nav(tab):
+            try:
+                window.show(); window.restore()
+            except Exception:
+                pass
+            try:
+                window.evaluate_js(shell.nav_js(tab))
+            except Exception:
+                pass
+
+        def toggle_autostart(icon=None, item=None):
+            shell.set_autostart(not shell.autostart_enabled(), sys.executable)
+
+        def update_check(icon=None, item=None):
+            shell.open_release()
+
         tray = pystray.Icon("Ledger", image, "Ledger", pystray.Menu(
             pystray.MenuItem("Відкрити Ledger", show_window, default=True),
+            pystray.MenuItem("➕ Додати угоду", lambda i=None, x=None: nav("tracker")),
+            pystray.MenuItem("Замовлення", lambda i=None, x=None: nav("mail")),
+            pystray.MenuItem("Канали", lambda i=None, x=None: nav("channels")),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Запускати з Windows", toggle_autostart,
+                             checked=lambda item: shell.autostart_enabled()),
+            pystray.MenuItem("Перевірити оновлення", update_check),
+            pystray.Menu.SEPARATOR,
             pystray.MenuItem("Вихід", quit_app)))
         tray.run_detached()
+        threading.Thread(target=shell.badge_loop,
+                         args=(url, title, window, lambda: tray, None),
+                         daemon=True, name="ledger-badge").start()
+        shell.register_hotkeys(show_window, lambda: nav("tracker"))
     except Exception:
         log("tray failed:\n" + traceback.format_exc())
 
