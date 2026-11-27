@@ -19,6 +19,10 @@
   .lang button{background:var(--card);border:1px solid var(--brd);color:var(--mu);border-radius:8px;
     padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit}
   .lang button.on{color:var(--tx);border-color:#4a4d54}
+  .back{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--brd);color:var(--tx);text-decoration:none;border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:600}
+  .back:hover{border-color:var(--a1)}
+  .backrow{margin:0 0 18px;display:flex}
+  @media(max-width:700px){.back{position:fixed;left:12px;bottom:12px;z-index:20;background:#15171b;box-shadow:0 6px 24px rgba(0,0,0,.45)}}
   h1{font-size:28px;line-height:1.2;letter-spacing:-.02em;margin:18px 0 8px;font-weight:600}
   .lead{color:var(--mu);font-size:15px;max-width:760px;margin:0 0 30px}
   .item{margin:0 0 46px}
@@ -38,6 +42,7 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="backrow"><a class="back" id="back" href="/" onclick="if(history.length>1){history.back();return false}">← <span id="backT">Ledger</span></a></div>
   <div class="top">
     <div class="brand">
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.6 21 20.4H3L12 3.6Z" fill="#edeef0"/></svg>
@@ -93,9 +98,10 @@ const T = {
        d: "Ціни з Китаю в юанях і доларах, орієнтовна маржа й демо-приклад. У безкоштовній версії — продажна сторінка, у платній — робоча панель збору.",
        li: ["Ціна в юанях і доларах", "Маржа одразу", "Демо в USD без конвертації", "Платна версія — автоматичний збір"]},
       {img: "10-setup.png", t: "Бекапи й налаштування",
-       d: "Локальні та хмарні бекапи, шифрування, експорт/імпорт, оновлення, мова, теми й розмір шрифту.",
-       li: ["Авто-бекап раз на день", "Хмарна копія в OneDrive", "Шифрування та перевірка", "Оновлення трьома мовами"]}
+       d: "Налаштування зібрані в згортувані острівці: акаунт і безпека, підключення, дані й бекапи, вигляд, пристрої та оновлення.",
+       li: ["Згортувані секції замість довгого списку", "Always online одним перемикачем", "Шифровані бекапи та відновлення", "Мова, тема й розмір шрифту"]}
     ],
+    back: "Назад до Ledger",
     ctaT: "Хочете таку саму автоматизацію?",
     ctaP: "Збір Taobao з проходженням капчі, авто-імпорт FunPay і ZeusX, постійний агент на ПК — напишіть, налаштуємо під вас.",
     ctaF: "Telegram @ledger_os · ledgeros.gg@gmail.com · Discord: discord.gg/eMBXnKA3Pa"
@@ -129,9 +135,10 @@ const T = {
        d: "Prices from China in yuan and dollars, estimated margin and a demo example. Free version shows the sales page; paid version adds the collector panel.",
        li: ["Yuan and dollar price", "Margin at a glance", "USD demo, no conversion", "Paid version — automatic collection"]},
       {img: "10-setup.png", t: "Backups and settings",
-       d: "Local and cloud backups, encryption, export/import, updates, language, themes and font size.",
-       li: ["Daily automatic backup", "Cloud copy in OneDrive", "Encryption and verification", "Three-language updates"]}
+       d: "Settings are grouped into collapsible islands: account and security, connections, data and backups, appearance, devices and updates.",
+       li: ["Collapsible sections instead of one long list", "One-click Always online", "Encrypted backups and restore", "Language, theme and font size"]}
     ],
+    back: "Back to Ledger",
     ctaT: "Want the same automation?",
     ctaP: "Taobao collection with captcha handling, FunPay and ZeusX auto-import, a permanent agent on your PC — message me and we set it up for you.",
     ctaF: "Telegram @ledger_os · ledgeros.gg@gmail.com · Discord: discord.gg/eMBXnKA3Pa"
@@ -165,9 +172,10 @@ const T = {
        d: "Цены из Китая в юанях и долларах, ориентировочная маржа и демо-пример. В бесплатной версии — продающая страница, в платной — рабочая панель сбора.",
        li: ["Цена в юанях и долларах", "Маржа сразу", "Демо в USD без конвертации", "Платная версия — автоматический сбор"]},
       {img: "10-setup.png", t: "Бэкапы и настройки",
-       d: "Локальные и облачные бэкапы, шифрование, экспорт/импорт, обновления, язык, темы и размер шрифта.",
-       li: ["Авто-бэкап раз в день", "Облачная копия в OneDrive", "Шифрование и проверка", "Обновления на трёх языках"]}
+       d: "Настройки собраны в сворачиваемые островки: аккаунт и безопасность, подключения, данные и бэкапы, внешний вид, устройства и обновления.",
+       li: ["Сворачиваемые секции вместо длинного списка", "Always online одним переключателем", "Шифрованные бэкапы и восстановление", "Язык, тема и размер шрифта"]}
     ],
+    back: "Назад к Ledger",
     ctaT: "Хотите такую же автоматизацию?",
     ctaP: "Сбор Taobao с прохождением капчи, авто-импорт FunPay и ZeusX, постоянный агент на ПК — напишите, настроим под вас.",
     ctaF: "Telegram @ledger_os · ledgeros.gg@gmail.com · Discord: discord.gg/eMBXnKA3Pa"
@@ -184,9 +192,10 @@ function setL(l){
   document.getElementById('ctaT').textContent = d.ctaT;
   document.getElementById('ctaP').textContent = d.ctaP;
   document.getElementById('ctaF').textContent = d.ctaF;
+  const _bt=document.getElementById('backT'); if(_bt) _bt.textContent=d.back;
   document.getElementById('items').innerHTML = d.items.map(x => `
     <section class="item">
-      <figure><img src="/docs/demo/${window.__l || 'en'}/${x.img}" alt="${x.t}" loading="lazy"></figure>
+      <figure><img src="/docs/demo/${window.__l || 'en'}/${x.img}" alt="${x.t}"></figure>
       <h2>${x.t}</h2>
       <p>${x.d}</p>
       <ul>${x.li.map(i => `<li>${i}</li>`).join('')}</ul>

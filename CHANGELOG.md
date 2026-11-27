@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.66.49 — demo screenshots and back navigation
+- Public demo/screenshot gallery rebuilt from the new Settings islands, three languages.
+- Added a visible localized Back button (works on mobile).
+- Updated cookie-guide logo and demo descriptions.
+
 ## v1.66.48 — final QA fixes
 - Recovery email field in Settings → Security; backup restore keeps Always-online/price targets.
 - SSRF redirect guard, 2FA/logout-all session revocation.
