@@ -491,9 +491,38 @@ def _taobao_segment(title):
 _TAOBAO_GAME_PATTERNS = (taobao_core.GAME_PATTERNS if taobao_core else {})
 
 
+AUTH_HASH = os.environ.get("GT_AUTH_HASH", "")
+
+
+def _hash_password(pw):
+    import hashlib as _h
+    salt = os.urandom(16)
+    it = 200000
+    dk = _h.pbkdf2_hmac("sha256", str(pw).encode("utf-8"), salt, it)
+    return "pbkdf2_sha256$%d$%s$%s" % (it, base64.b64encode(salt).decode("ascii"),
+                                       base64.b64encode(dk).decode("ascii"))
+
+
+def _verify_password(pw):
+    if AUTH_HASH:
+        try:
+            algo, it, salt_b64, hash_b64 = AUTH_HASH.split("$", 3)
+            if algo != "pbkdf2_sha256":
+                return False
+            import hashlib as _h
+            salt = base64.b64decode(salt_b64)
+            want = base64.b64decode(hash_b64)
+            got = _h.pbkdf2_hmac("sha256", str(pw).encode("utf-8"), salt, int(it))
+            return hmac.compare_digest(got, want)
+        except Exception:
+            return False
+    return bool(AUTH_PASS) and hmac.compare_digest(str(pw).encode("utf-8"),
+                                                   AUTH_PASS.encode("utf-8"))
+
+
 def _load_secrets():
     """Пароль дашборда і ключ ScraperAPI — поза кодом: .gt_secrets.json."""
-    global AUTH_USER, AUTH_PASS, SCRAPER_API_KEY
+    global AUTH_USER, AUTH_PASS, AUTH_HASH, SCRAPER_API_KEY
     if not os.path.exists(SECRETS_FILE):
         return
     try:
@@ -502,7 +531,18 @@ def _load_secrets():
         print(f"⚠ .gt_secrets.json: {e}")
         return
     AUTH_USER       = s.get("auth_user")       or AUTH_USER
+    AUTH_HASH       = s.get("auth_hash")       or AUTH_HASH
     AUTH_PASS       = s.get("auth_pass")       or AUTH_PASS
+    if not AUTH_HASH and AUTH_PASS:
+        AUTH_HASH = _hash_password(AUTH_PASS)
+        AUTH_PASS = ""
+        s["auth_hash"] = AUTH_HASH
+        s.pop("auth_pass", None)
+        try:
+            _atomic_dump(SECRETS_FILE, s)
+        except Exception:
+            pass
+        print("🔐 Password migrated to PBKDF2 hash")
     SCRAPER_API_KEY = s.get("scraper_api_key") or SCRAPER_API_KEY
     print("🔐 Secrets loaded from .gt_secrets.json")
 
@@ -720,7 +760,7 @@ def _auth_from_settings():
         _sec = _read_json(SECRETS_FILE, {}) or {}
     except Exception:
         _sec = {}
-    _has_pass = bool((os.environ.get("GT_AUTH_PASS") or "").strip()) or bool(_sec.get("auth_pass"))
+    _has_pass = bool((os.environ.get("GT_AUTH_PASS") or "").strip()) or bool(_sec.get("auth_pass") or _sec.get("auth_hash"))
     AUTH_MODE = "basic" if _has_pass else "off"
 
 
@@ -5046,7 +5086,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         """Basic-auth: без пароля дашборд не віддається навіть у локальній мережі."""
         if _totp_enabled():
             return False        # 2FA: тільки форма входу з кодом, Basic не обходить
-        if not AUTH_PASS:
+        if not AUTH_PASS and not AUTH_HASH:
             return False          # порожній пароль = застосунок не працює (див. main)
         hdr = self.headers.get("Authorization", "")
         if not hdr.startswith("Basic "):
@@ -5057,7 +5097,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             user, _, pwd = decoded.partition(":")
             # compare_digest працює з bytes: str з не-ASCII кидав TypeError
             return (hmac.compare_digest(user.encode("utf-8"), AUTH_USER.encode("utf-8"))
-                    and hmac.compare_digest(pwd.encode("utf-8"), AUTH_PASS.encode("utf-8")))
+                    and _verify_password(pwd))
         except Exception:
             return False
 
@@ -5223,7 +5263,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.37", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.38", "uptime": int(time.time() - _START_TS)})
             return
         if p in ("/api/license/register", "/api/license/release"):
             pass  # licensing endpoint: public, protected by the key signature
@@ -5841,7 +5881,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.37",
+            self._json({"ok": True, "version": "1.66.38",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -5985,7 +6025,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 pass
 
     def _route_post(self):
-        global AUTH_PASS
+        global AUTH_PASS, AUTH_HASH
         # вхід/вихід — публічні (без пароля й без CSRF-токена)
         if self.path in ("/api/login", "/api/logout"):
             try:
@@ -6005,8 +6045,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 self._json({"ok": False, "error": "Забагато спроб — спробуй пізніше"}, code=429)
                 return
             pw = str((body or {}).get("password") or "")
-            if not (AUTH_PASS and hmac.compare_digest(pw.encode("utf-8"),
-                                                      AUTH_PASS.encode("utf-8"))):
+            if not ((AUTH_PASS or AUTH_HASH) and _verify_password(pw)):
                 self._note_auth_fail()
                 print(f"  🔐 failed login (form) · IP {self._client_ip()}", flush=True)
                 self._json({"ok": False, "error": "Невірний пароль"}, code=401)
@@ -6088,8 +6127,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     if len(new) < 8:
                         self._json({"ok": False, "error": "Пароль має бути мінімум 8 символів"}, code=400)
                         return
-                    _save_secrets({"auth_pass": new})
-                    globals()["AUTH_PASS"] = new
+                    _save_secrets({"auth_hash": _hash_password(new), "auth_pass": ""})
+                    globals()["AUTH_HASH"] = _hash_password(new)
+                    globals()["AUTH_PASS"] = ""
                     globals()["AUTH_MODE"] = "basic"
                 else:
                     globals()["AUTH_MODE"] = "off"
@@ -6107,15 +6147,16 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 return
             old = str(body.get("old") or "")
             new = str(body.get("new") or "")
-            if not hmac.compare_digest(old.encode("utf-8"), AUTH_PASS.encode("utf-8")):
+            if not _verify_password(old):
                 self._json({"ok": False, "error": "Невірний поточний пароль"}); return
             if len(new) < 8:
                 self._json({"ok": False, "error": "Новий пароль має бути мінімум 8 символів"}); return
-            if new == AUTH_PASS:
+            if _verify_password(new):
                 self._json({"ok": False, "error": "Новий пароль збігається з поточним"}); return
             try:
-                _save_secrets({"auth_pass": new})
-                AUTH_PASS = new
+                _save_secrets({"auth_hash": _hash_password(new), "auth_pass": ""})
+                AUTH_HASH = _hash_password(new)
+                AUTH_PASS = ""
                 self._json({"ok": True})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)})
@@ -8653,12 +8694,12 @@ def main():
             print("     Listening on 127.0.0.1 only. Set a password in ⚙ → Password,")
             print("     or force open access on a trusted LAN with GT_ALLOW_OPEN=1.")
             print("=" * 60)
-    elif not AUTH_PASS and AUTH_MODE != "off":
+    elif not AUTH_PASS and not AUTH_HASH and AUTH_MODE != "off":
         print("  ❌ Empty password in .gt_secrets.json — that opens the dashboard to everyone.")
         print("     Set auth_pass (min 8 chars) and start again.")
         return 2
 
-    weak_pass = (AUTH_PASS == "gametracker2026") or len(AUTH_PASS) < 8
+    weak_pass = (AUTH_PASS == "gametracker2026") or (not AUTH_HASH and len(AUTH_PASS) < 8)
     if AUTH_MODE != "off" and public_bind and weak_pass and os.environ.get("GT_ALLOW_WEAK_PASS") != "1":
         print("=" * 60)
         print("  ❌ Public access with a weak/default password — stopping.")
@@ -8670,7 +8711,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.37")
+    print("  ▲  Ledger v1.66.38")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))
