@@ -1266,6 +1266,7 @@ button:disabled{opacity:.55;cursor:default}
   <input id="otp" type="text" inputmode="text" maxlength="20" placeholder="2FA code or recovery code" autocomplete="one-time-code" style="letter-spacing:.12em">
   <button id="btn" type="submit">Continue</button>
   <div class="err" id="err"></div>
+  <div style="text-align:center;margin:10px 0 0"><a href="#" onclick="recoverPw();return false" style="color:#8b95a9;font-size:12px;text-decoration:none">Забули пароль? / Forgot password?</a></div>
   <div class="lang">
     <a onclick="setL('uk')" id="l-uk">UA</a>
     <a onclick="setL('en')" id="l-en" class="on">EN</a>
@@ -1314,6 +1315,23 @@ async function go(e){
     else { err.className = 'err'; err.textContent = d.error || (r.status === 401 ? x.wrong : (x.wrong + ' (' + r.status + ')')); btn.disabled = false; }
   }catch(ex){ err.className = 'err'; err.textContent = x.net + ex.message; btn.disabled = false; }
   return false;
+}
+async function recoverPw(){
+  var email = prompt('Recovery email / Пошта для відновлення');
+  if(!email) return;
+  try{
+    var r = await fetch('/api/auth/recovery/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
+    var d = await r.json().catch(function(){return {};});
+    if(!d.ok){ alert(d.error || ('Error ' + r.status)); return; }
+    var code = prompt('Code from email / Код з листа');
+    if(!code) return;
+    var np = prompt('New password (min 8) / Новий пароль (мін. 8)');
+    if(!np) return;
+    var r2 = await fetch('/api/auth/recovery/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,code:code,new_password:np})});
+    var d2 = await r2.json().catch(function(){return {};});
+    if(d2.ok){ alert('Password reset. Sign in with the new password. / Пароль змінено.'); }
+    else { alert(d2.error || ('Error ' + r2.status)); }
+  }catch(e){ alert('Network error: ' + e.message); }
 }
 </script></body></html>"""
 
@@ -4465,6 +4483,8 @@ def _is_private_ip(ip):
 
 
 _SESSION_KEY_CACHE = ""
+_RECOVERY_LOCK = threading.Lock()
+_RECOVERY_REQUESTS = {}
 
 
 def _csrf_key():
@@ -5041,6 +5061,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 and "X-GT-TOKEN" in self.headers and self._collector_ok()):
             return True
         if (p in ("/join", "/pricing", "/api/license/register", "/api/license/release",
+                 "/api/auth/recovery/request", "/api/auth/recovery/confirm",
                  "/manifest.json", "/favicon.ico", "/favicon-32.png", "/apple-touch-icon.png",
                  "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg", "/demo", *_ICON_ALIASES)
                 or p.startswith("/admin") or p.startswith("/hosting")
@@ -5081,6 +5102,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return True
         self._json({"ok": False, "error": "auth required"}, code=401)
         return False
+
+    def _step_up_ok(self, body, otp_key="otp"):
+        """Require the current password and (if enabled) a current TOTP code."""
+        cur = str((body or {}).get("current") or "")
+        if not _verify_password(cur):
+            return False
+        if _totp_enabled():
+            code = str((body or {}).get(otp_key) or (body or {}).get("otp") or "")
+            if not _totp_verify(code):
+                return False
+        return True
 
     def _auth_ok(self):
         """Basic-auth: без пароля дашборд не віддається навіть у локальній мережі."""
@@ -5174,6 +5206,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 or self.path.split("?")[0].lstrip("/") in _ICON_ALIASES
                 or self.path.split("?")[0].lstrip("/") in _ICON_VERSIONED
                 or self.path.split("?")[0] in ("/api/license/register", "/api/license/release",
+                                                 "/api/auth/recovery/request", "/api/auth/recovery/confirm",
                                                 "/admin", "/admin/revoke", "/join", "/hosting",
                                                 "/hosting/save", "/hosting/check", "/hosting/delete",
                                                 "/hosting/provision", "/hosting/backup", "/hosting/restore",
@@ -5263,10 +5296,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         # health — без пароля: для uptime-моніторингу (жодних даних не віддає)
         if p == "/api/health":
-            self._json({"ok": True, "version": "1.66.38", "uptime": int(time.time() - _START_TS)})
+            self._json({"ok": True, "version": "1.66.40", "uptime": int(time.time() - _START_TS)})
             return
-        if p in ("/api/license/register", "/api/license/release"):
-            pass  # licensing endpoint: public, protected by the key signature
+        if p in ("/api/license/register", "/api/license/release",
+                 "/api/auth/recovery/request", "/api/auth/recovery/confirm"):
+            pass  # public endpoints: public, protected by the key signature
         elif (p in ("/manifest.json", "/favicon.ico", "/favicon-32.png",
                   "/apple-touch-icon.png", "/sw.js", "/icon.svg", "/icon.png", "/ledger.svg")
                 or p.lstrip("/") in _ICON_ALIASES or p.lstrip("/") in _ICON_VERSIONED
@@ -5881,7 +5915,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                     return os.path.getsize(path)
                 except Exception:
                     return 0
-            self._json({"ok": True, "version": "1.66.38",
+            self._json({"ok": True, "version": "1.66.40",
                         "uptime": int(time.time() - _START_TS),
                         "counts": {"purchases": len(_read_json(PL_FILE, []) or []),
                                    "eldorado": len(_read_json(ED_FILE, []) or []),
@@ -6024,8 +6058,74 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             except Exception:
                 pass
 
+    def _recovery_handler(self):
+        import secrets as _secrets, smtplib, ssl
+        try:
+            n = int(self.headers.get("Content-Length", 0) or 0)
+        except Exception:
+            n = 0
+        if n < 0 or n > 64 * 1024:
+            self._json({"ok": False, "error": "request too large"}, code=413); return
+        try:
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:
+            self._json({"ok": False, "error": "invalid JSON"}, code=400); return
+        email = str(body.get("email") or "").strip().lower()[:200]
+        sec = _read_json(SECRETS_FILE, {}) or {}
+        configured = str(sec.get("recovery_email") or "").strip().lower()
+        if not configured or email != configured:
+            self._json({"ok": False, "error": "recovery email is not configured"}, code=400); return
+        ip = self._client_ip()
+        now = time.time()
+        with _RECOVERY_LOCK:
+            rows = [t for t in _RECOVERY_REQUESTS.get(ip, []) if now - t < 900]
+            if len(rows) >= 3:
+                self._json({"ok": False, "error": "too many recovery requests"}, code=429); return
+            rows.append(now); _RECOVERY_REQUESTS[ip] = rows
+        if self.path.split("?")[0].endswith("/request"):
+            code = "%06d" % _secrets.randbelow(1000000)
+            exp = int(now + 600)
+            sig = hmac.new(_csrf_key(), ("recovery|" + email + "|" + code + "|" + str(exp)).encode("utf-8"), "sha256").hexdigest()
+            _save_secrets({"recovery_code_hash": sig, "recovery_exp": exp, "recovery_tries": 0})
+            user = str(sec.get("smtp_user") or sec.get("gmail_user") or configured)
+            pw = str(sec.get("smtp_pass") or sec.get("gmail_pass") or "")
+            try:
+                msg = ("From: " + user + "\r\nTo: " + email + "\r\nSubject: Ledger recovery code\r\n\r\n"
+                       + "Your Ledger recovery code: " + code + "\r\nIt expires in 10 minutes.")
+                with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20, context=ssl.create_default_context()) as sm:
+                    sm.login(user, pw)
+                    sm.sendmail(user, [email], msg)
+            except Exception:
+                self._json({"ok": False, "error": "email send failed"}, code=502); return
+            self._json({"ok": True, "sent": True}); return
+        # confirm
+        code = str(body.get("code") or "").strip()[:12]
+        new = str(body.get("new_password") or "")
+        try:
+            exp = int(sec.get("recovery_exp") or 0)
+            tries = int(sec.get("recovery_tries") or 0)
+        except Exception:
+            exp, tries = 0, 99
+        want = hmac.new(_csrf_key(), ("recovery|" + email + "|" + code + "|" + str(exp)).encode("utf-8"), "sha256").hexdigest()
+        if exp < now or tries >= 5 or not hmac.compare_digest(want, str(sec.get("recovery_code_hash") or "")):
+            _save_secrets({"recovery_tries": tries + 1})
+            self._json({"ok": False, "error": "invalid or expired code"}, code=401); return
+        if len(new) < 8:
+            self._json({"ok": False, "error": "password must be at least 8 characters"}, code=400); return
+        _save_secrets({"auth_hash": _hash_password(new), "auth_pass": "",
+                       "totp_secret": "", "totp_enabled": False, "totp_pending": "",
+                       "totp_recovery": [], "recovery_code_hash": "", "recovery_exp": 0,
+                       "recovery_tries": 0, "device_version": int(sec.get("device_version") or 0) + 1,
+                       "session_key": _secrets.token_urlsafe(32)})
+        globals()["AUTH_HASH"] = _hash_password(new)
+        globals()["AUTH_PASS"] = ""
+        globals()["AUTH_MODE"] = "basic"
+        self._json({"ok": True, "reset": True})
+
     def _route_post(self):
         global AUTH_PASS, AUTH_HASH
+        if self.path.split("?")[0] in ("/api/auth/recovery/request", "/api/auth/recovery/confirm"):
+            self._recovery_handler(); return
         # вхід/вихід — публічні (без пароля й без CSRF-токена)
         if self.path in ("/api/login", "/api/logout"):
             try:
@@ -6121,6 +6221,9 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
         if self.path == "/api/auth/toggle":
             try:
                 enabled = bool(body.get("enabled"))
+                if not (enabled and AUTH_MODE == "off") and not self._step_up_ok(body):
+                    self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403)
+                    return
                 st = _read_json(SETTINGS_FILE, {}) or {}
                 if enabled:
                     new = str(body.get("new") or "")
@@ -6149,6 +6252,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             new = str(body.get("new") or "")
             if not _verify_password(old):
                 self._json({"ok": False, "error": "Невірний поточний пароль"}); return
+            if _totp_enabled() and not _totp_verify(str(body.get("otp") or "")):
+                self._json({"ok": False, "error": "Невірний код 2FA"}, code=401); return
             if len(new) < 8:
                 self._json({"ok": False, "error": "Новий пароль має бути мінімум 8 символів"}); return
             if _verify_password(new):
@@ -6320,6 +6425,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                        "gt_device=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"})
             return
         if self.path == "/api/2fa/setup":
+            if not self._step_up_ok(body):
+                self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403); return
             if AUTH_MODE == "off":
                 self._json({"ok": False, "error": "Спочатку увімкни пароль входу"}, code=400)
                 return
@@ -6329,6 +6436,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": True, "secret": secret, "uri": _totp_uri(secret)})
             return
         if self.path == "/api/2fa/enable":
+            if not self._step_up_ok(body):
+                self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403); return
             secret = str((_read_json(SECRETS_FILE, {}) or {}).get("totp_pending") or "")
             if not secret:
                 self._json({"ok": False, "error": "Спочатку згенеруй секрет"}, code=400)
@@ -6342,6 +6451,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": True, "enabled": True, "recovery": codes})
             return
         if self.path == "/api/2fa/recovery":
+            if not self._step_up_ok(body, otp_key="code"):
+                self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403); return
             if not _totp_enabled() or not _totp_verify(body.get("code")):
                 self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
                 return
@@ -6350,6 +6461,8 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
             self._json({"ok": True, "recovery": codes})
             return
         if self.path == "/api/2fa/disable":
+            if not self._step_up_ok(body, otp_key="code"):
+                self._json({"ok": False, "error": "потрібен поточний пароль і 2FA-код"}, code=403); return
             if _totp_enabled() and not _totp_verify(body.get("code")):
                 self._json({"ok": False, "error": "Невірний код 2FA"}, code=401)
                 return
@@ -8711,7 +8824,7 @@ def main():
         return 3
 
     print("=" * 60)
-    print("  ▲  Ledger v1.66.38")
+    print("  ▲  Ledger v1.66.40")
     print("  📊 " + _cl("Угоди · Канали · Склад · Аналітика · Бекапи",
                         "Deals · Channels · Stock · Analytics · Backups",
                         "Сделки · Каналы · Склад · Аналитика · Бэкапы"))

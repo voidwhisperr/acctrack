@@ -3299,12 +3299,17 @@ async function supAdd(){
   }catch(e){ toast('⚠ '+e, false); }
 }
 
+function _askCurrent(){ return prompt(LANG==='ru'?'Текущий пароль':LANG==='en'?'Current password':'Поточний пароль') || ''; }
+function _askOtp(){ return prompt(LANG==='ru'?'Код 2FA':LANG==='en'?'2FA code':'Код 2FA') || ''; }
+
 async function pwEnable(){
   const el = g('pwEnableNew'); const pw = (el && el.value) || '';
   if(pw.length < 8){ toast(t('pw.short'), false); return; }
+  let cur='', otp='';
+  if(window.AUTH_ENABLED){ cur=_askCurrent(); if(!cur) return; otp=_askOtp(); }
   try{
     const d = await fetch('/api/auth/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({enabled:true,new:pw})}).then(r=>r.json());
+      body:JSON.stringify({enabled:true,new:pw,current:cur,otp:otp})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     if(el) el.value='';
     toast(t('pw.enabledToast'));
@@ -3314,9 +3319,10 @@ async function pwEnable(){
 
 async function pwDisable(){
   if(!confirm(t('pw.disable')+'?')) return;
+  const cur=_askCurrent(); if(!cur) return; const otp=_askOtp();
   try{
     const d = await fetch('/api/auth/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({enabled:false})}).then(r=>r.json());
+      body:JSON.stringify({enabled:false,current:cur,otp:otp})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     toast(t('pw.disabledToast'));
     loadSettings();
@@ -3615,8 +3621,9 @@ async function load2FA(){
   }catch(e){}
 }
 async function setup2FA(){
+  const cur=_askCurrent(); if(!cur) return; const otp=_askOtp();
   try{
-    const d=await fetch('/api/2fa/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+    const d=await fetch('/api/2fa/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current:cur,otp:otp})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     g('twofaSecret').textContent=d.secret||'';
     g('twofaUri').textContent=d.uri||'';
@@ -3639,9 +3646,10 @@ function copyRecovery(){
 }
 async function enable2FA(){
   const code=(g('twofaCode')?.value||'').trim();
+  const cur=_askCurrent(); if(!cur) return; const otp=_askOtp();
   try{
     const d=await fetch('/api/2fa/enable',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({code})}).then(r=>r.json());
+      body:JSON.stringify({code,current:cur,otp:otp})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     toast(t('twofa.enabledToast')); await load2FA(); showRecovery(d.recovery);
   }catch(e){ toast('⚠ '+e, false); }
@@ -3668,9 +3676,10 @@ async function logoutAll(){
 async function disable2FA(){
   const code=(g('twofaDisableCode')?.value||'').trim();
   if(!confirm(LANG==='en'?'Disable 2FA?':LANG==='ru'?'Выключить 2FA?':'Вимкнути 2FA?')) return;
+  const cur=_askCurrent(); if(!cur) return;
   try{
     const d=await fetch('/api/2fa/disable',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({code})}).then(r=>r.json());
+      body:JSON.stringify({code,current:cur})}).then(r=>r.json());
     if(!d.ok){ toast('⚠ '+(d.error||''), false); return; }
     toast(t('twofa.disabledToast')); await load2FA();
   }catch(e){ toast('⚠ '+e, false); }
@@ -3923,7 +3932,8 @@ async function loadSettings(){
     if(g('gmailUser')) g('gmailUser').value = gm.user || '';
     renderGmailInfo(gm);
     const au = d.auth || {};
-    if(g('pwStatus')) g('pwStatus').textContent = d.auth_enabled ? t('pw.statusOn') : t('pw.statusOff');
+    window.AUTH_ENABLED = !!d.auth_enabled;
+if(g('pwStatus')) g('pwStatus').textContent = d.auth_enabled ? t('pw.statusOn') : t('pw.statusOff');
     if(g('pwEnableBtn')) g('pwEnableBtn').style.display = d.auth_enabled ? 'none' : '';
     if(g('pwDisableBtn')) g('pwDisableBtn').style.display = d.auth_enabled ? '' : 'none';
     const am = g('authModeInfo');
@@ -4133,9 +4143,10 @@ async function changePassword(){
   const n2  = (g('pwNew2').value||'');
   if(n1.length < 8){ toast(t('pw.short'), false); return; }
   if(n1 !== n2){ toast(t('pw.mismatch'), false); return; }
+  const otp=_askOtp();
   try{
     const d = await fetch('/api/auth/password',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({old,new:n1})}).then(r=>r.json());
+      body:JSON.stringify({old,new:n1,otp:otp})}).then(r=>r.json());
     if(d.ok){
       g('pwOld').value=''; g('pwNew').value=''; g('pwNew2').value='';
       toast(t('pw.changed'));
