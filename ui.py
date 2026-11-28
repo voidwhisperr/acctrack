@@ -1255,6 +1255,12 @@ body.drop-active{outline:2px dashed var(--a1);outline-offset:-10px}
           <div style="display:flex;align-items:center;gap:5px"><input id="stScraperLimit" type="number" min="1" max="5000" step="1" style="width:80px"><span style="font-size:11px;color:var(--mu)" data-i18n="sched.credits.unit">кр./день</span></div>
         </label>
         <label style="display:block;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 11px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:3px">ScraperAPI keys</div>
+          <div style="font-size:10.5px;color:var(--mu);line-height:1.45;margin-bottom:6px">Optional. One 32-character key per line; used only when a supplier blocks direct access.</div>
+          <textarea id="stScraperKeys" rows="2" placeholder="one key per line" autocomplete="off" spellcheck="false" style="width:100%;font-size:11px;resize:vertical"></textarea>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><button class="btn gr" style="font-size:11px;padding:5px 9px" onclick="saveScraperKeys()">✓ Save</button><span id="stScraperKeysInfo" style="font-size:10.5px;color:var(--mu)">—</span></div>
+        </label>
+        <label style="display:block;background:var(--card2);border:1px solid var(--brd);border-radius:9px;padding:10px 11px">
           <div style="font-size:12px;font-weight:700;margin-bottom:3px" data-i18n="sched.digest.label">Час дайджесту</div>
           <div style="font-size:10.5px;color:var(--mu);line-height:1.45;margin-bottom:6px" data-i18n="sched.digest.desc">Година, коли надсилати підсумок дня в Telegram (0–23).</div>
           <div style="display:flex;align-items:center;gap:5px"><input id="stDigestHour" type="number" min="0" max="23" step="1" style="width:80px"><span style="font-size:11px;color:var(--mu)" data-i18n="sched.hour">год</span></div>
@@ -4232,6 +4238,17 @@ async function saveDesktopPrefs(){
   }catch(e){ toast('⚠ '+e, false); }
 }
 window.addEventListener('pywebviewready', ()=>setTimeout(initDesktopPrefs, 300));
+
+async function saveScraperKeys(){
+  const el=g('stScraperKeys'); if(!el) return;
+  const lines=(el.value||'').split(/[\n,]+/).map(x=>x.trim()).filter(Boolean);
+  try{
+    const d=await fetch('/api/secrets/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scraper_api_keys:lines})}).then(r=>r.json());
+    if(!d.ok){ toast('⚠ '+(apiErrText(d)||d.error||''), false); return; }
+    el.value=''; if(g('stScraperKeysInfo')) g('stScraperKeysInfo').textContent=lines.length+' saved';
+    toast(LANG==='en'?'✅ ScraperAPI keys saved':LANG==='ru'?'✅ Ключи ScraperAPI сохранены':'✅ Ключі ScraperAPI збережено');
+  }catch(e){ toast('⚠ '+e, false); }
+}
 
 async function loadSettings(){
   try{
@@ -7510,6 +7527,7 @@ async function loadAnalytics(){
     if(g('stSupHours')) g('stSupHours').value = st.sup_hours || 6;
     if(g('stNewsHours')) g('stNewsHours').value = st.news_hours || 1;
     if(g('stScraperLimit')) g('stScraperLimit').value = st.scraper_limit || 30;
+    if(g('stScraperKeysInfo')) g('stScraperKeysInfo').textContent = (st.scraper_keys_count || 0) + ' saved';
     if(g('stDigestHour') && st.digest_hour != null) g('stDigestHour').value = st.digest_hour;
     if(g('stDealX') && st.deal_x != null) g('stDealX').value = st.deal_x;
     if(g('targetPrices')) g('targetPrices').value = (d.price_targets || []).map(x => x.q + ' | ' + x.max).join('\n');

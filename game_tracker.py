@@ -82,7 +82,7 @@ BIND = (os.environ.get("GT_BIND") or "127.0.0.1").strip() or "127.0.0.1"
 AUTH_MODE = (os.environ.get("GT_AUTH") or "").strip().lower()  # "" = вирішуємо після налаштувань
 REQUIRE_ACCESS = (os.environ.get("GT_REQUIRE_ACCESS") or "").strip() == "1"
 # Єдине джерело версії: /api/health, /api/diag, /api/update/check, банер старту.
-APP_VERSION = "1.66.57"
+APP_VERSION = "1.66.59"
 _SESSION_SECRET = base64.urlsafe_b64encode(os.urandom(32)).decode("ascii")
 _BASE_DIR   = pathlib.Path(os.environ.get("GT_DATA_DIR") or pathlib.Path(__file__).parent)
 try:
@@ -6421,6 +6421,7 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 "sup_hours": float(st.get("sup_hours") or _sup_hours()),
                 "news_hours": float(st.get("news_hours") or 1),
                 "scraper_limit": int(st.get("scraper_limit") or _scraper_state.get("limit") or 30),
+                "scraper_keys_count": len((_read_json(SECRETS_FILE, {}) or {}).get("scraper_api_keys") or []),
                 "usd_uah": rate,
                 "currency": str((_read_json(SETTINGS_FILE, {}) or {}).get("currency") or "USD").upper()[:3],
                 "currency_manual": bool(st.get("currency_manual")),
@@ -7694,10 +7695,10 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                         "eldorado_client_secret": bool(_s.get("eldorado_client_secret"))})
             return
         if self.path == "/api/secrets/save":
-            allowed = ("funpay_cookie", "zeusx_cookie", "eldorado_client_id", "eldorado_client_secret")
+            allowed = ("funpay_cookie", "zeusx_cookie", "eldorado_client_id", "eldorado_client_secret", "scraper_api_keys")
             if body.get("clear"):
                 keys = body.get("keys") if isinstance(body.get("keys"), list) else list(allowed)
-                keys = [k for k in allowed if k in keys]
+                keys = [k for k in allowed if k != "scraper_api_keys" and k in keys]
                 _save_secrets({k: "" for k in keys})
                 try:
                     _platforms_mod._platform_cache["ts"] = 0
@@ -7707,6 +7708,21 @@ self.addEventListener('notificationclick', e => { e.notification.close(); client
                 return
             upd = {}
             for _k in allowed:
+                if _k not in body:
+                    continue
+                if _k == "scraper_api_keys":
+                    _raw = body.get(_k)
+                    if isinstance(_raw, list):
+                        _vals = [str(x).strip() for x in _raw]
+                    else:
+                        _vals = [x.strip() for x in str(_raw or "").replace(",", "\n").splitlines()]
+                    _vals = [x for x in _vals if x]
+                    if _vals and (len(_vals) > 20 or any(not re.fullmatch(r"[0-9a-fA-F]{32}", x) for x in _vals)):
+                        self._json({"ok": False, "error_code": "invalid_scraper_key",
+                                    "error": "ScraperAPI keys must be 32 hex characters, max 20"}, code=400)
+                        return
+                    upd[_k] = _vals
+                    continue
                 if _k in body:
                     _v = str(body.get(_k) or "").strip()
                     if len(_v) > 8000:
