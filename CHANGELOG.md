@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.66.56 — supplier completeness fix
+- A failed later supplier page (HTTP 429 / ScraperAPI limit) no longer marks the rest of that supplier's catalogue as gone.
+- Restored 254 GenshinAccount products wrongly marked gone on 2026-11-28.
+- Supplier totals now include stale/gone items correctly; partial scans keep the last good cache.
+
 ## v1.66.55 — deep links and desktop integrations
 - ledger:// protocol registration and deep links (new deal, orders, channels, settings).
 - Native File/View/Help menu and mini Today widget.

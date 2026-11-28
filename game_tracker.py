@@ -82,7 +82,7 @@ BIND = (os.environ.get("GT_BIND") or "127.0.0.1").strip() or "127.0.0.1"
 AUTH_MODE = (os.environ.get("GT_AUTH") or "").strip().lower()  # "" = вирішуємо після налаштувань
 REQUIRE_ACCESS = (os.environ.get("GT_REQUIRE_ACCESS") or "").strip() == "1"
 # Єдине джерело версії: /api/health, /api/diag, /api/update/check, банер старту.
-APP_VERSION = "1.66.55"
+APP_VERSION = "1.66.56"
 _SESSION_SECRET = base64.urlsafe_b64encode(os.urandom(32)).decode("ascii")
 _BASE_DIR   = pathlib.Path(os.environ.get("GT_DATA_DIR") or pathlib.Path(__file__).parent)
 try:
@@ -3519,11 +3519,12 @@ def fetch_supplier(key, is_first_run=False):
                 print(f" ⚠{'[ScraperAPI]' if is_scraper else '[direct]'}{str(ex)[:40]}",
                       end="", flush=True)
         if items is None:
-            print(f" ❌ both attempts failed", end="", flush=True)
-            if page == 1:
-                # перша сторінка не завантажилась — це збій сайту, а не «0 products»
-                raise RuntimeError(f"{src['name']}: не вдалось завантажити (блок/ScraperAPI)")
-            break
+            print(f" ❌ page {page} failed", end="", flush=True)
+            # ANY failed page means this supplier scan is incomplete. Never mark
+            # the remaining catalogue as "gone" just because page 3 failed
+            # (429 / ScraperAPI daily limit). This caused 254 Genshin products
+            # to disappear on 2026-11-28.
+            raise RuntimeError(f"{src['name']}: сторінка {page} не завантажилась (блок/ScraperAPI)")
         if not items: break
         for p in items:
             v = (p.get("variants") or [{}])[0]
