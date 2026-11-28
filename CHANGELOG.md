@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.66.57 — slower supplier scans
+- Direct supplier requests slowed from 13s to 25s+ jitter; page delay 4–5.5s; 15s between suppliers.
+- Designed to stay under Shopify rate limits and preserve ScraperAPI daily quota.
+
 ## v1.66.56 — supplier completeness fix
 - A failed later supplier page (HTTP 429 / ScraperAPI limit) no longer marks the rest of that supplier's catalogue as gone.
 - Restored 254 GenshinAccount products wrongly marked gone on 2026-11-28.

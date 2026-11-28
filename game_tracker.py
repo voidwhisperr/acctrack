@@ -82,7 +82,7 @@ BIND = (os.environ.get("GT_BIND") or "127.0.0.1").strip() or "127.0.0.1"
 AUTH_MODE = (os.environ.get("GT_AUTH") or "").strip().lower()  # "" = вирішуємо після налаштувань
 REQUIRE_ACCESS = (os.environ.get("GT_REQUIRE_ACCESS") or "").strip() == "1"
 # Єдине джерело версії: /api/health, /api/diag, /api/update/check, банер старту.
-APP_VERSION = "1.66.56"
+APP_VERSION = "1.66.57"
 _SESSION_SECRET = base64.urlsafe_b64encode(os.urandom(32)).decode("ascii")
 _BASE_DIR   = pathlib.Path(os.environ.get("GT_DATA_DIR") or pathlib.Path(__file__).parent)
 try:
@@ -2853,7 +2853,7 @@ def _refresh_suppliers_inner(reason=""):
         except Exception as ex:
             failed[key] = str(ex)
             print(f"  ⚠ {key}: {ex}", flush=True)
-        time.sleep(4)      # не бити по всіх сайтах одночасно
+        time.sleep(15)     # не бити по всіх сайтах одночасно; дати лімітам відпочити
     merged = _merge_supplier_cache(fresh, ok_keys)
     _sup_mark(bool(ok_keys))
     try:
@@ -3085,7 +3085,7 @@ _scraper_lock = threading.Lock()
 _refresh_lock = threading.Lock()
 _direct_pace_lock = threading.Lock()
 _last_direct_ts = [0.0]
-DIRECT_PACE = 13.0        # Shopify пускає ~4-5 запитів/хв з IP
+DIRECT_PACE = 25.0        # навмисно повільно: ~2-3 запити/хв, менше 429
 
 
 def _pace_direct():
@@ -3586,7 +3586,7 @@ def fetch_supplier(key, is_first_run=False):
         if len(items) < 250: break
         page += 1
         if page > 15: break
-        time.sleep(1.6 + random.uniform(0, 0.6))   # повільніше = менше 429
+        time.sleep(4.0 + random.uniform(0, 1.5))   # повільніше = менше 429
     print(f" ✓{len(products)}")
     return products
 
